@@ -1,0 +1,20 @@
+{
+  "topics": [
+    {
+      "query_id": "Insert the topic ID",
+      "title": "Insert the topic title if provided, otherwise put ''",
+      "narrative": "Insert the topic narrative, if provided, otherwise put ''",
+      "description": "Insert the topic description if provided, otherwise put ''",
+      "details": {
+        "key_1": "Insert here additional information",
+        "key_2": "..."
+      }
+    },
+    {
+
+    },
+    {
+
+    }
+  ]
+}

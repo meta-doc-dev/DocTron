@@ -1,0 +1,17 @@
+{
+  "qrels": [
+    {
+      "doc_id": "Insert the document ID",
+      "topic_id": "Insert the topic ID",
+      "score": "Insert the score",
+      "start": "only for passage retrieval: start of the passage. This field is optional",
+      "length": "only for passage retrieval: the length of the passage. This field is optional"
+    },
+    {
+
+    },
+    {
+
+    }
+  ]
+}
