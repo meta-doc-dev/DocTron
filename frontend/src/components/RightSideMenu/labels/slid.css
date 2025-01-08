@@ -1,0 +1,8 @@
+.custom-slider.Mui-disabled {
+    color: gray;
+    opacity: 0.5;
+}
+
+.custom-slider .MuiSlider-thumb.Mui-disabled {
+    color: lightgray;
+}

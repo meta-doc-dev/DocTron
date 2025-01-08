@@ -1,0 +1,13 @@
+.menu:hover{
+    color:royalblue;
+    text-decoration: underline;
+}
+
+.dem{
+    line-height: 1.5;
+    margin:20px 0;
+}
+.videoclass{
+    text-align: center;
+    margin:50px;
+}
