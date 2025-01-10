@@ -1,7 +1,7 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
-import Slider, { SliderThumb } from '@mui/material/Slider';
-import { styled } from '@mui/material/styles';
+import Slider, {SliderThumb} from '@mui/material/Slider';
+import {styled} from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
@@ -9,9 +9,13 @@ import {useContext, useEffect, useState} from "react";
 import Button from "@mui/material/Button";
 import {AppContext} from "../../../App";
 import axios from "axios";
+import InfoIcon from "@material-ui/icons/Info";
+import IconButton from "@mui/material/IconButton";
+import CommentDialog from "./CommentDialog";
+import DetailsDialog from "./DetailsDialog";
 
 function ValueLabelComponent(props) {
-    const { children, value } = props;
+    const {children, value} = props;
 
     return (
         <Tooltip enterTouchDelay={0} placement="top" title={value}>
@@ -28,139 +32,15 @@ ValueLabelComponent.propTypes = {
 const iOSBoxShadow =
     '0 3px 1px rgba(0,0,0,0.1),0 4px 8px rgba(0,0,0,0.13),0 0 0 1px rgba(0,0,0,0.02)';
 
-const IOSSlider = styled(Slider)(({ theme }) => ({
-    color: '#007bff',
-    height: 5,
-    padding: '15px 0',
-    '& .MuiSlider-thumb': {
-        height: 20,
-        width: 20,
-        backgroundColor: '#fff',
-        boxShadow: '0 0 2px 0px rgba(0, 0, 0, 0.1)',
-        '&:focus, &:hover, &.Mui-active': {
-            boxShadow: '0px 0px 3px 1px rgba(0, 0, 0, 0.1)',
-            // Reset on touch devices, it doesn't add specificity
-            '@media (hover: none)': {
-                boxShadow: iOSBoxShadow,
-            },
-        },
-        '&:before': {
-            boxShadow:
-                '0px 0px 1px 0px rgba(0,0,0,0.2), 0px 0px 0px 0px rgba(0,0,0,0.14), 0px 0px 1px 0px rgba(0,0,0,0.12)',
-        },
-    },
-    '& .MuiSlider-valueLabel': {
-        fontSize: 12,
-        fontWeight: 'normal',
-        top: -6,
-        backgroundColor: 'unset',
-        color: theme.palette.text.primary,
-        '&::before': {
-            display: 'none',
-        },
-        '& *': {
-            background: 'transparent',
-            color: '#000',
-            ...theme.applyStyles('dark', {
-                color: '#fff',
-            }),
-        },
-    },
-    '& .MuiSlider-track': {
-        border: 'none',
-        height: 5,
-    },
-    '& .MuiSlider-rail': {
-        opacity: 0.5,
-        boxShadow: 'inset 0px 0px 4px -2px #000',
-        backgroundColor: '#d0d0d0',
-    },
-    ...theme.applyStyles('dark', {
-        color: '#0a84ff',
-    }),
-}));
-
-const PrettoSlider = styled(Slider)({
-    color: '#52af77',
-    height: 8,
-    '& .MuiSlider-track': {
-        border: 'none',
-    },
-    '& .MuiSlider-thumb': {
-        height: 24,
-        width: 24,
-        backgroundColor: '#fff',
-        border: '2px solid currentColor',
-        '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
-            boxShadow: 'inherit',
-        },
-        '&::before': {
-            display: 'none',
-        },
-    },
-    '& .MuiSlider-valueLabel': {
-        lineHeight: 1.2,
-        fontSize: 12,
-        background: 'unset',
-        padding: 0,
-        width: 32,
-        height: 32,
-        borderRadius: '50% 50% 50% 0',
-        backgroundColor: '#52af77',
-        transformOrigin: 'bottom left',
-        transform: 'translate(50%, -100%) rotate(-45deg) scale(0)',
-        '&::before': { display: 'none' },
-        '&.MuiSlider-valueLabelOpen': {
-            transform: 'translate(50%, -100%) rotate(-45deg) scale(1)',
-        },
-        '& > *': {
-            transform: 'rotate(45deg)',
-        },
-    },
-});
-
-const AirbnbSlider = styled(Slider)(({ theme }) => ({
-    color: '#3a8589',
-    height: 3,
-    padding: '13px 0',
-    '& .MuiSlider-thumb': {
-        height: 27,
-        width: 27,
-        backgroundColor: '#fff',
-        border: '1px solid currentColor',
-        '&:hover': {
-            boxShadow: '0 0 0 8px rgba(58, 133, 137, 0.16)',
-        },
-        '& .airbnb-bar': {
-            height: 9,
-            width: 1,
-            backgroundColor: 'currentColor',
-            marginLeft: 1,
-            marginRight: 1,
-        },
-    },
-    '& .MuiSlider-track': {
-        height: 3,
-    },
-    '& .MuiSlider-rail': {
-        color: '#d8d8d8',
-        opacity: 1,
-        height: 3,
-        ...theme.applyStyles('dark', {
-            color: '#bfbfbf',
-            opacity: undefined,
-        }),
-    },
-}));
 
 function AirbnbThumbComponent(props) {
-    const { children, ...other } = props;
+    const {children, ...other} = props;
     return (
         <SliderThumb {...other}>
             {children}
-            <span className="airbnb-bar" />
-            <span className="airbnb-bar" />
-            <span className="airbnb-bar" />
+            <span className="airbnb-bar"/>
+            <span className="airbnb-bar"/>
+            <span className="airbnb-bar"/>
         </SliderThumb>
     );
 }
@@ -185,6 +65,7 @@ export default function LabelSlider(props) {
         labelstosave,
         annotatedlabels
     } = useContext(AppContext);
+    const [ShowCommentDialog,SetShowCommentDialog] = useState(false)
     const [ShowList, SetShowList] = useState(true)
     const [Labels, SetLabels] = labels
     const [NotAdded, SetNotAdded] = useState([])
@@ -197,14 +78,19 @@ export default function LabelSlider(props) {
     const [Modality, SetModality] = modality
     const [View, SetView] = view
     const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
-    const [value, setValue] = useState(props.value); // Stato locale
+    const [value, setValue] = useState(null); // Stato locale
+    const [OpenDetails,SetOpenDetails] = useState(false)
 
+    useEffect(() => {
+        setValue(props.value)
+    }, [props.value]);
     const handleChange = (event, newValue) => {
         setValue(newValue); // Aggiorna lo stato
-        AdddeleteLabel(event,props.label,newValue)
+        AdddeleteLabel(event, props.label, newValue)
 
     };
-    function AdddeleteLabel(e,label,score) {
+
+    function AdddeleteLabel(e, label, score) {
         e.preventDefault()
         if (Modality === 2 || View === 4) {
             SetOpenSnack(true)
@@ -215,12 +101,16 @@ export default function LabelSlider(props) {
         } else {
             if (CurAnnotator === Username) {
                 if (score !== null) {
+                    if (props.type_lab === 'label'){
+                        axios.post('labels/insert', {label: label, score: score})
+                            .then(response => {
 
-                    axios.post('labels/insert', {label: label,score: score})
-                        .then(response => {
 
+                            })
+                    }else if(props.type_lab === 'passage'){
+                      console.log('passage')
+                    }
 
-                        })
 
                 } else {
                     axios.delete('labels', {data: {label: label}})
@@ -242,9 +132,11 @@ export default function LabelSlider(props) {
 
 
     }
+
+
     const marks = [
 
-          {
+        {
             value: props.min,
             label: props.min,
         },
@@ -255,43 +147,71 @@ export default function LabelSlider(props) {
     ];
 
 
-
     return (
-        <Box sx={{marginTop:'5%'}}>
-            <Typography gutterBottom><span>{props.label}: {value !== null ? value : 'not set'}    </span>        <span> <Button size={'small'} sx={{textAlign:'right'}} onClick={()=>setValue(null)}>Reset</Button>
+        <Box sx={{marginTop: '5%'}}>
+            <CommentDialog open={ShowCommentDialog} setopen={SetShowCommentDialog} label={props.label}/>
+            <DetailsDialog open={OpenDetails} setopen={SetOpenDetails} label={props.label} details={props.details} />
+
+            <Typography gutterBottom><span>{props.label} <IconButton size={'small'} onClick={()=> {
+                if (props.details !== null) {
+                    SetOpenDetails(prev => !prev)
+                }
+            }
+
+
+                } aria-label="info">
+  <InfoIcon fontSize="inherit"/>
+</IconButton>: {value !== null ? value : 'not set'}    </span> <span> <Button size={'small'} sx={{textAlign: 'right'}}
+                                                                              onClick={() => {
+                                                                                  SetShowCommentDialog(prev=>!prev)
+                                                                              }}>Comment</Button> </span>
+
+
+                <span> <Button size={'small'} sx={{textAlign: 'right'}}
+                               onClick={() => {
+                                   setValue(null)
+                                   axios.delete('labels', {data: {label: props.label}})
+                                       .then(response => {
+                                           SetNotAdded([...NotAdded, props.label])
+                                           var labels = Object.entries(AnnotatedLabels).map(([key]) => key).filter(x => x === props.label)
+                                           //var labels = AnnotatedLabels.filter(o => o !== props.label)
+                                           SetAnnotatedLabels(labels)
+                                           SetLoading(false)
+
+                                       })
+                               }}>Reset</Button>
 
             </span>
             </Typography>
-            <div onClick={(e)=> {
+            <div onClick={(e) => {
                 e.preventDefault()
                 if (value === null) {
                     setValue(props.min)
-                    AdddeleteLabel(e,props.label,1)
+                    AdddeleteLabel(e, props.label, 1)
                 }
             }}>
-                <Slider                 marks={marks}
-                                        sx={value === null  ? {
-                                            width:'70%',
-                                            '& .MuiSlider-thumb': {
-                                                backgroundColor: 'blue', // Colore del thumb
-                                                border: '0px solid red', // Bordo del thumb
-                                                width: 0, // Dimensioni del thumb
-                                                height: 0,
-                                                '&:hover': {
-                                                    boxShadow: '0px 0px 10px blue', // Effetto hover
-                                                },
-                                            },
-                                        } : {width:'70%'}}
-                                        valueLabelDisplay="auto"
-                                        aria-label={props.label}
-                                        value={value === null ? props.min : value} // Default a props.min per evitare errori
-                                        max={props.max}
-                                        min={props.min}
-                                        onChange={handleChange}
+                <Slider marks={marks}
+                        sx={value === null ? {
+                            width: '70%',
+                            '& .MuiSlider-thumb': {
+                                backgroundColor: 'blue', // Colore del thumb
+                                border: '0px solid red', // Bordo del thumb
+                                width: 0, // Dimensioni del thumb
+                                height: 0,
+                                '&:hover': {
+                                    boxShadow: '0px 0px 10px blue', // Effetto hover
+                                },
+                            },
+                        } : {width: '70%'}}
+                        valueLabelDisplay="auto"
+                        aria-label={props.label}
+                        value={value === null ? props.min : value} // Default a props.min per evitare errori
+                        max={props.max}
+                        min={props.min}
+                        onChange={handleChange}
 
-                                        />
+                />
             </div>
-
 
 
         </Box>

@@ -288,7 +288,7 @@
 }
 
 .mention_span{
-    display: inline-block;
+    /*display: inline-block;*/
     margin-top: 10px;
     margin-bottom: 10px;
 }

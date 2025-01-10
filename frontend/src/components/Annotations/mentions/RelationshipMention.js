@@ -925,7 +925,7 @@ export default function RelMention(props){
 
 
     return (
-        <div className={'mentionpart_rel'}>
+        <span className={'mentionpart_rel'}>
             {ShowSelectMentionModal &&
 
                 <Dialog
@@ -983,10 +983,10 @@ export default function RelMention(props){
             {(View === 1|| View === 3) && props.concepts.length > 0 && props.mention.mentions.split(' ').indexOf(Predicate) !== -1 && <><Concept role={'Predicate'} concepts={ConceptsList.filter(x=>(x.start === props.mention.start && x.stop === props.mention.stop && x.position === props.loc))} mention={props.mention} mention_id = {props.id} /></>}
             {(View === 1|| View === 3) && props.concepts.length > 0 && props.mention.mentions.split(' ').indexOf(Target) !== -1 && <><Concept role={'Target'} concepts={ConceptsList.filter(x=>(x.start === props.mention.start && x.stop === props.mention.stop && x.position === props.loc))} mention={props.mention} mention_id = {props.id} /></>}
 
-            { <div  onContextMenu={handleContextMenu} >
+            { <span  onContextMenu={handleContextMenu} >
 
 
-                <div id={props.id} ref={inputEl}
+                <span id={props.id} ref={inputEl}
 
                      onClick={(e)=>{
                          if(!ShowReadOnlyRelation && CurAnnotator === Username && View !== 4) {
@@ -1160,7 +1160,7 @@ export default function RelMention(props){
 
 
 
-                </div>
+                </span>
 
                 {<StyledMenu
                     open={contextMenu !== null && ShowReadOnlyRelation === false && InARel && CurAnnotator === Username && View !== 4}
@@ -1357,9 +1357,9 @@ export default function RelMention(props){
 
                 </StyledMenu>}
 
-            </div>}
+            </span>}
 
 
-        </div>
+        </span>
     )
 }

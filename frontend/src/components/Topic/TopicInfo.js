@@ -20,6 +20,8 @@ import {emphasize} from "@mui/material";
 import {styled} from "@mui/material/styles";
 import Chip from "@mui/material/Chip";
 import * as PropTypes from "prop-types";
+import IconButton from "@mui/material/IconButton";
+import EditIcon from "@mui/icons-material/Edit";
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small"/>;
 
@@ -42,8 +44,8 @@ export default function TopicInfo(props) {
     }, [Topic])
 
     return (
-        <div style={{padding:'3%',backgroundColor:'#f5f5f5'}}>
-            {Info && <div><h4>Topic</h4>
+        <div style={{padding:'2%',margin:'2%',backgroundColor:'#f5f5f5'}}>
+            {Info && <div><h4>Topic </h4>
 
                 {Object.keys(Info).map(key => <div>
                         <span>

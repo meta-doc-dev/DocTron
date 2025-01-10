@@ -53,14 +53,18 @@ import {Popover} from "@mui/material";
 import Button from "@mui/material/Button";
 import {TextField} from "@material-ui/core";
 import SelectMentionToDelete from "./modals/SelectMentionToDelete";
+import LabelSlider from "../../RightSideMenu/labels/LabelSlider";
+import LabelsRadio from "../../RightSideMenu/labels/LabelsRadio";
+import EditIcon from "@mui/icons-material/Edit";
+import CommentModal from "./modals/CommentModal";
 
 
 export default function Mention(props){
     props.mention.position = props.loc
-    const { areascolors,concepts,inarel,annotationtypes,modality,newmention,binaryrel,addtagmodal,relationshipslist,tags_split,curannotator,opensnack,sourcetext,predicatetext,targettext,targetconcepts,predicateconcepts,sourceconcepts,snackmessage,username,showrelspannel,predicate,target,newrelation,readonlyrelation,view,source,document_id,tags,currentdiv,firstsel,curmention,secondsel,documentdescription,mentions,addconceptmodal,mentiontohighlight,startrange,endrange } = useContext(AppContext);
+    const { areascolors,concepts,inarel,annotationtypes,labels,modality,newmention,binaryrel,addtagmodal,relationshipslist,tags_split,curannotator,opensnack,sourcetext,predicatetext,targettext,targetconcepts,predicateconcepts,sourceconcepts,snackmessage,username,showrelspannel,predicate,target,newrelation,readonlyrelation,view,source,document_id,tags,currentdiv,firstsel,curmention,secondsel,documentdescription,mentions,addconceptmodal,mentiontohighlight,startrange,endrange } = useContext(AppContext);
     const [DocumentDesc,SetDocumentDesc] = documentdescription
     const [MentionsInvolved,SetMentionsInvolved] = useState([])
-
+    const [OpenMenuTags,SetOpenMenuTags] = useState(false)
     const [MentionsList,SetMentionsList] = mentions
     const [View,SetView] = view
     const [AnnotationTypes,SetAnnotationTypes] = annotationtypes
@@ -69,6 +73,8 @@ export default function Mention(props){
     const [Source,SetSource] = source
     const [Predicate,SetPredicate] = predicate
     const [Target,SetTarget] = target
+    const [Labels, SetLabels] = labels
+
     const [NewMention,SetNewMention] = newmention
     const [SourceConcepts,SetSourceConcepts] = sourceconcepts
     const [PredicateConcepts,SetPredicateConcepts] = predicateconcepts
@@ -97,12 +103,16 @@ export default function Mention(props){
 
     //PARTE RELATIVA AI TAG
     const [anchorElTagAnno, setAnchorElTagAnno] = useState(null);
+    const [anchorElPassAnno, setAnchorElPassAnno] = useState(null);
 
     const handleCloseTagAnno = () => {
         setAnchorElTagAnno(null);
     };
-
+    const handleClosePassAnno = () => {
+        setAnchorElPassAnno(null);
+    };
     const openTagAnno = Boolean(anchorElTagAnno);
+    const openPassAnno = Boolean(anchorElPassAnno);
     const id = openTagAnno ? "simple-popover" : undefined;
     // FINE TAG
 
@@ -120,6 +130,7 @@ export default function Mention(props){
     const [ConceptsList,SetConceptsList] = concepts
     const [anchorEl, setAnchorEl] = useState(null);
     const [SelectedTags,SetSelectedTags] = useState([])
+    const [ShowCommentModal,SetShowCommentModal] = useState(false)
 
     const [ShowCopyModal,SetShowCopyModal] = useState(false)
     const [ShowCopyConceptModal,SetShowCopyConceptModal] = useState(false)
@@ -128,6 +139,7 @@ export default function Mention(props){
     const [Tags, SetTags] = tags
     const [SelectedMention,SetSetSelectedMention] = useState(false)
 
+    const [menuPosition, setMenuPosition] = useState(null);
 
 
     function setMentionCurFunction(){
@@ -157,10 +169,12 @@ export default function Mention(props){
             const targetElement = document.getElementById(props.id); // Modifica con il tuo ID
             if (targetElement) {
                 setAnchorElTagAnno(targetElement);
+                setAnchorElPassAnno(targetElement);
                 SetNewMention(false)
             }
         } else {
             setAnchorElTagAnno(null); // Chiudi il popover se non corrisponde
+            setAnchorElPassAnno(null); // Chiudi il popover se non corrisponde
         }
     }, [props.mention.mentions, NewMention]);
 
@@ -181,6 +195,7 @@ export default function Mention(props){
         event.stopPropagation()
         if(CurAnnotator === Username){
             setAnchorElTagAnno(event.currentTarget);
+            setAnchorElPassAnno(event.currentTarget);
             SetNewMention(false)
 
         }
@@ -503,6 +518,24 @@ export default function Mention(props){
 
     };
 
+    const handleEventMenu = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if(!InARel){
+            setMenuPosition(
+                menuPosition === null
+                    ? {
+                        mouseX: event.clientX + 2,
+                        mouseY: event.clientY - 6,
+                    }
+                    : // repeated contextmenu when it is already open closes it with Chrome 84 on Ubuntu
+                      // Other native context menus might behave different.
+                      // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
+                    null,
+            );
+        }
+
+    };
 
     function selectTag(e,tag){
         e.preventDefault()
@@ -558,6 +591,7 @@ export default function Mention(props){
             }
         }
         setContextMenu(null);
+        setMenuPosition(null)
         DeleteRange(SetStart,SetEnd,SetFirstSelected,SetSecondSelected,SetCurrentDiv)
         handleCloseTagAnno()
     }
@@ -566,6 +600,7 @@ export default function Mention(props){
 
     const handleClose = () => {
         setContextMenu(null);
+        setMenuPosition(null)
     };
 
 
@@ -644,6 +679,17 @@ export default function Mention(props){
         e.preventDefault();
 
         SetShowAnnotateAllModal(true)
+
+        DeleteRange(SetStart,SetEnd,SetFirstSelected,SetSecondSelected,SetCurrentDiv);
+        setContextMenu(null);
+
+
+    }
+    function handleComment(e){
+        e.stopPropagation();
+        e.preventDefault();
+
+        SetShowCommentModal(true)
 
         DeleteRange(SetStart,SetEnd,SetFirstSelected,SetSecondSelected,SetCurrentDiv);
         setContextMenu(null);
@@ -756,7 +802,7 @@ export default function Mention(props){
 
 
     return (
-        <div className={'mentionpart'}>
+        <span className={'mentionpart'}>
             {ShowDeleteMetnionModal && <SelectMentionToDelete show={ShowDeleteMetnionModal} setshow={SetShowDeleteMetnionModal} mention={props.mention}
                                                            position={props.loc}/>}
             {ShowInfoModal && <InfoModal show={ShowInfoModal} setshow={SetShowInfoModal} mention={props.mention}
@@ -767,13 +813,12 @@ export default function Mention(props){
             />}
             {ShowCopyConceptModal && <ChooseMentionModal type={'concept'} show={ShowCopyConceptModal} setshow={SetShowCopyConceptModal} mention={props.mention} mention_id={props.id}
             />}
-
             {ShowSuggestionModal && <SuggestionModal  show={ShowSuggestionModal} setshow={SetShowSuggestionModal} mention={props.mention} mention_id={props.id}
             />}
             {ShowAnnotateAllModal && <AnnotateAllModal  show={ShowAnnotateAllModal} setshow={SetShowAnnotateAllModal} mention={props.mention} mention_id={props.id} position={props.loc}
             />}
-
-
+            {ShowCommentModal && <CommentModal  show={ShowCommentModal} setshow={SetShowCommentModal} mention={props.mention} mention_id={props.id} position={props.loc}
+            />}
 
             {TagsSplitted && (View === 2 || View === 3) && !InARel && TagsSplitted.filter(x=>(x.start === props.mention.start && x.stop === props.mention.stop && x.position === props.loc)).length > 0 &&
                 <>
@@ -787,7 +832,7 @@ export default function Mention(props){
             }
 
 
-            {CurAnnotator !== Username ? <div onClick={(e)=>{
+            {CurAnnotator !== Username ? <span onClick={(e)=>{
                     if((e.altKey)) {
                         handleDelete(e)
                     }else if((e.shiftKey)){
@@ -799,19 +844,18 @@ export default function Mention(props){
 
                 }
                 }>
-                    <div id={props.id} ref={inputEl} >
+                    <span id={props.id} ref={inputEl} >
                         {props.mention_text.startsWith(' ') && !props.mention_text.endsWith(' ') && <>&nbsp;{props.mention_text.trim()}</>}
                         {props.mention_text.endsWith(' ') && !props.mention_text.startsWith(' ') && <>{props.mention_text.trim()}&nbsp;</>}
                         {props.mention_text.endsWith(' ') && props.mention_text.startsWith(' ') && props.mention_text !== ' ' && <>&nbsp;{props.mention_text.trim()}&nbsp;</>}
                         {!props.mention_text.endsWith(' ') && !props.mention_text.startsWith(' ') && <>{props.mention_text}</>}
                         {props.mention_text === (' ') && <>&nbsp;</>}
-                    </div>
-                </div> :
-                <div onContextMenu={handleContextMenu} onClick={(e)=>{
+                    </span>
+                </span> :
+                <span onContextMenu={handleContextMenu} onClick={(e)=>{
                     if((e.altKey)) {
                         handleDelete(e)
                     }else if((e.shiftKey)){
-                        console.log('relationships')
                         handleRelationship(e)
                     }else if (e.ctrlKey ) {
                         handleConcept(e)
@@ -819,7 +863,7 @@ export default function Mention(props){
                 }
                 }>
 
-                    <div id={props.id} ref={inputEl} >
+                    <span id={props.id} ref={inputEl} >
 
                         {props.mention_text.startsWith(' ') && !props.mention_text.endsWith(' ') && <>&nbsp;{props.mention_text.trim()}</>}
                         {props.mention_text.endsWith(' ') && !props.mention_text.startsWith(' ') && <>{props.mention_text.trim()}&nbsp;</>}
@@ -827,22 +871,28 @@ export default function Mention(props){
                         {!props.mention_text.endsWith(' ') && !props.mention_text.startsWith(' ') && <>{props.mention_text}</>}
                         {props.mention_text === (' ') && <>&nbsp;</>}
 
-                    </div>
+                    </span>
 
 
-                    <Menu
+                    <StyledMenu
                         id={id}
-                        open={openTagAnno && Tags && View !== 4}
-                        anchorEl={anchorElTagAnno}
-                        onClose={handleCloseTagAnno}
-                        anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'center',
-                        }}
-                        transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'center',
-                        }}
+                        open={menuPosition !== null && openTagAnno && Tags && View !== 4 && (AnnotationTypes.indexOf('Entity tagging') !== -1 || OpenMenuTags)}
+                        onClose={handleClose}
+                        // elevation={0}
+                        anchorReference="anchorPosition"
+                        anchorPosition={
+                            menuPosition !== null
+                                ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
+                                : undefined
+                        }
+                        // anchorOrigin={{
+                        //     vertical: 'bottom',
+                        //     horizontal: 'center',
+                        // }}
+                        // transformOrigin={{
+                        //     vertical: 'top',
+                        //     horizontal: 'center',
+                        // }}
                         sx={{ marginTop: '20px' }} // Sposta il menu di 20px sopra
                     >
                         <div></div>
@@ -880,30 +930,46 @@ export default function Mention(props){
                         </div>
 
 
-                    </Menu>
+                    </StyledMenu>
 
-
-                    {/*<Popover
+                    <StyledMenu
                         id={id}
-                        open={openTagAnno && Tags && Tags.length > 0}
-                        anchorEl={anchorElTagAnno}
-                        onClose={handleCloseTagAnno}
-                        anchorOrigin={{
+                        open={menuPosition !== null && openPassAnno && View !== 4 && (AnnotationTypes.indexOf('Passages annotation') !== -1 || OpenMenuTags)}
+                        onClose={handleClose}
+                        // elevation={0}
+                        anchorReference="anchorPosition"
+                        anchorPosition={
+                            menuPosition !== null
+                                ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
+                                : undefined
+                        }
+                        /*anchorOrigin={{
                             vertical: 'bottom',
                             horizontal: 'center',
                         }}
                         transformOrigin={{
                             vertical: 'top',
                             horizontal: 'center',
-                        }}
-                        sx={{ marginTop: '20px' }} // Sposta il menu di 20px sopra
+                        }}*/
+
                     >
-                        <h5>Tags:</h5>
-                        {Tags.map(tag=><div><Button onClick={handleCloseTagAnno}   sx={AreasColors ? {padding:'5px 5px',width:'100%',display:'flex',justifyContent:'left',color:AreasColors[tag]} : {padding:'5px 5px',width:'100%',display:'flex',justifyContent:'left',  color:'rgb(65, 105, 225)'}}>{tag}</Button></div>)}
-                        <TextField onKeyDown={handleKeyDownTag} id="newTagField" label="Tag" style={{margin:'1vw',width:'80%',display:'flex',justifyContent:'left'}} variant="outlined" />
+                        <div></div>
+                        <div style={{padding:'5%'}}>
+                            <h6>Select Passage labels</h6>
+                            {Labels['labels_passage'].map((o, i) =>
+                                <div>
+                                    {parseInt(Labels['values_passage'][i][1]) - parseInt(Labels['values_passage'][i][0]) + 1 > 5 ? <LabelSlider label={o} details = {Labels['details_passage'][i]} value={null} min={Labels['values_passage'][i][0]} max={Labels['values_passage'][i][1]} type_lab={'passage'}/> :
+                                        <LabelsRadio  label={o} details = {Labels['details_passage'][i]}  value={null} min={Labels['values_passage'][i][0]} max={Labels['values_passage'][i][1]} type_lab={'passage'}/> }
+
+                                </div>
+
+                            )}
+                        </div>
 
 
-                    </Popover>*/}
+                    </StyledMenu>
+
+
 
 
                     <StyledMenu
@@ -918,7 +984,7 @@ export default function Mention(props){
                         }
                     >
                         <div></div>
-                        <div style={{display:'flex'}}>
+                        <div >
                             <div >
                                 {/* <MenuItem autoFocus={false}  onClick={(e)=>{
                                 handleInfo(e)
@@ -946,33 +1012,40 @@ export default function Mention(props){
                                         <ContentCopyIcon fontSize="small" />
                                     </ListItemIcon>
                                     Annotate all</MenuItem>
+                                      <MenuItem onClick={(e)=>{
+                                          handleComment(e)
+                                      }}>
+                                    <ListItemIcon>
+                                        <EditIcon fontSize="small" />
+                                    </ListItemIcon>
+                                    Comment passage</MenuItem>
                                 <Divider />
 
 
 
-                                <MenuItem onClick={(e)=> {
+                                {AnnotationTypes.indexOf('Entity linking') !== -1 && <MenuItem onClick={(e)=> {
                                     handleConcept(e)
                                 }}>
                                     <ListItemIcon>
                                         <AddIcon fontSize="small" />
                                     </ListItemIcon>
-                                    Add Concept</MenuItem>
+                                    Add Concept</MenuItem>}
 
-                                <MenuItem onClick={(e)=>{
+                                {AnnotationTypes.indexOf('Relationships annotation') !== -1 && <MenuItem onClick={(e) => {
                                     handleRelationship(e)
                                 }}>
                                     <ListItemIcon>
-                                        <HubIcon fontSize="small" />
+                                        <HubIcon fontSize="small"/>
                                     </ListItemIcon>
-                                    Add Relationship</MenuItem>
+                                    Add Relationship</MenuItem>}
 
-                                <MenuItem onClick={(e)=>{
+                                {AnnotationTypes.indexOf('Relationships annotation') !== -1 && <MenuItem onClick={(e)=>{
                                     handleRelationship(e,true)
                                 }}>
                                     <ListItemIcon>
                                         <HubIcon fontSize="small" />
                                     </ListItemIcon>
-                                    Add Binary Relationship</MenuItem>
+                                    Add Binary Relationship</MenuItem>}
                                 <Divider />
 
                                 <MenuItem style={{color:'#d00000'}} onClick={(e)=>{
@@ -996,7 +1069,7 @@ export default function Mention(props){
                     </StyledMenu>
 
 
-                </div>}
+                </span>}
             <Menu
                 id="fade-menu"
                 MenuListProps={{
@@ -1031,6 +1104,6 @@ export default function Mention(props){
                     Copy mention and tag(s)</MenuItem>
             </Menu>
 
-        </div>
+        </span>
     )
 }

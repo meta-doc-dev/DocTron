@@ -2243,8 +2243,8 @@ def update_gt(user,name_space,document,language,topic):
 
 
 
-        update_iaa_agreement(document.document_id)
-        user_iaa = User.objects.get(username = "IAA-Inter Annotator Agreement",name_space = name_space)
+        # update_iaa_agreement(document.document_id)
+        # user_iaa = User.objects.get(username = "IAA-Inter Annotator Agreement",name_space = name_space)
         # json_gt = generate_ground_truth(user_iaa, name_space, document, language)
 
 
@@ -2457,7 +2457,8 @@ def create_new_content(document,user,topic):
         no_mentions_indices = []
         if forbidden_indices[0] != 0:
             no_mentions_indices.append([j for j in range(0,forbidden_indices[0])])
-            new_content_from_dict_keys[k].append({'type':'no_mention','text':json_value[0:forbidden_indices[0]-key['start']],'start':0,'stop':forbidden_indices[0]-key['start']-1})
+            if forbidden_indices[0]-key['start']-1 != -1: # 09/01/25
+                new_content_from_dict_keys[k].append({'type':'no_mention','text':json_value[0:forbidden_indices[0]-key['start']],'start':0,'stop':forbidden_indices[0]-key['start']-1})
 
         if forbidden_indices[-1] != key['stop']:
             no_mentions_indices.append([j for j in range(forbidden_indices[-1]+1,len(json_value))])

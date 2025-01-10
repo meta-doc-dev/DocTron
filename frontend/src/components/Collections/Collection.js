@@ -137,6 +137,8 @@ export default function Collection(props) {
     const [CollectionAreas, SetCollectionAreas] = useState([])
     const [MembersToSplit, SetMembersToSplit] = useState([])
     const [AnnotationTypes, SetAnnotationTypes] = useState([])
+    const [TopicsSplit,SetTopicsSplit] = useState(false);
+    const [DocsSplit,SetDocsSplit] = useState(false);
 
     useEffect(() => {
         if (LoadColl) {
@@ -472,11 +474,13 @@ export default function Collection(props) {
     }
 
     function splitUsers(e) {
+        e.preventDefault()
         SetLoadingRound(true)
         axios.post('split_users',
             {
                 collection: props.collection.id,
-                members: MembersToSplit
+                topic: TopicsSplit,
+                document: DocsSplit
             }
         )
             .then(response => {
@@ -495,6 +499,7 @@ export default function Collection(props) {
     }
 
     function createhoneypot(e) {
+        e.preventDefault()
         SetLoadingRound(true)
         axios.post('honeypot',
             {
@@ -870,8 +875,8 @@ export default function Collection(props) {
                                handleClose={handleCloseRoundDialog} name={props.collection.name} error={Error}
                                confirm={addAdmin}/>
             <SplitDialog open={OpenSplitCollection} handleClose={handleCloseSplitDialog} name={props.collection.name}
-                         collection={props.collection} error={Error} members={MembersToSplit}
-                         setmembers={SetMembersToSplit} split={splitUsers}/>
+                         collection={props.collection} error={Error} members={MembersToSplit} set_topic={SetTopicsSplit}
+                         set_doc={SetDocsSplit} setmembers={SetMembersToSplit} split={splitUsers} loading={LoadingRound} />
             <HoneyPotDialog open={OpenHoneyPot} handleClose={handleCloseHP} name={props.collection.name}
                             collection={props.collection} error={Error} honeypot={HoneyPot} sethoneypot={SetHoneyPot}
                             documents={CollectionDocuments} createpot={createhoneypot}/>
@@ -1090,7 +1095,7 @@ export default function Collection(props) {
                                 </div>}
                             </ThemeProvider>
                             <hr/>
-                            <ThemeProvider theme={theme}>
+                            {AnnotationTypes.indexOf() !== -1 && <ThemeProvider theme={theme}>
                                 <h6 style={{marginBottom: '1%'}}>Tags: </h6>
                                 <div>
                                     {CollectionTags.map((m, i) =>
@@ -1106,8 +1111,8 @@ export default function Collection(props) {
                                                 <AddCircleOutlineIcon/>
                                             </IconButton></Tooltip>}
                                 </div>
-                            </ThemeProvider>
-                            <hr/>
+                                <hr/>
+                            </ThemeProvider>}
                             <ThemeProvider theme={theme}>
                                 {CollectionTags.length > 0 && <><h6 style={{marginBottom: '1%'}}>Change tags
                                     colors </h6>

@@ -202,7 +202,7 @@ export default function CollectionsList(props) {
                             <Col md={8}>
                                 <>
                                     <div style={{justifyContent: 'center', marginTop: '5vh'}}>
-                                        <><h2>Found {CollectionToShow.length} for {Task} task.</h2><br/>
+                                        <><h2>Found {CollectionToShow.length} collections for {Task} task.</h2><br/>
                                             <div style={{marginTop: '3%'}}>
                                                 <Button onClick={() => SetAddCollection(prev => !prev)}
                                                         variant="contained"

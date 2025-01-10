@@ -68,7 +68,7 @@ export default function MentionsListClass(props){
     const sorted_mentions_last = sorted_mentions.slice(5,sorted_mentions.length)
     const [MentionToHighlight,SetMentionToHighlight] = mentiontohighlight
     const [View,SetView] = view
-    const [ShowList,SetShowList] = useState(false)
+    const [ShowList,SetShowList] = useState(true)
 
 
 
@@ -76,7 +76,7 @@ export default function MentionsListClass(props){
 
     return(
         <div id='rightsidementionsclass'>
-            <Button disabled = {View === 4} onClick={()=>SetShowList(prev=>!prev)} variant="text">Mentions <i>({MentionsList.length})</i></Button>
+            <Button disabled = {View === 4} onClick={()=>SetShowList(prev=>!prev)} variant="text">Passages <i>({MentionsList.length})</i></Button>
 
             {/*{MentionsList && <div><i><b>{MentionsList.length}</b> mentions</i></div>}*/}
             <Collapse in={ShowList}>

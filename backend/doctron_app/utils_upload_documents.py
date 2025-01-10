@@ -1095,7 +1095,7 @@ def new_collection(request):
 
                         if not Document.objects.filter(document_id=pid).exists():
                             Document.objects.create(batch=1, collection_id=collection, provenance='user',
-                                                    document_id=pid, language=language,
+                                                    document_id=pid, language=language,honeypot=False,
                                                     document_content=json_content, insertion_time=Now())
 
             pubmed_ids = request.POST.get('pubmed_ids', None)
@@ -1115,7 +1115,7 @@ def new_collection(request):
                         if not Document.objects.filter(document_id=pid).exists():
                             Document.objects.create(batch=1, document_id=pid,
                                                     provenance='pubmed', language='english',
-                                                    document_content=json_val,
+                                                    document_content=json_val,honeypot=False,
                                                     insertion_time=Now(), collection_id=collection)
 
         areas = get_areas_collection(collection_id)

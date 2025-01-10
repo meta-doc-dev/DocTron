@@ -59,58 +59,12 @@ export default function LabelsClass(props) {
     const [View, SetView] = view
     const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
 
-    function AdddeleteLabel(e, label) {
-        e.preventDefault()
-        if (Modality === 2 || View === 4) {
-            SetOpenSnack(true)
-            SetSnackMessage({'message': 'You cannot annotate this document'})
-        } else if (AnnotationTypes.indexOf('Labels annotation') === -1) {
-            SetOpenSnack(true)
-            SetSnackMessage({'message': 'Labels annotation is not allowed here'})
-        } else {
-            SetLoading(true)
-            if (CurAnnotator === Username) {
-                if (AnnotatedLabels.indexOf(label) === -1) {
-                    // AnnotatedLabels.push(label)
-                    var labels = NotAdded.filter(o => o !== label)
-                    SetNotAdded(labels)
-                    SetAnnotatedLabels([...AnnotatedLabels, label])
-                    axios.post('labels/insert', {label: label})
-                        .then(response => {
-                            var labels = NotAdded.filter(o => o !== label)
-                            SetNotAdded(labels)
-                            SetAnnotatedLabels([...AnnotatedLabels, label])
-                            SetLoading(false)
-
-                        })
-
-                } else {
-                    axios.delete('labels', {data: {label: label}})
-                        .then(response => {
-                            SetNotAdded([...NotAdded, label])
-                            var labels = AnnotatedLabels.filter(o => o !== label)
-                            SetAnnotatedLabels(labels)
-                            SetLoading(false)
-
-                        })
-
-                }
-            } else {
-                if (AnnotatedLabels.indexOf(label) !== -1) {
-                    axios.post('labels/copy', {label: label}).then(res => console.log(res)).catch(error => console.log(error))
-                    SetLoading(false)
-
-                }
-
-            }
-        }
 
 
-    }
 
     useEffect(() => {
         if (AnnotatedLabels) {
-            var labs = AnnotatedLabels.map(o => o['label'])
+            const labs = Object.entries(AnnotatedLabels).map(([key]) => key);
             var notadded = Labels['labels'].filter(o => labs.indexOf(o) === -1)
             SetNotAdded(notadded)
         }
@@ -144,8 +98,8 @@ export default function LabelsClass(props) {
                     {AnnotatedLabels ? <ThemeProvider theme={labelstheme}>
                         {Labels['labels'].map((o, i) =>
                                 <div>
-                                    {parseInt(Labels['values'][i][1]) - parseInt(Labels['values'][i][0]) + 1 > 5 ? <LabelSlider label={o} details = {Labels['details'][i]} value={AnnotatedLabels[o] !== undefined ? AnnotatedLabels[o] : null} min={Labels['values'][i][0]} max={Labels['values'][i][1]}/> :
-                                        <LabelsRadio  label={o} details = {Labels['details'][i]}  value={AnnotatedLabels[o] !== undefined ? AnnotatedLabels[o] : null} min={Labels['values'][i][0]} max={Labels['values'][i][1]}/> }
+                                    {parseInt(Labels['values'][i][1]) - parseInt(Labels['values'][i][0]) + 1 > 5 ? <LabelSlider label={o} details = {Labels['details'][i]} value={AnnotatedLabels[o] !== undefined ? AnnotatedLabels[o] : null} min={Labels['values'][i][0]} max={Labels['values'][i][1]} type_lab={'label'}/> :
+                                        <LabelsRadio  label={o} details = {Labels['details'][i]}  value={AnnotatedLabels[o] !== undefined ? AnnotatedLabels[o] : null} min={Labels['values'][i][0]} max={Labels['values'][i][1]} type_lab={'label'}/> }
 
                                 </div>
 

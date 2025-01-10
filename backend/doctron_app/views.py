@@ -931,8 +931,8 @@ def statistics(request, collection_id=None, type=None):
             json_resp = {}
             dict_docs = []
             for document in documents:
-                if 'document_id' in list(document.document_content.keys()):
-                    doc = document.document_content['document_id']
+                if 'doc_id' in list(document.document_content.keys()):
+                    doc = document.document_content['doc_id']
                 else:
                     doc = document.document_id
 
@@ -2490,40 +2490,70 @@ def split_users(request):
         body_json = json.loads(request.body)
         collection = body_json['collection']
         collection = Collection.objects.get(collection_id=collection)
-        members = body_json['members']
+        members = ShareCollection.objects.filter(collection_id=collection)
+        members = [m.username_id for m in members if m.reviewer != True and m.admin != True]
+
+        split_topic = body_json['topic']
+        split_document = body_json['document']
+
+        topics = Topic.objects.filter(collection_id=collection)
+        topics = [t.id for t in topics]
         documents = Document.objects.filter(collection_id=collection, honeypot=False)
-        gts = GroundTruthLogFile.objects.filter(document_id__in=documents)
+        # gts = GroundTruthLogFile.objects.filter(document_id__in=documents)
         already_splitted = Split.objects.filter(document_id__in=documents)
         documents = [document.document_id for document in documents]
-        gts_documents = [document.document_id for document in gts]
+        #gts_documents = [document.document_id for document in gts]
         already_splitted = [document.document_id for document in already_splitted]
-        documents = [d for d in documents if d not in gts_documents and d not in already_splitted]
+        # documents = [d for d in documents if d not in gts_documents and d not in already_splitted]
+        documents = [d for d in documents if d not in already_splitted]
+        random.shuffle(topics)
         random.shuffle(documents)
-
         # Calculate the size of each partition
+        total_length_topics = len(topics)
         total_length = len(documents)
+        partition_size_topics = total_length_topics // len(members)
         partition_size = total_length // len(members)
+        remainder_topics = total_length_topics % len(members)
         remainder = total_length % len(members)
 
         partitions = []
+        partitions_topics = []
         start_index = 0
+        start_index_topic = 0
 
         for i in range(len(members)):
             # Adjust the size of the last few partitions to handle the remainder
             end_index = start_index + partition_size + (1 if i < remainder else 0)
             partitions.append(documents[start_index:end_index])
             start_index = end_index
+
+            end_index_topic = start_index_topic + partition_size_topics + (1 if i < remainder_topics else 0)
+            partitions_topics.append(topics[start_index_topic:end_index_topic])
+            start_index_topic = end_index_topic
         try:
-            with transaction.atomic():
-                for j, m in enumerate(members):
-                    m = User.objects.get(username=m['username'])
-                    docs = partitions[j]
-                    docs = [Document.objects.get(document_id=d) for d in docs]
-                    tuples = [(collection.collection_id, d.document_id, m.username, m.name_space_id, d.language) for d
-                              in docs]
-                    with connection.cursor() as cursor:
-                        query = "INSERT INTO split (collection_id, document_id, username, name_space, language) VALUES %s"
-                        execute_values(cursor, query, tuples)
+            if split_document:
+                with transaction.atomic():
+                    for j, m in enumerate(members):
+                        m = User.objects.get(username=m)
+                        docs = partitions[j]
+                        docs = [Document.objects.get(document_id=d) for d in docs]
+                        tuples = [(collection.collection_id, d.document_id, m.username, m.name_space_id, d.language) for d
+                                  in docs]
+                        with connection.cursor() as cursor:
+                            query = "INSERT INTO split (collection_id, document_id, username, name_space, language) VALUES %s"
+                            execute_values(cursor, query, tuples)
+            if split_topic:
+                with transaction.atomic():
+                    for j, m in enumerate(members):
+                        m = User.objects.get(username=m)
+                        topics = partitions_topics[j]
+                        topics = [Topic.objects.get(id=d) for d in topics]
+                        tuples = [(collection.collection_id, d.id, m.username, m.name_space_id) for
+                                  d
+                                  in topics]
+                        with connection.cursor() as cursor:
+                            query = "INSERT INTO split_topic (collection_id, topic_id, username, name_space) VALUES %s"
+                            execute_values(cursor, query, tuples)
 
         except Exception as e:
             print(e)
@@ -3076,21 +3106,37 @@ def labels(request, type=None):
             topic = request.GET.get('topic', None)
 
         language = request.session['language']
-        doc_id = request.session['document']
 
         doc_id = request.session.get('document', None)
         json_error = {'error': 'an error occurred'}
-        if name_space and username and doc_id and language and topic:
-            ns = NameSpace.objects.get(name_space=name_space)
-            user = User.objects.get(username=username, name_space=ns)
-            document = Document.objects.get(document_id=doc_id, language=language)
+        if type == 'comment':
+            label = request.GET.get('label',None)
+            name_space = NameSpace.objects.get(name_space=name_space)
             topic = Topic.objects.get(id=topic)
-            labels = AnnotateLabel.objects.filter(username=user, name_space=ns,topic_id=topic, document_id=document)
-            labels = [l.label.name for l in labels]
-            # labels = [l.name for l in labels]
-            return JsonResponse(labels, safe=False)
+            document = Document.objects.get(document_id=document, language=language)
+            user = User.objects.get(username=username, name_space=name_space)
+            label = Label.objects.get(name=label)
+            comment = ''
+            comments = AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
+                                            topic_id=topic, name_space=name_space)
+            if comments.exists():
+                comment = comments.first().comment
+            json_resp = {'comment': comment}
+            return JsonResponse(json_resp)
+
+
         else:
-            return JsonResponse(json_error)
+            if name_space and username and doc_id and language and topic:
+                ns = NameSpace.objects.get(name_space=name_space)
+                user = User.objects.get(username=username, name_space=ns)
+                document = Document.objects.get(document_id=doc_id, language=language)
+                topic = Topic.objects.get(id=topic)
+                labels = AnnotateLabel.objects.filter(username=user, name_space=ns,topic_id=topic, document_id=document)
+                labels = [l.label.name for l in labels]
+                # labels = [l.name for l in labels]
+                return JsonResponse(labels, safe=False)
+            else:
+                return JsonResponse(json_error)
 
     # elif request.method == 'POST' and collection.modality == 'Collaborative restricted':
     #     json_error = {'error':'TYou cannot annotate documents not assigned to you'}
@@ -3101,6 +3147,25 @@ def labels(request, type=None):
         label = json_body['label']
         json_resp = copy_labels(username, name_space, label, document, language)
         return JsonResponse(json_resp)
+
+    elif request.method == 'POST' and type == 'comment':
+        json_body = json.loads(request.body)
+        label = json_body['label']
+        label = Label.objects.get(name=label)
+        comment = json_body['comment']
+        name_space = NameSpace.objects.get(name_space=name_space)
+        topic = Topic.objects.get(id=topic)
+        document = Document.objects.get(document_id=document, language=language)
+        user = User.objects.get(username=username, name_space=name_space)
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE annotate_label SET comment = %s WHERE label = %s and username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s """,
+                [comment, label.name, user.username, name_space.name_space, document.document_id, document.language,
+                 topic.id])
+
+            return HttpResponse(status = 200)
+        return HttpResponse(stauts = 500)
 
     elif request.method == 'POST' and type == 'insert':
 
@@ -3117,9 +3182,12 @@ def labels(request, type=None):
             with transaction.atomic():
                 if AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
                                              topic_id=topic,name_space=name_space).exists():
-                    AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
-                                                 topic_id=topic, name_space=name_space).delete()
-                AnnotateLabel.objects.create(username=user, document_id=document, language=language, label=label,
+                    with connection.cursor() as cursor:
+                        cursor.execute("""UPDATE annotate_label SET label = %s, grade = %s WHERE username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s """,[label.name,score,user.username,name_space.name_space,document.document_id,document.language, topic.id])
+                    # AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
+                    #                              topic_id=topic, name_space=name_space).delete()
+                else:
+                    AnnotateLabel.objects.create(username=user, document_id=document, language=language, label=label,
                                              insertion_time=Now(), grade=score, topic_id=topic,name_space=name_space)
                 update_gt(user, name_space, document, language,topic)
 
@@ -3304,6 +3372,29 @@ def mentions(request, type=None):
         # print(json_mentions)
         return JsonResponse(json_mentions, safe=False)
 
+    elif request.method == 'GET' and type == 'comment':
+        start = request.GET.get('start',None)
+        position = request.GET.get('position',None)
+        comment = ''
+        stop = request.GET.get('stop',None)
+        mention_text = request.GET.get('mention_text',None)
+        name_space = NameSpace.objects.get(name_space=name_space)
+        document = Document.objects.get(document_id = document)
+        user = User.objects.get(username=username, name_space=name_space)
+        start, stop = return_start_stop_for_backend(int(start),int(stop),position, document.document_content)
+        mention = Mention.objects.get(document_id=document, language=request.session['language'], start=start,
+                                      stop=stop)
+        ann = Annotate.objects.filter(start=mention, stop=stop, username = user, document_id=document, language=language)
+        if ann.exists():
+            ann = ann.first()
+            if ann.comment is not None:
+                comment = ann.comment
+
+
+        json_resp = {'comment':comment}
+        return JsonResponse(json_resp)
+
+
     elif request.method == 'GET' and type == 'info':
         json_to_ret = {}
         json_to_ret['concepts'] = []
@@ -3456,6 +3547,31 @@ def mentions(request, type=None):
         mention = json_body['mention']
         json_resp = copy_mention_aux(user, name_space, document, language, mention)
         return JsonResponse(json_resp)
+
+    elif request.method == 'POST' and type == 'comment':
+        body_json = json.loads(request.body)
+        start = body_json.get('start',None)
+        position = body_json.get('position',None)
+        comment = body_json.get('comment',None)
+        stop = body_json.get('stop',None)
+        try:
+            name_space = NameSpace.objects.get(name_space=name_space)
+            document = Document.objects.get(document_id = document)
+            user = User.objects.get(username=username, name_space=name_space)
+            start, stop = return_start_stop_for_backend(int(start),int(stop),position, document.document_content)
+            mention = Mention.objects.get(document_id=document, language=request.session['language'], start=start,
+                                          stop=stop)
+            ann = Annotate.objects.filter(start=mention, stop=stop, username = user, document_id=document, language=language)
+            if ann.exists() and comment is not None and comment != '':
+                with connection.cursor() as cursor:
+                    cursor.execute("""UPDATE annotate SET comment = %s WHERE username = %s AND document_id = %s AND start = %s AND stop = %s""",
+                                   [comment, user.username,document.document_id,mention.start,mention.stop])
+
+        except Exception as e:
+            print(e)
+            return HttpResponse(status = 500)
+        else:
+            return HttpResponse(status = 200)
 
     elif request.method == 'POST' and type == 'insert':
         username = request.session['username']
@@ -4496,7 +4612,7 @@ def revise_collection(request):
     if collection and Collection.objects.filter(collection_id=collection).exists() and Collection.objects.get(collection_id=collection).revisor == request.session['username']:
         with transaction.atomic():
             docs = Document.objects.filter(collection_id=collection).values('document_id')
-            docs = [d['document_id'] for d in docs]
+            docs = [d['doc_id'] for d in docs]
             docs = tuple(docs)
 
             # with connection.cursor() as cursor:
@@ -4724,7 +4840,7 @@ def get_cur_collection_documents(request):
 
     for document in docs:
         gt = GroundTruthLogFile.objects.filter(document_id=document, username=user, name_space=name_space).exists()
-        json_doc = {'id': document.document_content['document_id'], 'hashed_id': document.document_id, 'annotated': gt}
+        json_doc = {'id': document.document_content['doc_id'], 'hashed_id': document.document_id, 'annotated': gt}
         docs_list.append(json_doc)
 
     # print(docs_list)
@@ -4834,7 +4950,7 @@ def get_documents_table(request):
             # json_doc[name.name_space] = {}
             json_doc['name_space'] = name.name_space
             if "document_id" in list(document.document_content.keys()):
-                json_doc['document_id'] = document.document_content['document_id']
+                json_doc['document_id'] = document.document_content['doc_id']
             else:
                 json_doc['document_id'] = document.document_id
             json_doc['document_id_hashed'] = document.document_id
@@ -6309,7 +6425,6 @@ def upload(request):
                         raise Exception
                     if json_val:
                         for doc in json_val['documents']:
-                            pid = doc['document_id']
                             to_enc_id = request.session['username'] + str(datetime.now())
                             pid = hashlib.md5(to_enc_id.encode()).hexdigest()
 
@@ -6331,7 +6446,6 @@ def upload(request):
                         raise Exception
                     if json_val:
                         for doc in json_val['documents']:
-                            pid = doc['document_id']
                             to_enc_id = request.session['username'] + str(datetime.now())
                             pid = hashlib.md5(to_enc_id.encode()).hexdigest()
                             if not Document.objects.filter(document_id=pid, language='english',
@@ -8335,7 +8449,7 @@ def change_role(request):
             split_docs_ids = [s.document_id.document_id for s in split_docs]
 
             for document in annotated_docs:
-                json_doc = {'id': document.document_content['document_id'], 'hashed_id': document.document_id,
+                json_doc = {'id': document.document_content['doc_id'], 'hashed_id': document.document_id,
                             'annotated': True, 'batch': document.batch}
                 if len(split_docs_ids) == 0:  # a chi non sono assegnati docs può vederli tutti
                     json_doc['split'] = 'all'
@@ -8453,14 +8567,14 @@ def comment(request):
         mode = collection.modality
         if mode == 'Competitive' or mode == 'Collaborative restricted':
             topic_comments = TopicComment.objects.filter(topic_id = topic)
-            topic_comments = [t.comment for t in topic_comments]
+            topic_comments = [{'comment':t.comment,'username':username.username} for t in topic_comments]
             doc_comments = DocumentComment.objects.filter(document_id = document)
-            doc_comments = [t.comment for t in doc_comments]
+            doc_comments = [{'comment':t.comment,'username':username.username} for t in doc_comments]
         elif mode == 'Collaborative open':
             topic_comments = TopicComment.objects.filter(topic_id = topic,username = username)
-            topic_comments = [t.comment for t in topic_comments]
+            topic_comments = [{'comment':t.comment,'username':username.username} for t in topic_comments]
             doc_comments = DocumentComment.objects.filter(document_id = document,username = username)
-            doc_comments = [t.comment for t in doc_comments]
+            doc_comments = [{'comment':t.comment,'username':username.username} for t in doc_comments]
 
         json_resp = {'topic':topic_comments,'document':doc_comments}
         return JsonResponse(json_resp)

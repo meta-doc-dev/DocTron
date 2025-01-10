@@ -85,7 +85,6 @@ function App() {
     // const [Outcomes,SetOutcomes] = useState([])
     const [UsersListAnnotations, SetUsersListAnnotations] = useState([])
     // const [ReloadMentions,SetReloadMentions] = useState(false)
-    const [labels, setLabels] = useState(false)
     const [Rows, SetRows] = useState([])
     const [Redir, SetRedir] = useState(0)
     const [MentionsList, SetMentionsList] = useState(false)
@@ -106,6 +105,7 @@ function App() {
     const [Disabled_Buttons, SetDisable_Buttons] = useState(false)
     const [Username, SetUsername] = useState(false)
     const [Labels, SetLabels] = useState([])
+    const [LabelsPassage, SetLabelsPassage] = useState([])
     // State for each ConceptList
     const [DocumentID, SetDocumentID] = useState(false)
     // const [MakeReq,SetMakeReq] = useState(false)
@@ -329,7 +329,6 @@ function App() {
                 .then(response => {
                     SetCollectionDocuments(response.data)
                 })
-
 
             axios.get('collections/concepts')
                 .then(response => {
@@ -566,6 +565,7 @@ function App() {
                 firstsel: [FirstSelected, SetFirstSelected],
                 secondsel: [SecondSelected, SetSecondSelected],
                 labels: [Labels, SetLabels],
+                labels_passage: [LabelsPassage, SetLabelsPassage],
                 labelstosave: [LabelsToSave, SetLabelsToSave],
                 annotatedlabels: [AnnotatedLabels, SetAnnotatedLabels],
                 newfact: [NewFact, SetNewFact],

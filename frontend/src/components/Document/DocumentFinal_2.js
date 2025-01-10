@@ -340,52 +340,6 @@ export default function Document(props) {
         }
     }, [RelationshipsList, MentionsList]);
 
-    // useEffect(()=>{
-    //     let areas = {}
-    //
-    //     if(ConceptsList && AreasColors) {
-    //         ConceptsList.map(c => {
-    //             if (Object.keys(areas).indexOf(c.area) === -1) {
-    //                 let color = AreasColors[c]
-    //                 if (color === null) {
-    //                     color = 'rgba(65,105,225,1)'
-    //                 }
-    //                 areas[c['concept'].area] = color
-    //             }
-    //         })
-    //     }else if(ConceptsList){
-    //         ConceptsList.map(c => {
-    //             if (Object.keys(areas).indexOf(c.area) === -1) {
-    //                 let color = 'rgba(65,105,225,1)'
-    //                 areas[c['concept'].area] = color
-    //             }
-    //         })
-    //     }
-    //     if (TagsSplitted && AreasColors){
-    //         TagsSplitted.map(c=>{
-    //             if(Object.keys(areas).indexOf(c.area) === -1){
-    //                 let color = AreasColors[c]
-    //                 if(color === null){
-    //                     color = 'rgba(65,105,225,1)'
-    //                 }
-    //                 areas[c['tag'].area] = color
-    //             }
-    //         })
-    //     }else if(TagsSplitted){
-    //         TagsSplitted.map(c => {
-    //             if (Object.keys(areas).indexOf(c.area) === -1) {
-    //                 let color = 'rgba(65,105,225,1)'
-    //                 areas[c['tag'].area] = color
-    //             }
-    //         })
-    //     }
-    //     if(ConceptsList || TagsSplitted){
-    //         SetAreasColors(areas)
-    //
-    //     }
-    //
-    //
-    // },[ConceptsList,TagsSplitted])
 
     useEffect(() => {
         if (LoadingNewAnn && MentionsList && ConceptsList && AnnotatedLabels) {
@@ -509,6 +463,7 @@ export default function Document(props) {
             }
 
             fetchRelationships()
+
 
         }
     }, [DocumentID, CurAnnotator, AutoAnnotate, LoadingNewAnn,Topic])
@@ -1360,7 +1315,7 @@ export default function Document(props) {
                                                         :
 
 
-                                                        <span style={{display: 'inline-block'}}
+                                                        <span //prima c'era display inline block
                                                               className={'mention_span'}>
                                                             {!InARel && <Mention id={mention_key + '_' + i.toString()}
 

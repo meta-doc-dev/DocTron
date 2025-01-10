@@ -15,6 +15,7 @@ from django.db.models import DateTimeField
 class Annotate(models.Model):
     document_id = models.ForeignKey('Document', models.DO_NOTHING, db_column='document_id')
     language = models.TextField()
+    comment = models.TextField()
     start = models.OneToOneField('Mention', models.DO_NOTHING, db_column='start',primary_key=True)
     stop = models.IntegerField()
     username = models.ForeignKey('User', models.DO_NOTHING, db_column='username')
@@ -652,6 +653,7 @@ class AnnotateLabel(models.Model):
     language = models.TextField()
     grade = models.IntegerField()
     details = models.JSONField()
+    comment = models.TextField()
     topic_id = models.ForeignKey('Topic', models.DO_NOTHING, db_column='topic_id')
     label = models.OneToOneField(Label, models.DO_NOTHING, db_column='label',primary_key=True)
     insertion_time = models.TimeField()

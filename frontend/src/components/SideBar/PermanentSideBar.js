@@ -513,7 +513,7 @@ function SideBar(props){
 
             {/*<div style={{'text-align':'center'}}>*/}
             <ThemeProvider theme={bottoni}>
-                <Tooltip placement="right" title={'roles'}>
+                <Tooltip placement="right" title={'Roles'}>
                     <IconButton color="buttons" disabled={InARel}
                                 component="div" onClick={(e) => {
                         OpenMenu(e, 'r')

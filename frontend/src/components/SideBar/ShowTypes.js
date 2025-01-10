@@ -25,11 +25,12 @@ export default function ShowTypes(props) {
     const {
         collection,
         labels,
+        labels_passage,
         annotationtypes,
         tags_split,
         relationshipslist,
         concepts,
-        view,
+        view,annotatedlabels,
         mentions
     } = useContext(AppContext);
 
@@ -38,9 +39,11 @@ export default function ShowTypes(props) {
     const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
     const [Collection, SetCollection] = collection
     const [Labels, SetLabels] = labels
+    const [LabelsPassage, SetLabelsPassage] = labels_passage
     const [MentionsList, SetMentionsList] = mentions
     const [ConceptsList, SetConceptsList] = concepts
     const [TagsSplitted, SetTagsSplitted] = tags_split
+    const [AnnotatedLabels, SetAnnotatedLabels] = annotatedlabels
     const [RelationshipsList, SetRelationshipsList] = relationshipslist
 
     useEffect(() => {
@@ -57,7 +60,6 @@ export default function ShowTypes(props) {
         }*/
 
     useEffect(() => {
-        console.log('collection', Collection)
         if (Collection) {
 
             axios.get('collections/labels')
@@ -74,9 +76,10 @@ export default function ShowTypes(props) {
         <div>
 
             <h5>Annotations overview</h5>
+            <div>The allowed annotation types are:<ul> {AnnotationTypes.map(type=> <li>{type}</li>)}</ul><hr/></div>
 
             <div>
-                {Labels && AnnotationTypes && AnnotationTypes.indexOf("Labels annotation") !== -1 &&
+                {Labels && AnnotatedLabels && AnnotationTypes && AnnotationTypes.indexOf("Labels annotation") !== -1 &&
                     <LabelsClass/>}
                 {MentionsList && MentionsList.length > 0 && AnnotationTypes && AnnotationTypes.indexOf("Passages annotation") !== -1 &&
                     <MentionsListClass/>}

@@ -18,6 +18,8 @@ import Checkbox from "@mui/material/Checkbox";
 import TextField from '@mui/material/TextField';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import FormGroup from "@mui/material/FormGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
@@ -42,55 +44,27 @@ function SplitDialog(props){
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
         >
-            <DialogTitle id="alert-dialog-title">
-                Split documents across members
-            </DialogTitle>
-            <DialogContent>
-                Select some (or all) the members to assign the documents to. The entire collection will be equally split across all the selected members.
-                If you plan to create the honeypot, please, first create the honeypot and then split in order have the same number of documents assigned to each annotator.
-                <Autocomplete
-                    multiple
-                    id="checkboxes-tags-demo"
-                    sx={{marginTop: '10px', width: '100% !important'}}
-                    options={props.collection.members}
-                    disableCloseOnSelect
-                    onChange={(event, value) => {
-                        let users = []
-                        value.map(e=>users.push(e))
-                        props.setmembers(users)
-                    }}
-                    /*onChange={(event, newValue) => {
-                        props.members[1](newValue);
-                    }}*/
-                    getOptionLabel={(option) => option.username}
-                    renderOption={(props, option, { selected }) => {
-                        const { key, ...optionProps } = props;
-                        return (
-                            <li key={key} {...optionProps}>
-                                <Checkbox
-                                    icon={icon}
-                                    checkedIcon={checkedIcon}
-                                    style={{ marginRight: 8 }}
-                                    checked={selected}
-                                />
-                                {option.username}
-                            </li>
-                        );
-                    }}
-                    style={{ width: 500 }}
-                    renderInput={(params) => (
-                        <TextField {...params} label="Members" placeholder="Members" />
-                    )}
-                />
 
-             {/*   {props.loading ? <div>
-                    <div className='loading'><CircularProgress /></div>
-                </div>: <div></div>}*/}
+            <DialogContent>
+                {!props.loading ? <div>
+                    <h5>Split documents and topics across members</h5>
+                    The entire collection can be distributed among its members, splitting the documents (or topics) into equal portions so that each user is assigned a unique set of documents (or topics).
+                    If only documents are split, each user will evaluate a subset of documents across all topics. If only topics are split, each user will evaluate all documents on a subset of topics. If both documents and topics are split, each user will evaluate a subset of documents on a subset of topics.
+                    Reviewer(s) and admin(s) are excluded.
+                    <FormGroup>
+                        <FormControlLabel onChange={()=>props.set_topic(prev=>!prev)} control={<Checkbox />} label="Topics" />
+                        <FormControlLabel onChange={()=>props.set_doc(prev=>!prev)} control={<Checkbox />} label="Documents" />
+                    </FormGroup>
+
+
+                </div> : <div className='loading'>
+                    <CircularProgress/>
+                </div>}
 
             </DialogContent>
             <DialogActions>
                 <Button color='error' onClick={props.handleClose}>Back</Button>
-                <Button onClick={props.split} autoFocus>
+                <Button disaled={props.loading} onClick={props.split} autoFocus>
                     Ok
                 </Button>
             </DialogActions>
@@ -98,4 +72,5 @@ function SplitDialog(props){
     );
 
 }
+
 export default SplitDialog

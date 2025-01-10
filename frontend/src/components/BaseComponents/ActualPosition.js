@@ -3,7 +3,7 @@ import Button from "@mui/material/Button";
 import TopicIcon from '@mui/icons-material/Topic';
 import ArticleIcon from '@mui/icons-material/Article';
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup, Dialog, DialogActions, DialogContent} from "@material-ui/core";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
@@ -23,11 +23,11 @@ import * as PropTypes from "prop-types";
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 import FlagIcon from '@mui/icons-material/Flag';
 import CollectionsIcon from '@mui/icons-material/Collections';
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContentText from "@mui/material/DialogContentText";
+import EditIcon from "@mui/icons-material/Edit";
 
-function handleClick(event) {
-    event.preventDefault();
-    console.info('You clicked a breadcrumb.');
-}
+
 
 const StyledBreadcrumb = styled(Chip)(({ theme }) => {
     const backgroundColor =
@@ -61,8 +61,12 @@ export default function ActualPosition(props){
     const [DocumentID,SetDocumentID] = document_id
     const [ShowDocs,SetShowDocs] = showdocs
     const [CollectionDescription,SetCollectionDescription] = useState(false)
+    const [TopicComments,SetTopicComments] = useState([])
+    const [DocumentsComments,SetDocumentsComments] = useState([])
     const [CollectionDocuments,SetCollectionDocuments] = collectiondocuments
     const [Doc,SetDoc] = useState(null)
+    const [ShowCommentDoc,SetShowCommentDoc] = useState(null)
+    const [ShowCommentTopic,SetShowCommentTopic] = useState(null)
     const [Topic,SetTopic] = topic
     const [Task,SetTask] = task
 
@@ -87,30 +91,94 @@ export default function ActualPosition(props){
 
     },[CollectionDocuments,DocumentID])
 
+
+    const handleClose = () => {
+        SetShowCommentDoc(false);
+        SetShowCommentTopic(false);
+    };
+
+    useEffect(() => {
+
+        axios.get('comment')
+            .then(response=>{
+                SetTopicComments(response.data['topic'])
+                SetDocumentsComments(response.data['document'])
+            })
+    }, []);
+
+
+    function uploadComment(){
+        var commento = document.getElementById('commento').value
+        var type = ''
+        if(ShowCommentDoc){
+            type = 'document'
+        }else if(ShowCommentTopic){
+            type = 'topic'
+        }
+        axios.post("comment",{comment:commento,type:type})
+            .then(response=>{
+                SetShowCommentDoc(false);
+                SetShowCommentTopic(false);
+            })
+    }
+
     return(
         <div className='inline'>
+
+            <Dialog
+                open={ShowCommentDoc || ShowCommentTopic}
+                onClose={handleClose}
+                maxWidth={'lg'}
+                sx={{width:'100%'}}
+
+
+            >
+                {ShowCommentTopic && <DialogTitle>Add a new comment for the topic: {Topic}</DialogTitle>}
+                {ShowCommentDoc && <DialogTitle>Add a new comment for the document: {Doc}</DialogTitle>}
+                <DialogContent>
+                    <DialogContentText>
+                        Write your comment below
+                    </DialogContentText>
+                    <div>
+
+
+                        <TextField           multiline
+                                             rows={4} id="commento" sx={{margin:'10px 0',width:'100%'}} label="Comment" variant="outlined" />
+
+                        <h5>Other comments:</h5>
+                        {ShowCommentTopic && TopicComments.map(comment=><div><b>{comment['username']}: </b><>{comment['comment']}</></div>)}
+                        {ShowCommentDoc && DocumentsComments.map(comment=><div><b>{comment['username']}: </b><>{comment['comment']}</></div>)}
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button onClick={uploadComment}>Confirm</Button>
+                </DialogActions>
+            </Dialog>
+
             {CollectionDescription && Doc && DocumentID && Topic&& <div role="presentation">
-                <div role="presentation" onClick={handleClick}>
+                <div role="presentation" >
                     <Breadcrumbs aria-label="breadcrumb">
-                         <StyledBreadcrumb
+               {/*          <StyledBreadcrumb
                             ccomponent="div"
                             label={`Task: ${Task}`}
-                            icon={<FlagIcon fontSize="small"/>}/>
+                        />*/}
                         <StyledBreadcrumb
                             component="div"
                             label={`Collection: ${CollectionDescription}`}
-                            icon={<CollectionsIcon fontSize="small"/>}
                         />
                         <StyledBreadcrumb
                             ccomponent="div"
-                              onClick={()=>console.log('topic')}
-                              label={`Topic: ${Topic}`}
-                              icon={<TopicIcon fontSize="small"/>}/>
+                            onClick={()=>SetShowCommentTopic(prev=>!prev)}
+                            label={`Topic: ${Topic}`}
+                            icon={<EditIcon fontSize="small"/>}
+                        />
                         <StyledBreadcrumb
                             component="div"
                             label={`Doc: ${Doc}`}
-                            icon={<ArticleIcon fontSize="small"/>}
-                            onClick={()=>SetShowDocs(prev=>!prev)}
+                            onClick={()=>SetShowCommentDoc(prev=>!prev)}
+                            icon={<EditIcon fontSize="small"/>}
+
                         />
                     </Breadcrumbs>
                 </div>
@@ -119,8 +187,6 @@ export default function ActualPosition(props){
             </div>}
 
 
-            {/*<span style={{display:'inline-block'}}><h3>{props.collection_name}</h3></span >&nbsp;&nbsp;{bull}&nbsp;&nbsp;<span style={{display:'inline-block'}}><h4>{props.document_id}</h4></span>*/}
-            {/*<span style={{display:'inline-block'}}><h3>Collection name</h3></span >&nbsp;&nbsp;/&nbsp;&nbsp;<span style={{display:'inline-block'}}><h4>Doc id</h4></span>*/}
-        </div>
+          </div>
     );
 }

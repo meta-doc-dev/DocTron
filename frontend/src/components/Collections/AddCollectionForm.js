@@ -52,12 +52,11 @@ export default function AddCollectionForm() {
     const [Topics, SetTopics] = useState([])
     const [Qrels, SetQrels] = useState([])
     const [Users, SetUsers] = users
-    const [LabelsToAdd, SetLabelsToAdd] = useState([])
     const [TagsToAdd, SetTagsToAdd] = useState([])
     const [Username, SetUsername] = username
     const [SelectedMembers, SetSelectedMembers] = useState([])
     const [UpdateCollection, SetUpdateCollection] = updatecollection
-    const [ShowDocumentsUpload, SetShowDocumentsUpload] = useState(false)
+    const [ShowDocumentsUpload, SetShowDocumentsUpload] = useState(true)
     const [ShowError, SetShowError] = useState(false)
     const [Files, SetFiles] = useState([])
     const [OpenAIREFiles, SetOpenAIREFiles] = useState([])
@@ -68,11 +67,13 @@ export default function AddCollectionForm() {
     var FileDownload = require('js-file-download');
     const [Loading, SetLoading] = useState(false)
     const [AddLabel, SetAddLabel] = useState([1, 2, 3])
+    const [AddLabelPassage, SetAddLabelPassage] = useState([1, 2, 3])
     const [AddTag, SetAddTag] = useState([1, 2, 3])
     const [AddMember, SetAddMember] = useState([1, 2, 3])
     const [AnnotationTypes, SetAnnotationTypes] = useState([])
     const [Task, SetTask] = task
     const [isChecked, SetisChecked] = useState(false)
+    const [isCheckedQ, SetisCheckedQ] = useState(false)
     const [IRDataset, SetIRDataset] = useState("")
     const [AllTypes] = useState(['Entity tagging', 'Labels annotation', 'Passages annotation', 'Entity linking', 'Relationships annotation', 'Facts annotation'])
 
@@ -111,18 +112,7 @@ export default function AddCollectionForm() {
     const handleChangeIRDataset = (event) => {
         SetIRDataset(event.target.value);
     };
-    const handleChangeOpenaireId = (event) => {
-        SetOpenAIREId(event.target.value);
-    };
-    const handleChangeSemanticId = (event) => {
-        SetSemanticID(event.target.value);
-    };
-    const handleChangeLabels = (event) => {
-        SetLabelsToAdd(event.target.value)
-    }
-    const handleChangeTags = (event) => {
-        SetTagsToAdd(event.target.value)
-    }
+
     useEffect(() => {
         if (!AddCollection) {
             clearFields()
@@ -279,6 +269,8 @@ export default function AddCollectionForm() {
     function uploadData() {
         //SetLoading(true)
         SetShowError(false)
+        var upload = true
+
         var lab = []
         var max_lab = []
         var min_lab = []
@@ -311,7 +303,43 @@ export default function AddCollectionForm() {
                 min_lab.push(inputmin.value)
             }
         })
-        var upload = true
+        if (all_lab.length !== all_min_lab.length || all_lab.length !== all_max_lab.length || all_max_lab.length !== all_min_lab.length) {
+            SetShowError('You have to provide label, min and max values for all the labels provided. Max maust be greater or equal than min.')
+            SetLoading(false)
+            upload = false
+        }
+
+        var lab = []
+        var max_lab = []
+        var min_lab = []
+        var all_lab = []
+        var all_max_lab = []
+        var all_min_lab = []
+        AddLabelPassage.map(el => {
+            var inputl = document.getElementById(`label_p_${el}`);
+            lab.push(inputl.value)
+            if (inputl.value !== '') {
+                all_lab.push(inputl.value)
+            }
+            var inputmin = document.getElementById(`min_p_${el}`);
+            if (inputmin.value !== '') {
+                all_min_lab.push(inputmin.value)
+            }
+            var inputmax = document.getElementById(`max_p_${el}`);
+            if (inputmax.value !== '') {
+                all_max_lab.push(inputmax.value)
+            }
+            if (parseInt(inputmax.value) >= parseInt(inputmin.value)) {
+                max_lab.push(inputmax.value)
+                min_lab.push(inputmin.value)
+            }
+        })
+        if (all_lab.length !== all_min_lab.length || all_lab.length !== all_max_lab.length || all_max_lab.length !== all_min_lab.length) {
+            SetShowError('You have to provide label, min and max values for all the labels provided. Max maust be greater or equal than min.')
+            SetLoading(false)
+            upload = false
+        }
+
         if (Task === '' || !Task) {
             SetShowError('Please, set the task on the left.')
             SetLoading(false)
@@ -351,13 +379,12 @@ export default function AddCollectionForm() {
             var name1 = input.value
             console.log(name1)
 
-            /*            input = document.getElementById('members');
-                        var members = input.value*/
 
             input = document.getElementById('ir_dataset');
             var ir_dataset = input.value
 
             var ir_preanno = isChecked;
+            var ir_queries = isCheckedQ;
 
             input = document.getElementById('collection_description');
             var desc = input.value
@@ -365,6 +392,9 @@ export default function AddCollectionForm() {
             var labels = []
             var min_labels = []
             var max_labels = []
+            var labels_p = []
+            var min_labels_p = []
+            var max_labels_p = []
             var tags = []
             var members = []
 
@@ -390,7 +420,28 @@ export default function AddCollectionForm() {
                 }
 
             })
+            AddLabelPassage.map((el, index) => {
+                input = document.getElementById(`label_p_${el}`);
+                if (input.value !== '') {
+                    labels_p.push(input.value)
+                    input = document.getElementById(`min_p_${el}`);
+                    if (input.value === '') {
+                        min_labels_p.push(0)
+                        max_labels_p.push(1)
+                    } else {
+                        min_labels_p.push(input.value)
+                    }
 
+                    input = document.getElementById(`max_p_${el}`);
+                    if (input.value === '') {
+                        max_labels_p.push(1)
+                        min_labels_p[index] = 0
+                    } else {
+                        max_labels_p.push(input.value)
+                    }
+                }
+
+            })
             AddTag.map(el => {
                 input = document.getElementById(`tag_${el}`);
                 tags.push(input.value)
@@ -402,22 +453,23 @@ export default function AddCollectionForm() {
 
             })
             formData.append('task', Task);
-            //formData.append('annotation_types', AnnotationTypes);
             formData.append('name', name1);
             formData.append('description', desc)
-            //formData.append('tags', JSON.stringify(tags))
-            //formData.append('labels',  JSON.stringify(labels))
             AnnotationTypes.forEach(item => formData.append('annotationtypes[]', item));
             tags.filter(x => x !== '').forEach(item => formData.append('tags[]', item));
             labels.forEach(item => formData.append('labels[]', item));
             max_labels.forEach(item => formData.append('max_labels[]', item));
             min_labels.forEach(item => formData.append('min_labels[]', item));
-            //formData.append('max_labels',  JSON.stringify(max_labels))
-            //formData.append('min_labels',  JSON.stringify(min_labels))
+
+            labels_p.forEach(item => formData.append('labels_p[]', item));
+            max_labels_p.forEach(item => formData.append('max_labels_p[]', item));
+            min_labels_p.forEach(item => formData.append('min_labels_p[]', item));
+
             members = members.filter(x => x !== '')
             formData.append('members[]', members)
             formData.append('ir_dataset', ir_dataset)
             formData.append('ir_preanno', ir_preanno)
+            formData.append('ir_queries', ir_queries)
 
 
             axios({
@@ -446,6 +498,7 @@ export default function AddCollectionForm() {
 
 
     }
+
 
     function DownloadTemplate(type) {
         axios.get('download_template_concepts', {params: {type: type}})
@@ -520,7 +573,6 @@ export default function AddCollectionForm() {
                                     placeholder="Select a member"
                                     variant='outlined'
                                     id={`member_${el}`}
-                                    onChange={handleChangeTags}
                                     label="Member"
                                     rows={1}
                                     sx={{width: '100%', marginTop: '15px'}}
@@ -566,7 +618,7 @@ export default function AddCollectionForm() {
                     <div><h5>Customize annotation</h5></div>
 
 
-                    {(AnnotationTypes.indexOf('Labels annotation') !== -1 || AnnotationTypes.indexOf('Passages annotation') !== -1) &&
+                    {(AnnotationTypes.indexOf('Labels annotation') !== -1) &&
                         <div>
                             <div>
                                 <h6>Labels <i></i></h6>
@@ -581,7 +633,6 @@ export default function AddCollectionForm() {
                                             placeholder="Label"
                                             variant='outlined'
                                             id={`label_${el}`}
-                                            onChange={handleChangeLabels}
                                             rows={1}
                                             sx={{width: '100%', marginTop: '15px'}}
 
@@ -593,7 +644,6 @@ export default function AddCollectionForm() {
                                             variant='outlined'
                                             id={`min_${el}`}
                                             type="number"
-                                            onChange={handleChangeLabels}
                                             rows={1}
                                             sx={{width: '100%', marginTop: '15px'}}
 
@@ -605,7 +655,6 @@ export default function AddCollectionForm() {
                                             variant='outlined'
                                             id={`max_${el}`}
                                             type="number"
-                                            onChange={handleChangeLabels}
                                             rows={1}
                                             sx={{width: '100%', marginTop: '15px'}}
                                         />
@@ -620,7 +669,57 @@ export default function AddCollectionForm() {
 
                             </div>
                         </div>}
+                    {(AnnotationTypes.indexOf('Passages annotation') !== -1) &&
+                        <div>
+                            <div>
+                                <h6>Labels for passage annotation<i></i></h6>
+                                <div>Provide a set of labels with the ranges of values that can be assigned; if you want
+                                    binary labels, place 0 for MIN and 1 for MAX.
+                                </div>
+                            </div>
+                            <div>
+                                {AddLabelPassage.map(el => <Row>
+                                    <Col md={8}>
+                                        <TextField
+                                            placeholder="Label"
+                                            variant='outlined'
+                                            id={`label_p_${el}`}
+                                            rows={1}
+                                            sx={{width: '100%', marginTop: '15px'}}
 
+                                        />
+                                    </Col>
+                                    <Col md={2}>
+                                        <TextField
+                                            placeholder="Min"
+                                            variant='outlined'
+                                            id={`min_p_${el}`}
+                                            type="number"
+                                            rows={1}
+                                            sx={{width: '100%', marginTop: '15px'}}
+
+                                        />
+                                    </Col>
+                                    <Col md={2}>
+                                        <TextField
+                                            placeholder="Max"
+                                            variant='outlined'
+                                            id={`max_p_${el}`}
+                                            type="number"
+                                            rows={1}
+                                            sx={{width: '100%', marginTop: '15px'}}
+                                        />
+                                    </Col>
+                                </Row>)}
+
+
+                                <Button
+                                    onClick={() => SetAddLabelPassage((prev) => [...prev, (prev[prev.length - 1] || 0) + 1])}>Add
+                                    label</Button>
+
+
+                            </div>
+                        </div>}
                     {AnnotationTypes.indexOf('Entity tagging') !== -1 && <div>
                         <div>
                             <h6>Tags </h6>
@@ -724,25 +823,32 @@ export default function AddCollectionForm() {
 
                         />
                         <FormControlLabel onChange={(e) => {
+                            SetisCheckedQ(prev => !prev)
+                        }} id="preannotation" control={<Checkbox/>}
+                                          label="Add also original collection's queries."/>
+                     {/*   <FormControlLabel onChange={(e) => {
                             SetisChecked(prev => !prev)
                         }} id="preannotation" control={<Checkbox/>}
                                           label="Add relevance judgements preannotations. In this case, the label Relevance will be added by default with the range of values provided in the original collection."/>
-
+*/}
                     </div>
 
                 </div>
                 <hr/>
                 <div style={{marginTop: '10px'}}>
                     <div className={'clickable clickBelow'} onClick={() => SetShowDocumentsUpload(prev => !prev)}>
+                        {/*
                         <h5>Upload custom collection</h5>
+*/}
                     </div>
                     <Collapse in={ShowDocumentsUpload}>
 
                         <>
-                            <div><h6>Upload documents</h6></div>
+                            <div><h6>Upload custom documents</h6></div>
                             <div>
-                                <i>Documents can be uploaded in CSV, JSON, TXT
-                                    formats. <>{window.location.hostname === "doctron.dei.unipd.it" &&
+                                <i>Documents can be uploaded in CSV, JSON, TXT, PDF
+                                    formats. This is optional if you provided a URL of a
+                                    ir-dataset. <>{window.location.hostname === "doctron.dei.unipd.it" &&
                                         <i>(Max 10 documents allowed)</i>}</></i>
 
 
@@ -841,7 +947,7 @@ export default function AddCollectionForm() {
 
                             <hr/>
                             <div>
-                                <div><h6>Upload topics</h6></div>
+                                <div><h5>Upload custom topics</h5></div>
                                 <div>
                                     <i>Topics can be uploaded in JSON format.</i>
 
@@ -897,7 +1003,7 @@ export default function AddCollectionForm() {
                             </div>
                             <hr/>
                             <div>
-                                <div><h6>Upload relevance judgements <i>(Optional)</i></h6></div>
+                       {/*         <div><h5>Upload relevance judgements <i>(Optional)</i></h5></div>
                                 <div>
                                     <i>QRELS can be uploaded in JSON format. Qrels are needed to be provided with a set
                                         of preannotations. </i>
@@ -909,14 +1015,14 @@ export default function AddCollectionForm() {
                                             the json template.
                                         </div>
 
-                                    </div>
-                                    <Row className='addcollectionclass'>
+                                    </div>*/}
+    {/*                                <Row className='addcollectionclass'>
 
                                         <Col md={1}></Col>
                                         <Col md={10}>
 
-                                            <div className='uploadfiles'>
-                        <span className='collectionButt'>
+                                            <div className='uploadfiles'>*/}
+                     {/*   <span className='collectionButt'>
                             <label htmlFor="qrels_to_upload">
                                 <Input accept="*" id="qrels_to_upload" onChange={() => {
                                     AddFiles('qrels')
@@ -927,10 +1033,10 @@ export default function AddCollectionForm() {
                                         Upload qrels
                                     </Button></ThemeProvider>
                             </label>
-                        </span>
+                        </span>*/}
 
 
-                                            </div>
+                                           {/* </div>
                                             {Qrels &&
                                                 <>
                                                     {Qrels.length > 0 && <b>Uploaded qrels files:</b>
@@ -949,8 +1055,10 @@ export default function AddCollectionForm() {
 
                                         </Col>
                                         <Col md={1}></Col>
-                                    </Row>
+                                    </Row>*/}
+{/*
                                 </div>
+*/}
                             </div>
                             <hr/>
                         </>

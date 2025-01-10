@@ -1,7 +1,7 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
-import Slider, { SliderThumb } from '@mui/material/Slider';
-import { styled } from '@mui/material/styles';
+import Slider, {SliderThumb} from '@mui/material/Slider';
+import {styled} from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
@@ -14,8 +14,10 @@ import RadioGroup from "@mui/material/RadioGroup";
 import Radio from "@mui/material/Radio";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
-
-
+import IconButton from "@mui/material/IconButton";
+import InfoIcon from "@material-ui/icons/Info";
+import CommentDialog from "./CommentDialog";
+import DetailsDialog from "./DetailsDialog";
 
 
 export default function LabelsRadio(props) {
@@ -34,6 +36,7 @@ export default function LabelsRadio(props) {
         annotatedlabels
     } = useContext(AppContext);
     const [ShowList, SetShowList] = useState(true)
+    const [ShowCommentDialog, SetShowCommentDialog] = useState(false)
     const [Labels, SetLabels] = labels
     const [NotAdded, SetNotAdded] = useState([])
     const [AnnotatedLabels, SetAnnotatedLabels] = annotatedlabels
@@ -44,24 +47,44 @@ export default function LabelsRadio(props) {
     const [OpenSnack, SetOpenSnack] = opensnack
     const [Modality, SetModality] = modality
     const [View, SetView] = view
-    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
-    const [value, setValue] = useState(props.value); // Stato locale
 
+    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+    const [OpenDetails,SetOpenDetails] = useState(false)
+    const [value, setValue] = useState(null); // Stato locale
+
+    useEffect(() => {
+        setValue(props.value)
+    }, [props.value]);
     const handleChange = (event) => {
         var val = event.target.value
         setValue(val);
-        if (val === 'true'){
+        if (val === 'true') {
             val = 0
-        }else if(val === 'false'){
+        } else if (val === 'false') {
             val = 1
-        }else{
+        } else {
             val = parseInt(val)
         }
-         // Aggiorna lo stato
-        AdddeleteLabel(event,props.label,val)
+        // Aggiorna lo stato
+        AdddeleteLabel(event, props.label, val)
 
     };
-    function AdddeleteLabel(e,label,score) {
+
+    function mapKey(element) {
+        if (props.min === 0 && props.max === 1) {
+            if (element === 1) {
+                return 'false'
+            } else if (element === 0) {
+                return 'true'
+            }
+        } else if (element === null) {
+            return null
+        } else {
+            return parseInt(element)
+        }
+    }
+
+    function AdddeleteLabel(e, label, score) {
         e.preventDefault()
         if (Modality === 2 || View === 4) {
             SetOpenSnack(true)
@@ -72,12 +95,16 @@ export default function LabelsRadio(props) {
         } else {
             if (CurAnnotator === Username) {
                 if (score !== null) {
+                    if (props.type_lab === 'label') {
+                        axios.post('labels/insert', {label: label, score: score})
+                            .then(response => {
 
-                    axios.post('labels/insert', {label: label,score: score})
-                        .then(response => {
 
+                            })
+                    } else if (props.type_lab === 'passage') {
+                        console.log('passage')
+                    }
 
-                        })
 
                 } else {
                     axios.delete('labels', {data: {label: label}})
@@ -105,16 +132,48 @@ export default function LabelsRadio(props) {
         for (let i = parseInt(min); i <= parseInt(max); i++) {
             array.push(i);
         }
-        if(parseInt(min) === 0 && parseInt(max) === 1 ) {
-            return ['true','false']
-        }
+        /*       if(parseInt(min) === 0 && parseInt(max) === 1 ) {
+                   return ['true','false']
+               }*/
         return array;
     }
 
 
     return (
-        <Box sx={{marginTop:'5%'}}>
-            <div><span>{props.label}: {value !== null ? value : 'not set'}    </span>  <span> <Button size={'small'} sx={{textAlign:'right'}} onClick={()=>setValue(null)}>Reset</Button>
+        <Box sx={{marginTop: '5%'}}>
+            <CommentDialog open={ShowCommentDialog} setopen={SetShowCommentDialog} label={props.label} />
+            <DetailsDialog open={OpenDetails} setopen={SetOpenDetails} label={props.label} details={props.details} />
+
+
+            <div><span>{props.label} <IconButton size={'small'} onClick={()=> {
+                if (props.details !== null) {
+                    SetOpenDetails(prev => !prev)
+                }
+            }
+
+
+            } aria-label="info">
+  <InfoIcon fontSize="inherit"/>
+</IconButton>: {mapKey(value) !== null ? mapKey(value) : 'not set'}    </span> <span> <Button size={'small'}
+                                                                                              sx={{textAlign: 'right'}}
+                                                                                              onClick={() => {
+                                                                                                  SetShowCommentDialog(prev => !prev)
+                                                                                              }}>Comment</Button> </span><span> <Button
+                size={'small'}
+                sx={{textAlign: 'right'}}
+                onClick={() => {
+                    setValue(null)
+                    axios.delete('labels', {data: {label: props.label}})
+                        .then(response => {
+                            SetNotAdded([...NotAdded, props.label])
+                            var labels = Object.entries(AnnotatedLabels).map(([key]) => key).filter(x => x === props.label)
+                            // var labels = AnnotatedLabels.filter(o => o !== props.label)
+                            SetAnnotatedLabels(labels)
+                            SetLoading(false)
+
+                        })
+
+                }}>Reset</Button>
             </span></div>
             <FormControl>
 
@@ -122,15 +181,17 @@ export default function LabelsRadio(props) {
                     row
                     onChange={handleChange}
                     aria-labelledby={props.label}
+                    value={value}
                     name={props.label}
                 >
 
-                    {creaArray(props.min, props.max).map(el=><FormControlLabel value={el} control={<Radio size="small"/>} label={el}/>)}
+                    {creaArray(props.min, props.max).map(el => <FormControlLabel value={el}
+                                                                                 control={<Radio size="small"/>}
+                                                                                 label={mapKey(el)}/>)}
 
 
                 </RadioGroup>
             </FormControl>
-
 
 
         </Box>
