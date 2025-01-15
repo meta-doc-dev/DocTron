@@ -416,7 +416,7 @@ export default function Document(props) {
                 const response = await axios.get('mentions', {params: {user: CurAnnotator}});
                 // console.log('request',response)
                 SetMentionsList(response.data['mentions'])
-                SetMentionsListSplitted(response.data['mentions_splitted'])
+                // SetMentionsListSplitted(response.data['mentions_splitted'])
                 SetLoadMen(true)
                 return response
             }
@@ -761,7 +761,7 @@ export default function Document(props) {
                     console.log("mention_" + (response.data['mentions'].length - 1).toString())
                     SetNewMention('mention_' + (response.data['mentions'].length - 1).toString())
                     SetMentionsList(response.data['mentions'])
-                    SetMentionsListSplitted(response.data['mentions_splitted'])
+                    // SetMentionsListSplitted(response.data['mentions_splitted'])
                     SetConceptsList(response.data['concepts'])
                     SetTagsSplitted(response.data['tags'])
                     SetDocumentDesc(response.data['document'])

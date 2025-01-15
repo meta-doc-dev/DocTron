@@ -46,7 +46,7 @@ export default function ConceptsListClass(props){
 
 
     useEffect(()=>{
-        if(AreasColors && ShowConcepts){
+        if(AreasColors && ShowList){
             let areas = {}
             Object.keys(AreasColors).map(k=>areas[k] = false)
             SetShowArea(areas)
@@ -59,24 +59,13 @@ export default function ConceptsListClass(props){
             })
         }
 
-    },[AreasColors,ShowConcepts])
+    },[AreasColors,ShowList])
 
-    // useEffect(()=>{
-    //     if(ShowArea){
-    //         Object.keys(ShowArea).map(k => {
-    //             if (ShowArea[k] === false) {
-    //                 let elements = Array.from(document.getElementById('list_' + k.toString() + '_id').children)
-    //                 elements.map(e => e.style.fontWeight = 'normal')
-    //             }
-    //         })
-    //     }
-    //
-    // },[ShowArea])
+
 
 
 
     useEffect(()=>{
-        console.log('update concepts',ConceptsList)
         if(ConceptsList){
             let conceptslist = {}
             conceptslist['total_list'] = []
@@ -122,20 +111,7 @@ export default function ConceptsListClass(props){
 
 
     }
-    // useEffect(()=>{
-    //     if(ShowConcepts){
-    //         if(MentionsList){
-    //             // pulisco le mentions
-    //             MentionsList.map(m=>{
-    //                 console.log(m)
-    //                 clearMentionsFromBorder(m.mentions)
-    //
-    //             })
-    //         }
-    //     }
-    //
-    //
-    // },[ShowConcepts])
+
 
     useEffect(()=>{
 
@@ -153,8 +129,6 @@ export default function ConceptsListClass(props){
         <div>
             <Button disabled={View === 4} onClick={()=>SetShowList(prev=>!prev)} variant="text">Concepts <i>({ConceptsList.length})</i></Button>
 
-
-            {/*{MentionsList && <div><i><b>{MentionsList.length}</b> mentions</i></div>}*/}
             <Collapse in={ShowList}>
                 {ConceptsList && FullConceptsList && ShowArea && <div>
                     {(Object.keys(Concepts)).filter(x=>x !== 'total_list').map(a =>
@@ -162,12 +136,12 @@ export default function ConceptsListClass(props){
 
                             <h6 id={a+'_id'} className='areas_header' onClick={(e)=>showAreaList(e,a)}>{a} ({ConceptsList.filter(x=>x['concept']['area'] === a).length})</h6>
                             <Collapse in={ShowArea[a]}>
-                                <div id={'list_' + a + '_id'}>
+                                <ul id={'list_' + a + '_id'}>
                                     {Concepts[a].map((c,i) =>
-                                        <RightSideConcept id ={a+'concept_'+i.toString()} ConceptsList = {FullConceptsList} c = {c} />
+                                        <li><RightSideConcept id ={a+'concept_'+i.toString()} ConceptsList = {FullConceptsList} c = {c} /></li>
 
                                     )}
-                                </div><hr/><br/>
+                                </ul><hr/><br/>
                             </Collapse>
 
 

@@ -103,6 +103,11 @@ export default function LabelsRadio(props) {
                             })
                     } else if (props.type_lab === 'passage') {
                         console.log('passage')
+                        axios.post('labels/insert', {label: label, score: score,mention:props.mention})
+                            .then(response => {
+
+
+                            })
                     }
 
 
@@ -141,11 +146,12 @@ export default function LabelsRadio(props) {
 
     return (
         <Box sx={{marginTop: '5%'}}>
-            <CommentDialog open={ShowCommentDialog} setopen={SetShowCommentDialog} label={props.label} />
+            {ShowCommentDialog && <CommentDialog open={ShowCommentDialog} setopen={SetShowCommentDialog} mention={props.mention ? props.mention : null} label={props.label} type={'passage'}/>}
             <DetailsDialog open={OpenDetails} setopen={SetOpenDetails} label={props.label} details={props.details} />
 
 
-            <div><span>{props.label} <IconButton size={'small'} onClick={()=> {
+            <div><span>{props.label} </span>
+                {props.type_anno !== 'quick' && <><span> <IconButton size={'small'} onClick={()=> {
                 if (props.details !== null) {
                     SetOpenDetails(prev => !prev)
                 }
@@ -174,7 +180,7 @@ export default function LabelsRadio(props) {
                         })
 
                 }}>Reset</Button>
-            </span></div>
+            </span></>}</div>
             <FormControl>
 
                 <RadioGroup
@@ -192,7 +198,6 @@ export default function LabelsRadio(props) {
 
                 </RadioGroup>
             </FormControl>
-
 
         </Box>
     );

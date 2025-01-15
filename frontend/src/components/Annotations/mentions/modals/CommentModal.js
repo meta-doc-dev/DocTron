@@ -97,6 +97,7 @@ export default function CommentModal(props) {
         e.stopPropagation()
         SetLoading(true)
         var comment = document.getElementById("comment").value
+
         axios.post('mentions/comment',{start:SelectedMention.start,position:position,stop:SelectedMention.stop,comment:comment})
             .then(response=>{
                 props.setshow(false)

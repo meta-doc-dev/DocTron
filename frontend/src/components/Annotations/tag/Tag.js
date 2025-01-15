@@ -61,6 +61,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import ChipRel from "../relationship/ChipRelationship";
+import CommentDialog from "../../RightSideMenu/labels/CommentDialog";
+import CommentTag from "./CommentTag";
 
 
 
@@ -69,11 +71,13 @@ export default function Tag(props){
     const [RelationshipsList,SetRelationshipsList] = relationshipslist
     const [Modality,SetModality] = modality
     const [ConceptsList,SetConceptsList] = concepts
+    const [Comment,SetComment] = useState(false)
     const [ShowDelete,SetShowDelete] = useState(false)
-    const [ShowDescription,SetShowDescription] = useState(false)
+    const [ShowComment,SetShowComment] = useState(false)
     const [ShowMultiple,SetShowMultiple] = useState(false)
     const [MentionsList,SetMentionsList] = mentions
     const [InARel,SetInARel] = inarel
+    const [Tag,SetTag] = useState(false);
     const [CurAnnotator,SetCurAnnotator] = curannotator
     const [Username,SetUsername] = username
     const [AreasColors,SetAreasColors] = areascolors
@@ -185,29 +189,88 @@ export default function Tag(props){
     });
 
 
+    useEffect(() => {
+        if(Tag){
+            if (props.mention && props.mention.mention_text) {
+                delete props.mention.mention_text;
+            }
+            axios.get('tag/comment',{params:{tag:Tag,mention:props.mention}})
+                .then(response=>{
+
+                    SetComment(response.data['comment'] === '' ? false : response.data['comment'])
+                })
+        }else{
+            SetComment(false)
+            SetShowComment(false)
+        }
+
+
+
+
+    }, [Tag]);
+
+    useEffect(() => {
+        if(!ShowComment){
+            SetComment(false)
+            SetTag(false)
+        }
+    }, [ShowComment]);
+
+    function uploadComment(){
+        if(Tag){
+            var comment = document.getElementById("comment").value
+            axios.post('tag/comment',{tag:Tag,comment:comment,mention:props.mention})
+                .then(response=>{
+
+                    SetShowComment(false)
+                    SetComment(false)
+                    SetTag(false)
+                })
+        }
+
+
+    }
+
 
     return (
-        <div>
-            {/*sx={{height:'15px',fontSize:'0.6rem'}}*/}
-            {((props.tags && props.tags.length === 1 && Color && ColorOver && !InARel)) &&
-            // <div className='concepts' >
-                <div style={{textAlign:'center'}}>
+        <div style={{textAlign: 'center'}}>
+{/*
+            {ShowComment & Tag && <CommentTag tag={Tag} mention={props.mention} />}
+*/}
 
-                    {CurAnnotator === Username ?<CustomChip label={props.tags[0]['tag'].area === 'disease' ? 'DDF' : props.tags[0]['tag'].area }
-                            onDelete={(e)=>handleDelete(e,0)} onClick={()=>SetShowDescription(prev=>!prev)}  /> :
-                    <CustomChip label={props.tags[0]['tag'].area === 'disease' ? 'DDF' : props.tags[0]['tag'].area }
-                                 onClick={()=>SetShowDescription(prev=>!prev)}  />}
-            </div>}
-            {props.tags && props.tags.length > 1 &&  Color && ColorOver && !InARel &&
-            <div style={{textAlign:'center'}}>
-                <CustomChip label={props.tags.length} color="primary" onClick={()=>SetShowMultiple(prev=>!prev)}
-                       />
-            </div>}
+            {((props.tags && props.tags.length >= 1 && Color && ColorOver && !InARel)) &&
+                <>{props.tags.map(tag =>
+                    <span>
+
+                        {CurAnnotator === Username ?
+                            <CustomChip
+                                label={tag['tag'].area}
+                                onDelete={(e) => handleDelete(e, 0)}
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    SetTag(tag['tag'].area)
+                                    SetShowComment(prev => !prev)
+                                }}/> :
+                            <CustomChip
+                                label={tag['tag'].area }
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    SetTag(tag['tag'].area)
+                                    SetShowComment(prev => !prev)
+                                }}/>}
+                    </span>
+                )
+                }</>
+            }
+  {/*          {props.tags && props.tags.length > 1 && Color && ColorOver && !InARel &&
+                <div style={{textAlign: 'center'}}>
+                    <CustomChip label={props.tags.length} color="primary" onClick={() => SetShowMultiple(prev => !prev)}
+                    />
+                </div>}*/}
             {((props.tags && props.tags.length === 1 && Color && ColorOver && InARel)) &&
-            // <div className='concepts' >
-            <div style={{textAlign:'center'}}>
+                <div style={{textAlign: 'center'}}>
 
-                <ChipRel role={props.role} variant = {(props.role.toLowerCase() === 'source' || props.role.toLowerCase() === 'predicate' || props.role.toLowerCase() === 'target') ? "filled":"outlined"} color={Color} label={props.tags[0]['tag'].area === 'disease' ? 'DDF' : props.tags[0]['tag'].area } />
+                    <ChipRel role={props.role} variant = {(props.role.toLowerCase() === 'source' || props.role.toLowerCase() === 'predicate' || props.role.toLowerCase() === 'target') ? "filled":"outlined"} color={Color} label={props.tags[0]['tag'].area === 'disease' ? 'DDF' : props.tags[0]['tag'].area } />
             </div>}
             {props.tags && props.tags.length > 1 &&  Color && ColorOver && InARel &&
             <div className='concepts'>
@@ -241,7 +304,43 @@ export default function Tag(props){
                 </DialogActions>
             </Dialog>
             }
+            {ShowComment &&   <Dialog
+                open={ShowComment}
+                onClose={(e)=> {
+                    e.preventDefault()
+                    SetShowComment(false)
+                    SetComment(false)
+                    SetTag(false)
+                }}
+                maxWidth={'lg'}
+                sx={{width:'100%'}}
 
+
+            >
+                <DialogTitle>Leave a comment about your annotation</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+
+                    </DialogContentText>
+                    <div>
+                        <TextField           multiline
+                                             rows={4} id="comment" sx={{margin:'10px 0',width:'100%'}} label="Comment" variant="outlined" />
+
+                        {Comment && <><h5>Your comment:</h5>
+                            <div>{Comment}</div>
+                        </>}
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button        onClick={(e)=> {
+                        e.preventDefault()
+                        SetShowComment(false)
+                        SetComment(false)
+                        SetTag(false)
+                    }}>Cancel</Button>
+                    <Button onClick={uploadComment}>Confirm</Button>
+                </DialogActions>
+            </Dialog>}
 
             {ShowMultiple &&
             <Dialog

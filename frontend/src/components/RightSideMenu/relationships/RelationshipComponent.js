@@ -37,7 +37,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 export default function RelationshipComponent(props){
-    const { concepts,binaryrel,inarel,newfactin,opensnack,modality,snackmessage,curannotator,view,labels,newfact,mentions,collectionconcepts,showrelspannel,showfactspannel,modifyrel,readonlyrelation,sourcetext,relationshipslist,sourceconcepts,targettext,targetconcepts,predicatetext,predicateconcepts,relationship,predicate,source,target } = useContext(AppContext);
+    const { concepts,annotationtypes,binaryrel,inarel,newfactin,opensnack,modality,snackmessage,curannotator,view,labels,newfact,mentions,collectionconcepts,showrelspannel,showfactspannel,modifyrel,readonlyrelation,sourcetext,relationshipslist,sourceconcepts,targettext,targetconcepts,predicatetext,predicateconcepts,relationship,predicate,source,target } = useContext(AppContext);
     const [ShowReadOnlyRelation,SetShowReadOnlyRelation] = readonlyrelation
     const [NewFact,SetNewFact] = newfact
     const [ShowInstructionModal,SetShowInstructionModal] = useState(false)
@@ -81,6 +81,7 @@ export default function RelationshipComponent(props){
     const [TargetTextBackup,SetTargetTextBackup] =useState(false);
     const [TargetBackup,SetTargetBackup] = useState(false);
     const [PredicateBackup,SetPredicateBackup] = useState(false);
+    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
 
 
     useEffect(() => {
@@ -257,7 +258,7 @@ export default function RelationshipComponent(props){
             if(Modality === 2 || View === 4) {
                 SetOpenSnack(true)
                 SetSnackMessage({'message': 'You cannot annotate this document'})
-            }else if(AnnotationTypes.indexOf('Relationships annotation') === -1){
+            }else if(AnnotationTypes.indexOf('Relationships annotation') === -1 && AnnotationTypes.indexOf('Facts annotation') === -1){
                     SetOpenSnack(true)
                     SetSnackMessage({'message': 'Relationships annotation is not allowed here'})
             }else {
@@ -287,7 +288,7 @@ export default function RelationshipComponent(props){
                         SetNewFactInterno(false)
                         SetShowReadOnlyRelation(true);
                         SetShowAlertSuccess(true)
-                        SetInARel(true)
+                        //SetInARel(false)
                         SetBinaryRel(false)
                         SetNewFact(false)
                         SetModify(false)
@@ -328,7 +329,7 @@ export default function RelationshipComponent(props){
                         SetModify(false)
                         SetNewFactInterno(false)
                         SetShowAlertSuccess(true)
-                        SetInARel(true)
+                        //SetInARel(true)
                         SetModify(false)
                         SetNewFactInterno(false)
                         SetSnackMessage({'message': 'Saved'})
@@ -393,7 +394,7 @@ export default function RelationshipComponent(props){
                 aria-describedby="alert-dialog-description"
             >
                 <DialogTitle id="alert-dialog-title">
-                    {(Source || Predicate || Target) ? "Add a new relationship" : "Add a new assertion"}
+                    {(Source || Predicate || Target) ? "Add a new relationship" : "Add a new fact"}
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
@@ -436,7 +437,7 @@ export default function RelationshipComponent(props){
             {ShowConceptModal && NodeType === 'target' && <RelationshipModal relation={'target'} setconcepts_list = {SetTargetConcepts} concepts_list={TargetConcepts} showconceptmodal={ShowConceptModal} setshowconceptmodal={SetShowConceptModal} settext={SetTargetText}/>  }
             {ShowConceptModal && NodeType === 'predicate' && <RelationshipModal relation={'predicate'} setconcepts_list = {SetPredicateConcepts} concepts_list={PredicateConcepts} showconceptmodal={ShowConceptModal} setshowconceptmodal={SetShowConceptModal} settext={SetPredicateText}/>  }
             <h3>
-                {(Source || Predicate || Target) ? <>Relationship</> : <>Document Assertion</>}
+                {(Source || Predicate || Target) ? <>Relationship</> : <>Fact</>}
             </h3>
             <div className={'rel_instr'} onClick={()=>SetShowInstructionModal(prev=>!prev)}>Help</div>
             {/*{MentionsList && <div><i><b>{MentionsList.length}</b> mentions</i></div>}*/}

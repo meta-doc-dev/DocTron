@@ -84,6 +84,10 @@ export default function LabelSlider(props) {
     useEffect(() => {
         setValue(props.value)
     }, [props.value]);
+
+
+
+
     const handleChange = (event, newValue) => {
         setValue(newValue); // Aggiorna lo stato
         AdddeleteLabel(event, props.label, newValue)
@@ -101,14 +105,19 @@ export default function LabelSlider(props) {
         } else {
             if (CurAnnotator === Username) {
                 if (score !== null) {
-                    if (props.type_lab === 'label'){
+                    if (props.type_lab === 'label') {
                         axios.post('labels/insert', {label: label, score: score})
                             .then(response => {
 
 
                             })
-                    }else if(props.type_lab === 'passage'){
-                      console.log('passage')
+                    } else if (props.type_lab === 'passage') {
+                        console.log('passage')
+                        axios.post('labels/insert', {label: label, score: score,mention:props.mention})
+                            .then(response => {
+
+
+                            })
                     }
 
 
@@ -149,10 +158,11 @@ export default function LabelSlider(props) {
 
     return (
         <Box sx={{marginTop: '5%'}}>
-            <CommentDialog open={ShowCommentDialog} setopen={SetShowCommentDialog} label={props.label}/>
+            {ShowCommentDialog && <CommentDialog open={ShowCommentDialog} setopen={SetShowCommentDialog} label={props.label}
+                            mention={props.mention ? props.mention : null} type={'passage'}/>}
             <DetailsDialog open={OpenDetails} setopen={SetOpenDetails} label={props.label} details={props.details} />
 
-            <Typography gutterBottom><span>{props.label} <IconButton size={'small'} onClick={()=> {
+            <Typography gutterBottom><span>{props.label}</span>{props.type_anno !== 'quick' && <><span> <IconButton size={'small'} onClick={()=> {
                 if (props.details !== null) {
                     SetOpenDetails(prev => !prev)
                 }
@@ -181,7 +191,7 @@ export default function LabelSlider(props) {
                                        })
                                }}>Reset</Button>
 
-            </span>
+            </span></>}
             </Typography>
             <div onClick={(e) => {
                 e.preventDefault()
@@ -212,7 +222,6 @@ export default function LabelSlider(props) {
 
                 />
             </div>
-
 
         </Box>
     );

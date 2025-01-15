@@ -2323,6 +2323,25 @@ def concepts(request, type=None):
         if request.GET.get('name_space', None) is not None:
             name_space = request.GET.get('name_space', None)
 
+
+        if type == 'comment':
+            concept = request.GET.get('concept', None)
+            concept = Concept.objects.get(concept_url = concept)
+            topic = request.session.get('topic', None)
+            topic = Topic.objects.get(id = topic)
+
+            start = int(request.GET.get('mention[start]', None))
+            stop = int(request.GET.get('mention[stop]', None))
+            position = request.GET.get('mention[position]', None)
+            start_recomp, stop_recomp = return_start_stop_for_backend(start, stop, position, document.document_content)
+            mention =  Mention.objects.get(document_id=document, start=start_recomp, stop=stop_recomp)
+            annotation = Associate.objects.filter(start = mention,stop=mention.stop,concept_url = concept,topic_id=topic,username = user,name_space=name_space)
+            if annotation.exists():
+                comment = annotation.first().comment
+                if comment is None:
+                    comment = ''
+                return JsonResponse({'comment':comment})
+
         if type == 'full':
             json_mentions = generate_associations_list(username, name_space.name_space, document.document_id, language,topic)
         else:
@@ -2337,7 +2356,32 @@ def concepts(request, type=None):
         json_resp = copy_concepts_aux(username, name_space.name_space, document.document_id, language, json_body)
         return JsonResponse(json_resp)
 
+    elif request.method == 'POST' and type == 'comment':
 
+        body_json = json.loads(request.body)
+        concept = body_json.get('concept',None)
+
+        mention = body_json.get('mention',None)
+        comment = body_json.get('comment',None)
+        try:
+            name_space = NameSpace.objects.get(name_space=request.session['name_space'])
+            document = Document.objects.get(document_id = request.session['document'])
+            concept = Concept.objects.get(concept_url = concept)
+            topic = Topic.objects.get(id = request.session['topic'])
+            user = User.objects.get(username=username, name_space=name_space)
+            start, stop = return_start_stop_for_backend(int(mention['start']),int(mention['stop']),mention['position'], document.document_content)
+            mention = Mention.objects.get(document_id=document, language=request.session['language'], start=start,
+                                          stop=stop)
+            ann = Associate.objects.filter(start=mention, stop=stop,concept_url=concept, username = user, document_id=document,topic_id=topic, language=language)
+            if ann.exists() and comment is not None:
+                with connection.cursor() as cursor:
+                    cursor.execute("""UPDATE associate SET comment = %s WHERE concept_url=%s and username = %s AND document_id = %s AND start = %s AND stop = %s and topic_id=%s""",
+                                   [comment, concept.concept_url,user.username,document.document_id,mention.start,mention.stop,topic.id])
+
+            return HttpResponse(status = 200)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status = 500)
 
     elif request.method == 'POST' and type == 'insert':
 
@@ -2345,6 +2389,8 @@ def concepts(request, type=None):
         area = body_json['area']
         user = request.session['username']
         name_space = request.session['name_space']
+        topic = request.session['topic']
+        topic = Topic.objects.get(id=topic)
         name_space = NameSpace.objects.get(name_space=name_space)
         document = Document.objects.get(document_id=request.session['document'])
         collection = request.session['collection']
@@ -2381,13 +2427,13 @@ def concepts(request, type=None):
                                                  collection_id=collection).exists():
                     AddConcept.objects.create(username=user, name_space=name_space, insertion_time=Now(),
                                               concept_url=concept, name=area, collection_id=collection)
-                if not Associate.objects.filter(username=user, name_space=name_space, name=area, concept_url=concept,
+                if not Associate.objects.filter(username=user, name_space=name_space, name=area, concept_url=concept,topic_id=topic,
                                                 document_id=document, start=mention, stop=mention.stop).exists():
                     Associate.objects.create(username=user, name_space=name_space, language=request.session['language'],
-                                             insertion_time=Now(), concept_url=concept, name=area, start=mention,
+                                             insertion_time=Now(), concept_url=concept, name=area, start=mention,topic_id=topic,
                                              stop=mention.stop, document_id=document)
 
-                    update_gt(user, name_space, document, request.session['language'])
+                    update_gt(user, name_space, document, request.session['language'],request.session['topic'])
             json_resp['concepts'] = generate_associations_list_splitted(request.session['username'],
                                                                         request.session['name_space'],
                                                                         request.session['document'],
@@ -2589,6 +2635,24 @@ def tag(request, type=None):
         if request.GET.get('name_space', None) is not None:
             name_space = request.GET.get('name_space', None)
 
+        if type == 'comment':
+            tag = request.GET.get('tag', None)
+            tag = Tag.objects.get(name = tag)
+            topic = request.session.get('topic', None)
+            topic = Topic.objects.get(id = topic)
+
+            start = int(request.GET.get('mention[start]', None))
+            stop = int(request.GET.get('mention[stop]', None))
+            position = request.GET.get('mention[position]', None)
+            start_recomp, stop_recomp = return_start_stop_for_backend(start, stop, position, document.document_content)
+            mention =  Mention.objects.get(document_id=document, start=start_recomp, stop=stop_recomp)
+            annotation = AssociateTag.objects.filter(start = mention,stop=mention.stop,name = tag,topic_id=topic,username = user,name_space=name_space)
+            if annotation.exists():
+                comment = annotation.first().comment
+                if comment is None:
+                    comment = ''
+                return JsonResponse({'comment':comment})
+
         if type == 'full':
             json_mentions = generate_tag_list(username, name_space.name_space, document.document_id, language,topic)
         else:
@@ -2602,7 +2666,32 @@ def tag(request, type=None):
         json_resp = copy_tags_aux(username, name_space.name_space, document.document_id, language, json_body)
         return JsonResponse(json_resp)
 
+    elif request.method == 'POST' and type == 'comment':
 
+        body_json = json.loads(request.body)
+        tag = body_json.get('tag',None)
+
+        mention = body_json.get('mention',None)
+        comment = body_json.get('comment',None)
+        try:
+            name_space = NameSpace.objects.get(name_space=request.session['name_space'])
+            document = Document.objects.get(document_id = request.session['document'])
+            tag = Tag.objects.get(name = tag)
+            topic = Topic.objects.get(id = request.session['topic'])
+            user = User.objects.get(username=username, name_space=name_space)
+            start, stop = return_start_stop_for_backend(int(mention['start']),int(mention['stop']),mention['position'], document.document_content)
+            mention = Mention.objects.get(document_id=document, language=request.session['language'], start=start,
+                                          stop=stop)
+            ann = AssociateTag.objects.filter(start=mention, stop=stop,name=tag, username = user, document_id=document,topic_id=topic, language=language)
+            if ann.exists() and comment is not None:
+                with connection.cursor() as cursor:
+                    cursor.execute("""UPDATE associate_tag SET comment = %s WHERE name=%s and username = %s AND document_id = %s AND start = %s AND stop = %s and topic_id=%s""",
+                                   [comment, tag.name,user.username,document.document_id,mention.start,mention.stop,topic.id])
+
+            return HttpResponse(status = 200)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status = 500)
 
     elif request.method == 'POST' and type == 'insert':
 
@@ -2614,6 +2703,7 @@ def tag(request, type=None):
         document = Document.objects.get(document_id=request.session['document'])
         user = User.objects.get(username=user, name_space=name_space)
         collection_obj = Collection.objects.get(collection_id=request.session['collection'])
+        topic = Topic.objects.get(id=request.session['topic'])
         mention = body_json['mention']
         start = mention['start']
         stop = mention['stop']
@@ -2650,14 +2740,14 @@ def tag(request, type=None):
 
                 area = Tag.objects.get(name=area)
 
-                if not AssociateTag.objects.filter(username=user, name_space=name_space, name=area,
+                if not AssociateTag.objects.filter(username=user, name_space=name_space, name=area,topic_id=topic,
                                                    document_id=document, start=mention, stop=mention.stop).exists():
-                    AssociateTag.objects.create(username=user, name_space=name_space,
+                    AssociateTag.objects.create(username=user, name_space=name_space,topic_id=topic,
                                                 language=request.session['language'],
                                                 insertion_time=Now(), name=area, start=mention,
                                                 stop=mention.stop, document_id=document)
 
-                    update_gt(user, name_space, document, request.session['language'])
+                    update_gt(user, name_space, document, request.session['language'],request.session['topic'])
             json_resp['concepts'] = generate_associations_list_splitted(request.session['username'],
                                                                         request.session['name_space'],
                                                                         request.session['document'],
@@ -3117,8 +3207,25 @@ def labels(request, type=None):
             user = User.objects.get(username=username, name_space=name_space)
             label = Label.objects.get(name=label)
             comment = ''
-            comments = AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
-                                            topic_id=topic, name_space=name_space)
+            mention = request.GET.get('mention[start]',None)
+            if mention is None:
+                comments = AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
+                                                topic_id=topic, name_space=name_space)
+            else:
+                mention = {}
+                mention['start'] = int(request.GET.get('mention[start]',None))
+                mention['stop'] = int(request.GET.get('mention[stop]',None))
+                mention['position'] = request.GET.get('mention[position]',None)
+
+                start, stop = return_start_stop_for_backend(mention['start'], mention['stop'],
+                                                            mention['position'],
+                                                            document.document_content)
+                mention = Mention.objects.get(document_id=document, language=request.session['language'],
+                                              start=start,
+                                              stop=stop)
+                comments = AnnotatePassage.objects.filter(username=user, document_id=document, language=language,
+                                                        label=label,start=mention,stop=mention.stop,
+                                                        topic_id=topic, name_space=name_space)
             if comments.exists():
                 comment = comments.first().comment
             json_resp = {'comment': comment}
@@ -3151,21 +3258,37 @@ def labels(request, type=None):
     elif request.method == 'POST' and type == 'comment':
         json_body = json.loads(request.body)
         label = json_body['label']
+        type = json_body['type']
         label = Label.objects.get(name=label)
         comment = json_body['comment']
         name_space = NameSpace.objects.get(name_space=name_space)
         topic = Topic.objects.get(id=topic)
         document = Document.objects.get(document_id=document, language=language)
         user = User.objects.get(username=username, name_space=name_space)
+        if type == 'label':
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """UPDATE annotate_label SET comment = %s WHERE label = %s and username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s """,
+                    [comment, label.name, user.username, name_space.name_space, document.document_id, document.language,
+                     topic.id])
 
-        with connection.cursor() as cursor:
-            cursor.execute(
-                """UPDATE annotate_label SET comment = %s WHERE label = %s and username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s """,
-                [comment, label.name, user.username, name_space.name_space, document.document_id, document.language,
-                 topic.id])
 
-            return HttpResponse(status = 200)
-        return HttpResponse(stauts = 500)
+                return HttpResponse(status = 200)
+        elif type == 'passage':
+            mention = json_body['mention']
+            start, stop = return_start_stop_for_backend(mention['start'], mention['stop'],
+                                                        mention['position'],
+                                                        document.document_content)
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """UPDATE annotate_passage SET comment = %s WHERE label = %s and username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s and start = %s and stop = %s """,
+                    [comment, label.name, user.username, name_space.name_space, document.document_id,
+                     document.language,
+                     topic.id,start,stop])
+
+                return HttpResponse(status=200)
+        return HttpResponse(status = 500)
 
     elif request.method == 'POST' and type == 'insert':
 
@@ -3176,22 +3299,46 @@ def labels(request, type=None):
         body_json = json.loads(request.body)
         language = document.language
         label = body_json['label']
+        mention = body_json.get('mention', None)
         score = body_json['score']
         label = Label.objects.get(name=label)
         try:
-            with transaction.atomic():
-                if AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
-                                             topic_id=topic,name_space=name_space).exists():
-                    with connection.cursor() as cursor:
-                        cursor.execute("""UPDATE annotate_label SET label = %s, grade = %s WHERE username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s """,[label.name,score,user.username,name_space.name_space,document.document_id,document.language, topic.id])
-                    # AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
-                    #                              topic_id=topic, name_space=name_space).delete()
-                else:
-                    AnnotateLabel.objects.create(username=user, document_id=document, language=language, label=label,
-                                             insertion_time=Now(), grade=score, topic_id=topic,name_space=name_space)
-                update_gt(user, name_space, document, language,topic)
+            if mention is None:
+                with transaction.atomic():
+                    if AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
+                                                 topic_id=topic,name_space=name_space).exists():
+                        with connection.cursor() as cursor:
+                            cursor.execute("""UPDATE annotate_label SET label = %s, grade = %s WHERE username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s """,[label.name,score,user.username,name_space.name_space,document.document_id,document.language, topic.id])
 
-                return JsonResponse({'msg': 'ok'})
+                    else:
+                        AnnotateLabel.objects.create(username=user, document_id=document, language=language, label=label,
+                                                 insertion_time=Now(), grade=score, topic_id=topic,name_space=name_space)
+                    update_gt(user, name_space, document, language,topic)
+
+                    return JsonResponse({'msg': 'ok'})
+            else:
+                with transaction.atomic():
+                    start, stop = return_start_stop_for_backend(mention['start'], mention['stop'],
+                                                                mention['position'],
+                                                                document.document_content)
+                    mention = Mention.objects.get(document_id=document, language=request.session['language'],
+                                                  start=start,
+                                                  stop=stop)
+                    if AnnotatePassage.objects.filter(username=user, document_id=document,start = mention,stop = mention.stop, language=language, label=label,
+                                                    topic_id=topic, name_space=name_space).exists():
+                        with connection.cursor() as cursor:
+                            cursor.execute(
+                                """UPDATE annotate_passage SET label = %s, grade = %s WHERE username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s and start = %s and stop = %s""",
+                                [label.name, score, user.username, name_space.name_space, document.document_id,
+                                 document.language, topic.id, mention.start, mention.stop])
+                    else:
+                        AnnotatePassage.objects.create(username=user, document_id=document, language=language,
+                                                     label=label,start = mention,stop = mention.stop,
+                                                     insertion_time=Now(), grade=score, topic_id=topic,
+                                                     name_space=name_space)
+                    update_gt(user, name_space, document, language, topic)
+
+                    return JsonResponse({'msg': 'ok'})
 
         except Exception as e:
             print(e)
@@ -3367,24 +3514,49 @@ def mentions(request, type=None):
         json_mentions = {}
 
         json_mentions['mentions'] = generate_mentions_list(username, name_space, document, language,topic)
-        json_mentions['mentions_splitted'] = generate_mentions_list(username, name_space, document, language,topic)
+        #json_mentions['mentions_splitted'] = generate_mentions_list(username, name_space, document, language,topic)
 
         # print(json_mentions)
         return JsonResponse(json_mentions, safe=False)
+
+    # elif request.method == 'GET' and type == 'label':
+    #     collection = request.session['collection']
+    #     collection = Collection.objects.get(collection_id=collection)
+    #     start = request.GET.get('start',None)
+    #     position = request.GET.get('position',None)
+    #     comment = ''
+    #     stop = request.GET.get('stop',None)
+    #     name_space = NameSpace.objects.get(name_space=name_space)
+    #     document = Document.objects.get(document_id = document)
+    #     user = User.objects.get(username=username, name_space=name_space)
+    #     start, stop = return_start_stop_for_backend(int(start),int(stop),position, document.document_content)
+    #     mention = Mention.objects.get(document_id=document, language=request.session['language'], start=start,
+    #                                   stop=stop)
+    #
+    #     ann = AnnotatePassage.objects.filter(start=mention, stop=stop, username = user, document_id=document, language=language)
+    #     json_resp = {}
+    #     labels = CollectionHasLabel.objects.filter(passage_annotation = True,collection_id = collection)
+    #     for l in labels:
+    #         json_resp[l.name] = None
+    #     for annotation in ann:
+    #         json_resp[ann.label.name] = ann.grade
+    #     return JsonResponse(json_resp)
+
+
 
     elif request.method == 'GET' and type == 'comment':
         start = request.GET.get('start',None)
         position = request.GET.get('position',None)
         comment = ''
         stop = request.GET.get('stop',None)
-        mention_text = request.GET.get('mention_text',None)
         name_space = NameSpace.objects.get(name_space=name_space)
         document = Document.objects.get(document_id = document)
+        topic = Topic.objects.get(id = request.session['topic'])
         user = User.objects.get(username=username, name_space=name_space)
         start, stop = return_start_stop_for_backend(int(start),int(stop),position, document.document_content)
         mention = Mention.objects.get(document_id=document, language=request.session['language'], start=start,
                                       stop=stop)
-        ann = Annotate.objects.filter(start=mention, stop=stop, username = user, document_id=document, language=language)
+        ann = Annotate.objects.filter(start=mention, stop=stop,topic_id=topic, username = user, document_id=document, language=language)
         if ann.exists():
             ann = ann.first()
             if ann.comment is not None:
@@ -3534,8 +3706,8 @@ def mentions(request, type=None):
                                                                 request.session['name_space'],
                                                                 request.session['document'],
                                                                 request.session['language'],request.session['topic'])
-            json_to_return['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-                                                                                  document.document_id, language,topic)
+            # json_to_return['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
+            #                                                                       document.document_id, language,topic)
 
         return JsonResponse(json_to_return)
 
@@ -3557,15 +3729,16 @@ def mentions(request, type=None):
         try:
             name_space = NameSpace.objects.get(name_space=name_space)
             document = Document.objects.get(document_id = document)
+            topic = Topic.objects.get(id = request.session['topic'])
             user = User.objects.get(username=username, name_space=name_space)
             start, stop = return_start_stop_for_backend(int(start),int(stop),position, document.document_content)
             mention = Mention.objects.get(document_id=document, language=request.session['language'], start=start,
                                           stop=stop)
-            ann = Annotate.objects.filter(start=mention, stop=stop, username = user, document_id=document, language=language)
-            if ann.exists() and comment is not None and comment != '':
+            ann = Annotate.objects.filter(start=mention,topic_id=topic, stop=stop, username = user, document_id=document, language=language)
+            if ann.exists() and comment is not None:
                 with connection.cursor() as cursor:
-                    cursor.execute("""UPDATE annotate SET comment = %s WHERE username = %s AND document_id = %s AND start = %s AND stop = %s""",
-                                   [comment, user.username,document.document_id,mention.start,mention.stop])
+                    cursor.execute("""UPDATE annotate SET comment = %s WHERE username = %s AND document_id = %s AND start = %s AND stop = %s and topic_id = %s""",
+                                   [comment, user.username,document.document_id,mention.start,mention.stop,topic.id])
 
         except Exception as e:
             print(e)
@@ -3647,8 +3820,8 @@ def mentions(request, type=None):
                                                                     request.session['name_space'],
                                                                     request.session['document'],
                                                                     request.session['language'],request.session['topic'])
-                json_to_return['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-                                                                                      document.document_id, language,topic.id)
+                # json_to_return['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
+                #                                                                       document.document_id, language,topic.id)
 
             return JsonResponse(json_to_return)
         except Exception as e:
@@ -3750,8 +3923,8 @@ def mentions(request, type=None):
                 json_resp['document'] = new_content
                 json_resp['mentions'] = generate_mentions_list(username, name_space.name_space, document.document_id,
                                                                language,topic.id)
-                json_resp['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-                                                                                 document.document_id, language,topic.id)
+                # json_resp['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
+                #                                                                  document.document_id, language,topic.id)
                 json_resp['concepts'] = generate_associations_list_splitted(username, name_space.name_space,
                                                                             document.document_id, language,topic.id)
                 json_resp['tags'] = generate_tag_list_splitted(username, name_space.name_space,
@@ -3784,12 +3957,12 @@ def relationships(request, type=None):
         language = request.session['language']
         document = request.session['document']
         json_mentions = {}
+        if type is None:
+            json_mentions = generate_relationships_list(username, name_space, document, language,topic)
 
-        json_mentions = generate_relationships_list(username, name_space, document, language,topic)
+            return JsonResponse(json_mentions, safe=False)
 
-        return JsonResponse(json_mentions, safe=False)
-
-    elif request.method == 'GET' and type == 'assertions':
+    if request.method == 'GET' and type == 'assertions':
         if request.GET.get('user', None) is not None:
             username = request.GET.get('user', None)
         if request.GET.get('name_space', None) is not None:
@@ -3802,6 +3975,40 @@ def relationships(request, type=None):
         json_ment_areas = {}
         json_assertions = generate_assertions_list(username, name_space, document, language)
         return JsonResponse(json_assertions, safe=False)
+
+    elif request.method == 'GET' and type == 'assertion_comment':
+        if request.GET.get('user', None) is not None:
+            username = request.GET.get('user', None)
+        else:
+            username = request.session.get('username', None)
+
+        if request.GET.get('name_space', None) is not None:
+            name_space = request.GET.get('name_space', None)
+        else:
+            name_space = request.session.get('name_space', None)
+
+        name_space = NameSpace.objects.get(name_space=name_space)
+        username = User.objects.get(username=username,name_space=name_space)
+        document = request.session['document']
+        document = Document.objects.get(document_id=document)
+        topic = request.session['topic']
+        topic = Topic.objects.get(id=topic)
+
+        subj = request.GET.get('relationship[subject_concept_url]',None)
+        obj = request.GET.get('relationship[object_concept_url]',None)
+        pred = request.GET.get('relationship[predicate_concept_url]',None)
+        subj_area = request.GET.get('relationship[subject_concept_area]',None)
+        obj_area = request.GET.get('relationship[object_concept_area]',None)
+        pred_area = request.GET.get('relationship[predicate_concept_area]',None)
+        comment = ''
+        fact = CreateFact.objects.filter(document_id = document,subject_name=subj_area,object_name=obj_area,predicate_name=pred_area,username=username,topic_id=topic,subject_concept_url = subj,object_concept_url = obj,predicate_concept_url = pred)
+        if fact.exists():
+            comment = fact.first().comment
+            if comment is None:
+                comment = ''
+        return JsonResponse({'comment': comment}, safe=False)
+
+
 
     elif request.method == 'POST' and type == 'copy':
         json_body = json.loads(request.body)
@@ -3819,13 +4026,47 @@ def relationships(request, type=None):
         json_body = json.loads(request.body)
         json_resp = copy_assertion_aux(username, name_space, document, language, json_body)
         return JsonResponse(json_resp)
+
+
+    elif request.method == 'POST' and type == 'assertion_comment':
+        username = request.session.get('username', None)
+        name_space = request.session.get('name_space', None)
+
+        name_space = NameSpace.objects.get(name_space=name_space)
+
+        language = request.session['language']
+        document = request.session['document']
+        document = Document.objects.get(document_id=document)
+        topic = request.session['topic']
+        topic = Topic.objects.get(id=topic)
+        username = User.objects.get(username=username,name_space=name_space)
+        body_json = json.loads(request.body)
+        relationship = body_json['relationship']
+        comment = body_json['comment']
+        try:
+
+
+            fact = CreateFact.objects.filter(document_id = document,subject_name=relationship['subject_area'],object_name=relationship['object_area'],predicate_name=relationship['predicate_area'],username=username,topic_id=topic,subject_concept_url = relationship['subject_url'],object_concept_url = relationship['object_url'],predicate_concept_url = relationship['predicate_url'])
+
+
+            if fact.exists() and comment is not None:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        """UPDATE create_fact SET comment = %s WHERE subject_name=%s and object_name=%s and predicate_name = %s and subject_concept_url = %s and object_concept_url = %s and predicate_concept_url=%s and username = %s AND document_id = %s and topic_id=%s""",
+                        [comment, relationship['subject_area'], relationship['object_area'], relationship['predicate_area'], relationship['subject_url'], relationship['object_url'], relationship['predicate_url'],  username.username, document.document_id, topic.id])
+
+                return HttpResponse(status = 200)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status = 500)
+
+
     elif request.method == 'POST' and type == 'insert':
         name_space = NameSpace.objects.get(name_space=name_space)
         user = User.objects.get(username=username, name_space=name_space)
         document = Document.objects.get(document_id=document, language=language)
-        # collection = Collection.objects.get(collection_id = collection)
+        topic = Topic.objects.get(id=topic)
         json_body = json.loads(request.body)
-        to_up = False
         source = json_body['source']
         source_mention = source['mention']
         predicate = json_body['predicate']
@@ -3836,12 +4077,12 @@ def relationships(request, type=None):
 
             with transaction.atomic():
                 insert_new_relationship_if_exists(source_mention, predicate_mention, target_mention, source, target,
-                                                  predicate, collection, document, language, user, name_space)
+                                                  predicate, collection, document, language, user, name_space,topic)
 
                 update_gt(user, name_space, document, language,topic)
 
             new_rel = generate_relationships_list(user.username, name_space.name_space, document.document_id,
-                                                  document.language,topic)
+                                                  document.language,topic.id)
             # new_rel = transform_relationships_list(new_rel, document.document_id, username, name_space.name_space)
             return JsonResponse(new_rel, safe=False)
 
@@ -3852,8 +4093,8 @@ def relationships(request, type=None):
         name_space = NameSpace.objects.get(name_space=name_space)
         user = User.objects.get(username=username, name_space=name_space)
         document = Document.objects.get(document_id=document, language=language)
+        topic = Topic.objects.get(id=topic)
         json_body = json.loads(request.body)
-        to_up = False
         source_prev = json_body['prev_subject']
         source_mention_prev = source_prev['mention']
         predicate_prev = json_body['prev_predicate']
@@ -3871,14 +4112,14 @@ def relationships(request, type=None):
         try:
             with transaction.atomic():
                 delete_old_relationship(source_mention_prev, predicate_mention_prev, target_mention_prev, source_prev,
-                                        target_prev, predicate_prev, collection, document, language, user, name_space)
+                                        target_prev, predicate_prev, collection, document, language, user, name_space,topic)
                 insert_new_relationship_if_exists(source_mention, predicate_mention, target_mention, source, target,
-                                                  predicate, collection, document, language, user, name_space)
+                                                  predicate, collection, document, language, user, name_space,topic)
 
             update_gt(user, name_space, document, language,topic)
 
             new_rel = generate_relationships_list(user.username, name_space.name_space, document.document_id,
-                                                  document.language,topic)
+                                                  document.language,topic.id)
             #new_rel = transform_relationships_list(new_rel, document.document_id, username, name_space.name_space)
             return JsonResponse(new_rel, safe=False)
 
@@ -3892,9 +4133,8 @@ def relationships(request, type=None):
         name_space = NameSpace.objects.get(name_space=name_space)
         user = User.objects.get(username=username, name_space=name_space)
         document = Document.objects.get(document_id=document, language=language)
-        # collection = Collection.objects.get(collection_id = collection)
+        topic = Topic.objects.get(id = request.session['topic'])
         json_body = json.loads(request.body)
-        to_up = False
         source = json_body['source']
         source_mention = source['mention']
         predicate = json_body['predicate']
@@ -3908,7 +4148,7 @@ def relationships(request, type=None):
             update_gt(user, name_space, document, language,topic)
 
             new_rel = generate_relationships_list(user.username, name_space.name_space, document.document_id,
-                                                  document.language,topic)
+                                                  document.language,topic.id)
             #new_rel = transform_relationships_list(new_rel, document.document_id, username, name_space.name_space)
             return JsonResponse(new_rel, safe=False)
         except Exception as e:
@@ -3930,7 +4170,7 @@ def get_mentions(request):
     json_mentions = {}
 
     json_mentions['mentions'] = generate_mentions_list(username, name_space, document, language,topic)
-    json_mentions['mentions_splitted'] = generate_mentions_list(username, name_space, document, language,topic)
+    # json_mentions['mentions_splitted'] = generate_mentions_list(username, name_space, document, language,topic)
 
     # print(json_mentions)
     return JsonResponse(json_mentions, safe=False)
@@ -3998,11 +4238,12 @@ def delete_relationship(request):
     document = request.session['document']
     collection = request.session['collection']
     language = request.session['language']
+    topic = request.session['topic']
 
     name_space = NameSpace.objects.get(name_space=name_space)
     user = User.objects.get(username=username, name_space=name_space)
     document = Document.objects.get(document_id=document, language=language)
-    # collection = Collection.objects.get(collection_id = collection)
+    topic = Topic.objects.get(id = topic)
     json_body = json.loads(request.body)
     to_up = False
     source = json_body['source']
@@ -4019,7 +4260,7 @@ def delete_relationship(request):
         update_gt(user, name_space, document, language,topic)
 
         new_rel = generate_relationships_list(user.username, name_space.name_space, document.document_id,
-                                              document.language,topic)
+                                              document.language,topic.id)
         #new_rel = transform_relationships_list(new_rel, document.document_id, username, name_space)
         return JsonResponse(new_rel, safe=False)
     except Exception as e:
@@ -4055,18 +4296,19 @@ def update_relationship(request):
     target = json_body['target']
     target_mention = target['mention']
     topic = request.session['topic']
+    topic = Topic.objects.get(id=topic)
 
     try:
         with transaction.atomic():
             delete_old_relationship(source_mention_prev, predicate_mention_prev, target_mention_prev, source_prev,
                                     target_prev, predicate_prev, collection, document, language, user, name_space)
             insert_new_relationship_if_exists(source_mention, predicate_mention, target_mention, source, target,
-                                              predicate, collection, document, language, user, name_space)
+                                              predicate, collection, document, language, user, name_space,topic)
 
         update_gt(user, name_space, document, language,topic)
 
         new_rel = generate_relationships_list(user.username, name_space.name_space, document.document_id,
-                                              document.language,topic)
+                                              document.language,topic.id)
         #new_rel = transform_relationships_list(new_rel, document.document_id, username, name_space)
         return JsonResponse(new_rel, safe=False)
 
@@ -4097,16 +4339,18 @@ def add_relationship(request):
     target = json_body['target']
     target_mention = target['mention']
     topic = request.session['topic']
+    topic = Topic.objects.get(id=topic)
+
     try:
         with transaction.atomic():
             insert_new_relationship_if_exists(source_mention, predicate_mention, target_mention, source, target,
-                                              predicate, collection, document, language, user, name_space)
+                                              predicate, collection, document, language, user, name_space,topic)
 
         if to_up:
             update_gt(user, name_space, document, language,topic)
 
         new_rel_list = generate_relationships_list(user.username, name_space.name_space, document.document_id,
-                                                   document.language,topic)
+                                                   document.language,topic.id)
         #new_rel = transform_relationships_list(new_rel_list, document.document_id, username, name_space)
         return JsonResponse(new_rel_list, safe=False)
 
@@ -4184,8 +4428,8 @@ def add_mentions(request):
                                                                 request.session['name_space'],
                                                                 request.session['document'],
                                                                 request.session['language'],request.session['topic'])
-            json_to_return['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-                                                                                  document.document_id, language,topic.id)
+            # json_to_return['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
+            #                                                                       document.document_id, language,topic.id)
 
         return JsonResponse(json_to_return)
     except Exception as e:
@@ -4415,8 +4659,8 @@ def delete_single_mention(request):
             json_resp['document'] = new_content
             json_resp['mentions'] = generate_mentions_list(username, name_space.name_space, document.document_id,
                                                            language,topic)
-            json_resp['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-                                                                             document.document_id, language,topic)
+            # json_resp['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
+            #                                                                  document.document_id, language,topic)
             json_resp['concepts'] = generate_associations_list_splitted(username, name_space.name_space,
                                                                         document.document_id, language,topic)
             json_resp['tags'] = generate_tag_list_splitted(username, name_space.name_space, document.document_id,
@@ -4728,6 +4972,7 @@ def collection_options(request):
             for k in union:
                 if k not in keys_options:
                     options[k] = 'rgba(65, 105, 225, 1)'
+                    json_opt[k] = options[k]
                 else:
                     json_opt[k] = options[k]
 

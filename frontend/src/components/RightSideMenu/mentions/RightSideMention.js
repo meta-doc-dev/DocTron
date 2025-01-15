@@ -59,10 +59,7 @@ export default function RightSideMention(props){
     const [InARel,SetInARel] = inarel
     const [FirstSelected,SetFirstSelected] = firstsel
     const [SecondSelected,SetSecondSelected] = secondsel
-    // console.log('test',props.mention_text)
-    const [ShowInfo, SetShowInfo] = useState(false)
-    const [contextMenu, setContextMenu] = useState(null);
-    const [ShowMentions,SetShowMentions] = showmentionsspannel
+
 
     useEffect(()=>{
         let elements = Array.from(document.getElementsByClassName(props.mention.mentions))
@@ -88,7 +85,10 @@ export default function RightSideMention(props){
             // if(MentionToHighlight !== props.mention.mentions){
             if(document.getElementById(props.mention.mentions).style.fontWeight === 'bold'){
 
+
                 SetMentionToHighlight(false)
+                var new_list = props.listhigh.filter(x=>x[0]!==props.mention.start && x[1] !== props.mention.stop)
+                props.setlisthigh(new_list)
                 // document.getElementById(props.mention.mentions).style.fontWeight = 'normal'
                 RemovehighlightMention(props.mention)
 
@@ -96,7 +96,9 @@ export default function RightSideMention(props){
             } else {
                 // document.getElementById(props.mention.mentions).style.fontWeight = 'bold'
                 SetMentionToHighlight(props.mention.mentions)
-                // recomputeColor(props.mention,true)
+
+                props.setlisthigh([...props.listhigh,[props.mention.start,props.mention.stop]])
+
                 highlightMention(props.mention)
 
             }

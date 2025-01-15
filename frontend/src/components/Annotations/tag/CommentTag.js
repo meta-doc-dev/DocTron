@@ -54,20 +54,9 @@ function HomeIcon(props) {
 }
 
 HomeIcon.propTypes = {fontSize: PropTypes.string};
-export default function CommentDialog(props){
+export default function CommentTag(props){
     const { collection,document_id,collectiondocuments,topic,showdocs,task } = useContext(AppContext);
-    const [Collection,SetCollection] = collection
-    const [DocumentID,SetDocumentID] = document_id
-    const [ShowDocs,SetShowDocs] = showdocs
-    const [CollectionDescription,SetCollectionDescription] = useState(false)
-    const [TopicComments,SetTopicComments] = useState([])
-    const [DocumentsComments,SetDocumentsComments] = useState([])
-    const [CollectionDocuments,SetCollectionDocuments] = collectiondocuments
-    const [Doc,SetDoc] = useState(null)
-    const [ShowCommentDoc,SetShowCommentDoc] = useState(null)
-    const [ShowCommentTopic,SetShowCommentTopic] = useState(null)
-    const [Topic,SetTopic] = topic
-    const [Task,SetTask] = task
+
     const [Comment,SetComment] = useState(null)
 
 
@@ -80,7 +69,7 @@ export default function CommentDialog(props){
         if (props.mention && props.mention.mention_text) {
             delete props.mention.mention_text;
         }
-        axios.get('labels/comment',{params:{label:props.label,mention:props.mention}})
+        axios.get('tag/comment',{params:{tag:props.tag,mention:props.mention}})
             .then(response=>{
 
                 SetComment(response.data['comment'])
@@ -88,56 +77,48 @@ export default function CommentDialog(props){
 
 
 
-    }, [props.label]);
+    }, [props.tag]);
 
 
     function uploadComment(){
         var comment = document.getElementById("comment").value
-        if (props.type === 'label'){
-            axios.post('labels/comment',{label:props.label,comment:comment,type:'label'})
-                .then(response=>{
-
-                    props.setopen(false)
-                })
-        }else if(props.type === 'passage'){
-            axios.post('labels/comment',{label:props.label,comment:comment,mention:props.mention,type:'passage'})
+        axios.post('tag/comment',{tag:props.tag,comment:comment,mention:props.mention})
             .then(response=>{
 
                 props.setopen(false)
             })
-        }
 
     }
 
     return(
 
-            <Dialog
-                open={props.open}
-                onClose={handleClose}
-                maxWidth={'lg'}
-                sx={{width:'100%'}}
+        <Dialog
+            open={props.open}
+            onClose={handleClose}
+            maxWidth={'lg'}
+            sx={{width:'100%'}}
 
 
-            >
-               <DialogTitle>Leave a comment about your annotation</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
+        >
+            <DialogTitle>Leave a comment about your annotation</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
 
-                    </DialogContentText>
-                    <div>
-                        <TextField           multiline
-                                             rows={4} id="comment" sx={{margin:'10px 0',width:'100%'}} label="Comment" variant="outlined" />
+                </DialogContentText>
+                <div>
+                    <TextField           multiline
+                                         rows={4} id="comment" sx={{margin:'10px 0',width:'100%'}} label="Comment" variant="outlined" />
 
-                        {Comment && <><h5>Your comment:</h5>
-                            <div>{Comment}</div>
-                        </>}
-                        </div>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>Cancel</Button>
-                    <Button onClick={uploadComment}>Confirm</Button>
-                </DialogActions>
-            </Dialog>
+                    {Comment && <><h5>Your comment:</h5>
+                        <div>{Comment}</div>
+                    </>}
+                </div>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleClose}>Cancel</Button>
+                <Button onClick={uploadComment}>Confirm</Button>
+            </DialogActions>
+        </Dialog>
 
 
 

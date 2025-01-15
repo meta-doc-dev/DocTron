@@ -21,7 +21,7 @@ import AddIcon from "@mui/icons-material/Add";
 
 function CreateFact(){
 
-    const { annotationtypes,inarel,labels,newfact,sourcetext,expand,sourceconcepts,targettext,targetconcepts,predicatetext,predicateconcepts,relationship,predicate,source,target } = useContext(AppContext);
+    const { annotationtypes,inarel,labels,showtypes,newfact,sourcetext,expand,sourceconcepts,targettext,targetconcepts,predicatetext,predicateconcepts,relationship,predicate,source,target } = useContext(AppContext);
 
     const [Labels,SetLabels] = labels
     const [Relationship,SetRelationship] = relationship
@@ -40,6 +40,7 @@ function CreateFact(){
     const [AssertionModal,SetShowAssertionModal] = useState(true)
     const [NewFact,SetNewFact] = newfact
     const [Expand,SetExpand] = expand
+    const [ShowAnnoTypes, SetShowAnnoTypes] = showtypes
 
 
 
@@ -50,7 +51,7 @@ function CreateFact(){
         <div className='inline'>
 
             <>
-                {AnnotationTypes.indexOf("Facts annotation") !== -1 && <Tooltip title="New document assertion">
+                {AnnotationTypes.indexOf("Facts annotation") !== -1 && <Tooltip title="New fact">
                     <Button startIcon={<AddIcon/>} variant="outlined" color={'primary'} size="small" className={'bt'}
                             onClick={() => {
 
@@ -67,13 +68,16 @@ function CreateFact(){
                                 SetPredicateText(false)
                                 SetTargetText(false)
                                 SetRelationship(false)
-                                // SetInARel(true)
-                                // SetInARel(prev=>!prev)
+                                if(NewFact) {
+                                    SetShowAnnoTypes(true)
+                                }else {
+                                    SetShowAnnoTypes(false)
+                                }
                                 SetNewFact(prev => !prev)
-                                SetExpand(false)
+                                SetExpand(true)
 
 
-                            }}>ASSERTION
+                            }}>Fact
                         {/*New Document Assertion*/}
                     </Button>
 

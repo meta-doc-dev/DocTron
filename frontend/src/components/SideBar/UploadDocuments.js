@@ -378,7 +378,7 @@ export default function UploadDocument(props){
                     <MenuItem value={'concepts'}>Concepts</MenuItem>
                     <MenuItem value={'relationships'}>Relationships</MenuItem>
                     <MenuItem value={'labels'}>Document labels</MenuItem>
-                    <MenuItem value={'assertions'}>Document assertions</MenuItem>
+                    <MenuItem value={'assertions'}>Facts</MenuItem>
 
                 </Select></FormControl>
             </div>

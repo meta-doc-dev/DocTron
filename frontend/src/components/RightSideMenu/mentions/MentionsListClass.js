@@ -16,7 +16,8 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
-const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
+
+const icon = <CheckBoxOutlineBlankIcon fontSize="small"/>;
 import UploadIcon from '@mui/icons-material/Upload';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Typography from '@mui/material/Typography';
@@ -24,7 +25,8 @@ import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark';
 import ArticleIcon from '@mui/icons-material/Article';
-const checkedIcon = <CheckBoxIcon fontSize="small" />;
+
+const checkedIcon = <CheckBoxIcon fontSize="small"/>;
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Fade from '@mui/material/Fade';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
@@ -40,8 +42,8 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import DocumentToolBar from "../../Document/ToolBar/DocumentToolBar";
 import AddIcon from '@mui/icons-material/Add';
 import Paper from "@mui/material/Paper";
-import { styled } from '@mui/material/styles';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import {styled} from '@mui/material/styles';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import {AppContext} from "../../../App";
@@ -50,57 +52,115 @@ import Chip from "@mui/material/Chip";
 import {CircularProgress} from "@mui/material";
 import RightSideMention from "./RightSideMention";
 import {RemovehighlightMention} from "../../HelperFunctions/HelperFunctions";
+import LabelsRadio from "../labels/LabelsRadio";
+import LabelSlider from "../labels/LabelSlider";
 
-export default function MentionsListClass(props){
-    const { collection,view,inarel,document_id,labels,mentions,mentiontohighlight,showmentionsspannel } = useContext(AppContext);
-    const [Collection,SetCollection] = collection
-    const [DocumentID,SetDocumentID] = document_id
+export default function MentionsListClass(props) {
+    const {view, labels, mentions, concepts, tags_split, documentdescription} = useContext(AppContext);
+
     const [MentionsList, SetMentionsList] = mentions
-    const [Labels,SetLabels] = labels
-    const [NotAdded,SetNotAdded] = useState(false)
-    const [ShowSelect,SetShowSelect] = useState(false)
-    const [InARel,SetInARel] = inarel
+    const [Labels, SetLabels] = labels
+    const [ConceptsList, SetConceptsList] = concepts
+    const [DocumentDesc, SetDocumentDesc] = documentdescription
 
-    const [OpenMentions, SetOpenMentions] = useState(false)
-    const [CollectionDescription,SetCollectionDescription] = useState(false)
-    const sorted_mentions = MentionsList.sort(function(a, b) { return a.start - b.start; })
-    const sorted_mentions_10 = sorted_mentions.slice(0,5)
-    const sorted_mentions_last = sorted_mentions.slice(5,sorted_mentions.length)
-    const [MentionToHighlight,SetMentionToHighlight] = mentiontohighlight
-    const [View,SetView] = view
-    const [ShowList,SetShowList] = useState(true)
+    const [TagsSplitted, SetTagsSplitted] = tags_split
+
+    const sorted_mentions = MentionsList.sort(function (a, b) {
+        return a.start - b.start;
+    })
+
+    const [View, SetView] = view
+    const [ShowList, SetShowList] = useState(false)
+    const [MentionsListHigh, SetMentionsListHigh] = useState([])
+
+    /*    useEffect(()=>{
+            var m = ''
+            if (MentionToHighlight) {
+                m = MentionsListHigh.includes(MentionToHighlight)
+                    ? MentionsListHigh.filter(x => x !== MentionToHighlight) // Rimuovi se esiste
+                    : [...MentionsListHigh, MentionToHighlight];             // Aggiungi se non esiste
+                SetMentionsListHigh(m);
+            } else if (MentionsListHigh.length > 0) {
+                m = MentionsListHigh.filter(x => x.mentions !== MentionToHighlight);
+                SetMentionsListHigh(m);
+            }
+            console.log('liste')
+            console.log(MentionToHighlight)
+            console.log(m)
 
 
+        },[MentionToHighlight])*/
 
 
-
-    return(
+    return (
         <div id='rightsidementionsclass'>
-            <Button disabled = {View === 4} onClick={()=>SetShowList(prev=>!prev)} variant="text">Passages <i>({MentionsList.length})</i></Button>
+            <Button disabled={View === 4} onClick={() => SetShowList(prev => !prev)}
+                    variant="text">Passages <i>({MentionsList.length})</i></Button>
 
-            {/*{MentionsList && <div><i><b>{MentionsList.length}</b> mentions</i></div>}*/}
             <Collapse in={ShowList}>
                 <div>
                     {MentionsList ? <>
 
-                            {sorted_mentions_10.map((mention, index) =>
-                                <div id={mention.mentions}>
+                            {sorted_mentions.map((mention, index) =>
+                                <div>
 
-                                    <RightSideMention testo={mention.mention_text} mention={mention} index={index}/>
+                                    <div id={mention.mentions} style={{margin: "5% 0"}}><RightSideMention
+                                        testo={mention.mention_text} listhigh={MentionsListHigh}
+                                        setlisthigh={SetMentionsListHigh}
+                                        mention={mention} index={index}/></div>
+
+                                    <Collapse in={MentionsListHigh.filter(x=> x[0] === mention.start && x[1] === mention.stop).length > 0}>
+                                        <div>
+
+                                            {Labels['labels_passage'].map((o, i) =>
+                                                <div>
+                                                    {parseInt(Labels['values_passage'][i][1]) - parseInt(Labels['values_passage'][i][0]) + 1 > 5 ?
+                                                        <LabelSlider label={o}
+                                                                     details={Labels['details_passage'][i]}
+                                                                     value={mention['labels'][o]}                                                                     mention={mention}
+                                                                     mention={mention}
+                                                                     min={Labels['values_passage'][i][0]}
+                                                                     max={Labels['values_passage'][i][1]}
+                                                                     type_lab={'passage'}/> :
+                                                        <LabelsRadio label={o}
+                                                                     details={Labels['details_passage'][i]}
+                                                                     value={mention['labels'][o]}
+                                                                     mention={mention}
+                                                                     min={Labels['values_passage'][i][0]}
+                                                                     max={Labels['values_passage'][i][1]}
+                                                                     type_lab={'passage'}/>}
+
+                                                </div>
+                                            )}
+                                            <Button color={'error'} size={'small'} variant={'outlined'} onClick={() => {
+                                                axios.delete('mentions/delete', {
+                                                    data: {
+                                                        start: mention.start,
+                                                        stop: mention.stop,
+                                                        mention_text: mention.mention_text,
+                                                        position: mention.position
+                                                    }
+                                                })
+                                                    .then(response => {
+
+                                                        SetDocumentDesc(response.data['document'])
+                                                        SetMentionsList(response.data['mentions'])
+                                                        SetConceptsList(response.data['concepts'])
+                                                        SetTagsSplitted(response.data['tags'])
+                                                        var m = MentionsListHigh.filter(x=>x[0] !== mention.start && x[1] !== mention.stop)
+                                                        SetMentionsListHigh(m)
+
+
+                                                    })
+                                            }}>Delete passage</Button>
+                                            <hr/>
+                                        </div>
+                                    </Collapse>
+
 
                                 </div>
                             )}
 
-                            {OpenMentions && <>{sorted_mentions_last.map((mention, index) =>
-                                <div id={mention.mentions}>
-
-                                    <RightSideMention testo={mention.mention_text} mention={mention} index={index + 5}/>
-
-                                </div>
-                            )}</>}
-                            {MentionsList.length > 5 && <a role="button" className='view_more'
-                                                           onClick={() => SetOpenMentions(prev => !prev)}>{OpenMentions ? <>View
-                                less</> : <>View more</>}</a>}
                         </>
                         : <CircularProgress/>}
                 </div>

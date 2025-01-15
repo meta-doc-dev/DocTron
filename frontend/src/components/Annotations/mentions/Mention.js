@@ -74,7 +74,10 @@ export default function Mention(props){
     const [Predicate,SetPredicate] = predicate
     const [Target,SetTarget] = target
     const [Labels, SetLabels] = labels
-
+    const [menuOpen, setMenuOpen] = useState(false);
+    const handleOpen = () => {
+        setMenuOpen(true);
+    };
     const [NewMention,SetNewMention] = newmention
     const [SourceConcepts,SetSourceConcepts] = sourceconcepts
     const [PredicateConcepts,SetPredicateConcepts] = predicateconcepts
@@ -140,6 +143,10 @@ export default function Mention(props){
     const [SelectedMention,SetSetSelectedMention] = useState(false)
 
     const [menuPosition, setMenuPosition] = useState(null);
+
+
+
+
 
 
     function setMentionCurFunction(){
@@ -231,6 +238,8 @@ export default function Mention(props){
                 if (!mouseMoved) {
                     console.log('Hai cliccato sul div!'); // Esegui l'azione solo se non si sta selezionando
                     handleClickTagAnno(event)
+                    handleEventMenu(event)
+
 
                 } else {
                     event.preventDefault(); // Previene l'azione di clic durante la selezione
@@ -522,6 +531,9 @@ export default function Mention(props){
         event.preventDefault();
         event.stopPropagation();
         if(!InARel){
+            setMenuOpen(
+                menuPosition === null,
+            );
             setMenuPosition(
                 menuPosition === null
                     ? {
@@ -802,7 +814,7 @@ export default function Mention(props){
 
 
     return (
-        <span className={'mentionpart'}>
+        <span className={'mentionpart'} >
             {ShowDeleteMetnionModal && <SelectMentionToDelete show={ShowDeleteMetnionModal} setshow={SetShowDeleteMetnionModal} mention={props.mention}
                                                            position={props.loc}/>}
             {ShowInfoModal && <InfoModal show={ShowInfoModal} setshow={SetShowInfoModal} mention={props.mention}
@@ -832,6 +844,7 @@ export default function Mention(props){
             }
 
 
+
             {CurAnnotator !== Username ? <span onClick={(e)=>{
                     if((e.altKey)) {
                         handleDelete(e)
@@ -853,6 +866,7 @@ export default function Mention(props){
                     </span>
                 </span> :
                 <span onContextMenu={handleContextMenu} onClick={(e)=>{
+                    console.log('clicked on span')
                     if((e.altKey)) {
                         handleDelete(e)
                     }else if((e.shiftKey)){
@@ -860,6 +874,10 @@ export default function Mention(props){
                     }else if (e.ctrlKey ) {
                         handleConcept(e)
                     }
+
+                  /*  if(contextMenu === null) {
+                        handleEventMenu(e)
+                    }*/
                 }
                 }>
 
@@ -876,24 +894,20 @@ export default function Mention(props){
 
                     <StyledMenu
                         id={id}
-                        open={menuPosition !== null && openTagAnno && Tags && View !== 4 && (AnnotationTypes.indexOf('Entity tagging') !== -1 || OpenMenuTags)}
+                        open={menuPosition !== null && View !== 4 && (AnnotationTypes.indexOf('Entity tagging') !== -1)}
+                        // open={contextMenu !== null && View !== 4}
                         onClose={handleClose}
-                        // elevation={0}
+                        onClick={(e)=>{
+                            e.stopPropagation();
+                            e.preventDefault()
+                        }}
+                        disableAutoFocusItem
                         anchorReference="anchorPosition"
                         anchorPosition={
                             menuPosition !== null
                                 ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
                                 : undefined
                         }
-                        // anchorOrigin={{
-                        //     vertical: 'bottom',
-                        //     horizontal: 'center',
-                        // }}
-                        // transformOrigin={{
-                        //     vertical: 'top',
-                        //     horizontal: 'center',
-                        // }}
-                        sx={{ marginTop: '20px' }} // Sposta il menu di 20px sopra
                     >
                         <div></div>
                         <div style={{padding:'5%'}}>
@@ -923,7 +937,11 @@ export default function Mention(props){
                                     <TextFieldsIcon fontSize="small"/>
                                 </CheckIcon>}
                                 {tag !== 'disease' ? tag : 'DDF'} </MenuItem>)}
-                            <TextField onKeyDown={handleKeyDownTag} id="newTagField" label="Tag"
+                            <TextField size={'small'} onKeyDown={handleKeyDownTag} id="newTagField" label="Tag"
+                                       onBlur={(event) => {
+                                           event.preventDefault(); // Previeni la perdita del focus
+                                       }}
+                                       onFocus={handleOpen}
                                        style={{margin: '1vw', width: '80%', display: 'flex', justifyContent: 'left'}}
                                        variant="outlined"/>
 
@@ -932,42 +950,7 @@ export default function Mention(props){
 
                     </StyledMenu>
 
-                    <StyledMenu
-                        id={id}
-                        open={menuPosition !== null && openPassAnno && View !== 4 && (AnnotationTypes.indexOf('Passages annotation') !== -1 || OpenMenuTags)}
-                        onClose={handleClose}
-                        // elevation={0}
-                        anchorReference="anchorPosition"
-                        anchorPosition={
-                            menuPosition !== null
-                                ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
-                                : undefined
-                        }
-                        /*anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'center',
-                        }}
-                        transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'center',
-                        }}*/
 
-                    >
-                        <div></div>
-                        <div style={{padding:'5%'}}>
-                            <h6>Select Passage labels</h6>
-                            {Labels['labels_passage'].map((o, i) =>
-                                <div>
-                                    {parseInt(Labels['values_passage'][i][1]) - parseInt(Labels['values_passage'][i][0]) + 1 > 5 ? <LabelSlider label={o} details = {Labels['details_passage'][i]} value={null} min={Labels['values_passage'][i][0]} max={Labels['values_passage'][i][1]} type_lab={'passage'}/> :
-                                        <LabelsRadio  label={o} details = {Labels['details_passage'][i]}  value={null} min={Labels['values_passage'][i][0]} max={Labels['values_passage'][i][1]} type_lab={'passage'}/> }
-
-                                </div>
-
-                            )}
-                        </div>
-
-
-                    </StyledMenu>
 
 
 
@@ -975,7 +958,6 @@ export default function Mention(props){
                     <StyledMenu
                         open={contextMenu !== null && View !== 4}
                         onClose={handleClose}
-                        // elevation={0}
                         anchorReference="anchorPosition"
                         anchorPosition={
                             contextMenu !== null
@@ -1107,3 +1089,42 @@ export default function Mention(props){
         </span>
     )
 }
+
+
+/*
+<StyledMenu
+    id={id}
+    open={menuPosition !== null && openPassAnno && View !== 4 && (AnnotationTypes.indexOf('Passages annotation') !== -1 || OpenMenuTags)}
+    onClose={handleClose}
+    // elevation={0}
+    anchorReference="anchorPosition"
+    anchorPosition={
+        menuPosition !== null
+            ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
+            : undefined
+    }
+    /!*anchorOrigin={{
+        vertical: 'bottom',
+        horizontal: 'center',
+    }}
+    transformOrigin={{
+        vertical: 'top',
+        horizontal: 'center',
+    }}*!/
+
+>
+    <div></div>
+    <div style={{padding:'5%'}}>
+        <h6>Select Passage labels</h6>
+        {Labels['labels_passage'].map((o, i) =>
+            <div>
+                {parseInt(Labels['values_passage'][i][1]) - parseInt(Labels['values_passage'][i][0]) + 1 > 5 ? <LabelSlider label={o} details = {Labels['details_passage'][i]} value={null} min={Labels['values_passage'][i][0]} max={Labels['values_passage'][i][1]} type_lab={'passage'} type_anno={'quick'}/> :
+                    <LabelsRadio  label={o} details = {Labels['details_passage'][i]}  value={null} min={Labels['values_passage'][i][0]} max={Labels['values_passage'][i][1]} type_lab={'passage'} type_anno={'quick'}/> }
+
+            </div>
+
+        )}
+    </div>
+
+
+</StyledMenu>*/

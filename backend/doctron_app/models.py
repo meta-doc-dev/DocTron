@@ -39,6 +39,7 @@ class Associate(models.Model):
     name_space = models.ForeignKey('NameSpace', models.DO_NOTHING, db_column='name_space')  # This field type is a guess.
     start = models.OneToOneField('Mention', models.DO_NOTHING, db_column='start',primary_key=True)
     stop = models.IntegerField()
+    comment = models.TextField()
     name = models.ForeignKey('SemanticArea', models.DO_NOTHING, db_column='name')
     insertion_time = models.TimeField()
     concept_url = models.ForeignKey('Concept', models.DO_NOTHING, db_column='concept_url')
@@ -53,6 +54,7 @@ class AssociateTag(models.Model):
 
     document_id = models.ForeignKey('Document', models.DO_NOTHING, db_column='document_id')
     language = models.TextField()
+    comment = models.TextField()
     username = models.ForeignKey('User', models.DO_NOTHING, db_column='username')
     name_space = models.ForeignKey('NameSpace', models.DO_NOTHING, db_column='name_space')  # This field type is a guess.
     start = models.OneToOneField('Mention', models.DO_NOTHING, db_column='start',primary_key=True)
@@ -492,6 +494,7 @@ class CreateFact(models.Model):
     subject_name = models.TextField()
     predicate_name = models.TextField()
     object_name = models.TextField()
+    comment = models.TextField()
     insertion_time = models.TimeField()
     class Meta:
         managed = False
@@ -673,13 +676,14 @@ class AnnotatePassage(models.Model):
                                    db_column='name_space')  # This field type is a guess.
     insertion_time = models.TimeField()
     grade = models.IntegerField()
-    name = models.ForeignKey(Label, models.DO_NOTHING, db_column='name')
+    comment = models.TextField()
+    label = models.ForeignKey(Label, models.DO_NOTHING, db_column='label')
     topic_id = models.ForeignKey(Topic, models.DO_NOTHING, db_column='topic_id')
 
     class Meta:
         managed = False
         db_table = 'annotate_passage'
-        unique_together = (('start', 'stop', 'document_id', 'language', 'username', 'name_space','name','topic_id'),)
+        unique_together = (('start', 'stop', 'document_id', 'language', 'username', 'name_space','label','topic_id'),)
 
 
 

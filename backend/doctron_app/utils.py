@@ -164,10 +164,17 @@ def generate_mentions_list(username,name_space,document,language,topic,gt=False)
         c += 1
         json_m['position'] = json_mention['position']
 
+        json_m['labels'] = {}
+        labels = CollectionHasLabel.objects.filter(collection_id = document.collection_id,passage_annotation = True)
+        for label in labels:
+            json_m['labels'][label.label_id] = None
+        annotations = AnnotatePassage.objects.filter(username = user,name_space = name_space,start = mention,stop = mention.stop)
+        for a in annotations:
+            json_m['labels'][a.label_id] = int(a.grade)
 
 
         json_m['time'] = str(annotation.insertion_time).split('.')[0:-1][0]
-        # json_mentions.append([testo,json_mention['start'],json_mention['stop'],json_mention['position']])
+
         json_mentions.append(json_m)
     return json_mentions
 
@@ -367,7 +374,7 @@ def generate_associations_list(username,name_space,document,language,topic,gt=Fa
     return json_mentions
 
 
-def delete_old_relationship(source_mention,predicate_mention,target_mention,source,target,predicate,collection,document,language,user,name_space):
+def delete_old_relationship(source_mention,predicate_mention,target_mention,source,target,predicate,collection,document,language,user,name_space,topic):
 
     """This method removes a specific relationship"""
 
@@ -389,7 +396,7 @@ def delete_old_relationship(source_mention,predicate_mention,target_mention,sour
         rel = Link.objects.filter(username=user, name_space=name_space, subject_document_id=document.document_id,
                                   subject_language=language, predicate_document_id=document.document_id,
                                   predicate_language=language, object_document_id=document.document_id,
-                                  object_language=language,
+                                  object_language=language,topic_id=topic,
                                   subject_start=source_mention.start, subject_stop=source_mention.stop,
                                   predicate_start=predicate_mention.start, predicate_stop=predicate_mention.stop,
                                   object_start=target_mention.start, object_stop=target_mention.stop)
@@ -421,7 +428,7 @@ def delete_old_relationship(source_mention,predicate_mention,target_mention,sour
 
         rel = RelationshipObjConcept.objects.filter(username=user, name_space=name_space,
                                                     subject_document_id=document.document_id,
-                                                    subject_language=language,
+                                                    subject_language=language,topic_id=topic,
                                                     predicate_document_id=document.document_id,
                                                     predicate_language=language,
                                                     subject_start=source_mention.start,
@@ -458,7 +465,7 @@ def delete_old_relationship(source_mention,predicate_mention,target_mention,sour
                                                      subject_document_id=document.document_id,
                                                      subject_language=language, object_language=language,
                                                      object_document_id=document.document_id,
-                                                     subject_start=source_mention.start,
+                                                     subject_start=source_mention.start,topic_id=topic,
                                                      subject_stop=source_mention.stop,
                                                      object_start=object_mention.start, object_stop=object_mention.stop,
                                                      concept_url=predicate_concept, name=predicate_area)
@@ -493,7 +500,7 @@ def delete_old_relationship(source_mention,predicate_mention,target_mention,sour
         rel = RelationshipSubjConcept.objects.filter(username=user, name_space=name_space,
                                                      predicate_document_id=document.document_id,
                                                      predicate_language=language, object_language=language,
-                                                     object_document_id=document.document_id,
+                                                     object_document_id=document.document_id,topic_id=topic,
                                                      predicate_start=predicate_mention.start,
                                                      predicate_stop=predicate_mention.stop,
                                                      object_start=object_mention.start, object_stop=object_mention.stop,
@@ -521,7 +528,7 @@ def delete_old_relationship(source_mention,predicate_mention,target_mention,sour
 
         rel = RelationshipObjMention.objects.filter(username=user, name_space=name_space, document_id=document,
                                                     language=language, start=object_mention, stop=object_mention.stop,
-                                                    subject_concept_url=subject_concept['concept_url'],
+                                                    subject_concept_url=subject_concept['concept_url'],topic_id=topic,
                                                     predicate_concept_url=predicate_concept['concept_url'], subject_name=subject_area,
                                                     predicate_name=predicate_area)
         if  rel.exists():
@@ -548,7 +555,7 @@ def delete_old_relationship(source_mention,predicate_mention,target_mention,sour
 
         rel = RelationshipPredMention.objects.filter(username=user, name_space=name_space, document_id=document,
                                                      language=language, start=predicate_mention,
-                                                     stop=predicate_mention.stop,
+                                                     stop=predicate_mention.stop,topic_id=topic,
                                                      subject_concept_url=subject_concept['concept_url'],
                                                      object_concept_url=object_concept['concept_url'],
                                                      subject_name=subject_area, object_name=object_area)
@@ -571,7 +578,7 @@ def delete_old_relationship(source_mention,predicate_mention,target_mention,sour
 
         rel = RelationshipSubjMention.objects.filter(username=user, name_space=name_space, document_id=document,
                                                      language=language, start=subject_mention,
-                                                     stop=subject_mention.stop,
+                                                     stop=subject_mention.stop,topic_id=topic,
                                                      predicate_concept_url=predicate_concept['concept_url'],
                                                      object_concept_url=object_concept['concept_url'],
                                                      predicate_name=predicate_area, object_name=object_area)
@@ -592,7 +599,7 @@ def delete_old_relationship(source_mention,predicate_mention,target_mention,sour
         insert_if_missing(object_concept, object_area, user, collection)
 
         rel = CreateFact.objects.filter(username=user, name_space=name_space, document_id=document,
-                                        language=language,
+                                        language=language,topic_id=topic,
                                         predicate_concept_url=predicate_concept['concept_url'],
                                         object_concept_url=object_concept['concept_url'],
                                         subject_concept_url=source_concept['concept_url'],
@@ -850,7 +857,7 @@ def transform_relationships_list1(json_mentions,document_id,username,name_space)
 
 
 
-def insert_new_relationship_if_exists(source_mention,predicate_mention,target_mention,source,target,predicate,collection,document,language,user,name_space):
+def insert_new_relationship_if_exists(source_mention,predicate_mention,target_mention,source,target,predicate,collection,document,language,user,name_space,topic):
 
     if source_mention['start'] is not None and source_mention['stop'] is not None and predicate_mention[
         'start'] is not None and predicate_mention['stop'] is not None and target_mention['start'] is not None and \
@@ -870,7 +877,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
         rel = Link.objects.filter(username=user, name_space=name_space, subject_document_id=document.document_id,
                                   subject_language=language, predicate_document_id=document.document_id,
                                   predicate_language=language, object_document_id=document.document_id,
-                                  object_language=language,
+                                  object_language=language,topic_id=topic,
                                   subject_start=source_mention.start, subject_stop=source_mention.stop,
                                   predicate_start=predicate_mention.start, predicate_stop=predicate_mention.stop,
                                   object_start=target_mention.start, object_stop=target_mention.stop)
@@ -879,7 +886,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
             Link.objects.create(username=user, name_space=name_space, subject_document_id=document.document_id,
                                 subject_language=language, object_document_id=document.document_id,
                                 object_language=language, predicate_document_id=document.document_id,
-                                predicate_language=language, insertion_time=Now(),
+                                predicate_language=language, insertion_time=Now(),topic_id=topic,
                                 subject_start=source_mention.start, subject_stop=source_mention.stop,
                                 predicate_start=predicate_mention.start, predicate_stop=predicate_mention.stop,
                                 object_start=target_mention.start, object_stop=target_mention.stop)
@@ -912,7 +919,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
                                                     subject_document_id=document.document_id,
                                                     subject_language=language,
                                                     predicate_document_id=document.document_id,
-                                                    predicate_language=language,
+                                                    predicate_language=language,topic_id=topic,
                                                     subject_start=source_mention.start,
                                                     subject_stop=source_mention.stop,
                                                     predicate_start=predicate_mention.start,
@@ -926,7 +933,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
                                                   predicate_document_id=document.document_id,
                                                   predicate_language=document.language,
                                                   subject_language=language, insertion_time=Now(),
-                                                  subject_start=source_mention.start,
+                                                  subject_start=source_mention.start,topic_id=topic,
                                                   subject_stop=source_mention.stop,
                                                   predicate_start=predicate_mention.start,
                                                   predicate_stop=predicate_mention.stop,
@@ -957,7 +964,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
         rel = RelationshipPredConcept.objects.filter(username=user, name_space=name_space,
                                                      subject_document_id=document.document_id,
                                                      subject_language=language, object_language=language,
-                                                     object_document_id=document.document_id,
+                                                     object_document_id=document.document_id,topic_id=topic,
                                                      subject_start=source_mention.start,
                                                      subject_stop=source_mention.stop,
                                                      object_start=object_mention.start, object_stop=object_mention.stop,
@@ -968,7 +975,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
             RelationshipPredConcept.objects.create(username=user, name_space=name_space,
                                                    subject_document_id=document.document_id,
                                                    subject_language=language, object_language=language,
-                                                   object_document_id=document.document_id,
+                                                   object_document_id=document.document_id,topic_id=topic,
                                                    subject_start=source_mention.start, insertion_time=Now(),
                                                    subject_stop=source_mention.stop,
                                                    object_start=object_mention.start, object_stop=object_mention.stop,
@@ -1000,7 +1007,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
         rel = RelationshipSubjConcept.objects.filter(username=user, name_space=name_space,
                                                      predicate_document_id=document.document_id,
                                                      predicate_language=language, object_language=language,
-                                                     object_document_id=document.document_id,
+                                                     object_document_id=document.document_id,topic_id=topic,
                                                      predicate_start=predicate_mention.start,
                                                      predicate_stop=predicate_mention.stop,
                                                      object_start=object_mention.start, object_stop=object_mention.stop,
@@ -1011,7 +1018,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
             RelationshipSubjConcept.objects.create(username=user, name_space=name_space,
                                                    predicate_document_id=document.document_id,
                                                    predicate_language=language, object_language=language,
-                                                   object_document_id=document.document_id,
+                                                   object_document_id=document.document_id,topic_id=topic,
                                                    predicate_start=predicate_mention.start,
                                                    predicate_stop=predicate_mention.stop, insertion_time=Now(),
                                                    object_start=object_mention.start, object_stop=object_mention.stop,
@@ -1037,14 +1044,14 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
 
         rel = RelationshipObjMention.objects.filter(username=user, name_space=name_space, document_id=document,
                                                     language=language, start=object_mention, stop=object_mention.stop,
-                                                    subject_concept_url=subject_concept,
+                                                    subject_concept_url=subject_concept,topic_id=topic,
                                                     predicate_concept_url=predicate_concept, subject_name=subject_area,
                                                     predicate_name=predicate_area)
         if not rel.exists():
             to_up = True
 
             RelationshipObjMention.objects.create(username=user, name_space=name_space, document_id=document,
-                                                  language=language, start=object_mention,
+                                                  language=language, start=object_mention,topic_id=topic,
                                                   stop=object_mention.stop, insertion_time=Now(),
                                                   subject_concept_url=subject_concept['concept_url'],
                                                   predicate_concept_url=predicate_concept['concept_url'],
@@ -1069,7 +1076,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
 
         rel = RelationshipPredMention.objects.filter(username=user, name_space=name_space, document_id=document,
                                                      language=language, start=predicate_mention,
-                                                     stop=predicate_mention.stop,
+                                                     stop=predicate_mention.stop,topic_id=topic,
                                                      subject_concept_url=subject_concept['concept_url'],
                                                      object_concept_url=object_concept['concept_url'],
                                                      subject_name=subject_area, object_name=object_area)
@@ -1077,7 +1084,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
             to_up = True
 
             RelationshipPredMention.objects.create(username=user, name_space=name_space, document_id=document,
-                                                   language=language, start=predicate_mention,
+                                                   language=language, start=predicate_mention,topic_id=topic,
                                                    stop=predicate_mention.stop, insertion_time=Now(),
                                                    subject_concept_url=subject_concept['concept_url'],
                                                    object_concept_url=object_concept['concept_url'],
@@ -1099,7 +1106,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
 
         rel = RelationshipSubjMention.objects.filter(username=user, name_space=name_space, document_id=document,
                                                      language=language, start=subject_mention,
-                                                     stop=subject_mention.stop,
+                                                     stop=subject_mention.stop,topic_id=topic,
                                                      predicate_concept_url=predicate_concept['concept_url'],
                                                      object_concept_url=object_concept['concept_url'],
                                                      predicate_name=predicate_area, object_name=object_area)
@@ -1107,7 +1114,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
             to_up = True
 
             RelationshipSubjMention.objects.create(username=user, name_space=name_space, document_id=document,
-                                                   language=language, start=subject_mention,
+                                                   language=language, start=subject_mention,topic_id=topic,
                                                    stop=subject_mention.stop, insertion_time=Now(),
                                                    predicate_concept_url=predicate_concept['concept_url'],
                                                    object_concept_url=object_concept['concept_url'],
@@ -1128,7 +1135,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
         insert_if_missing(object_concept, object_area, user, collection)
 
         rel = CreateFact.objects.filter(username=user, name_space=name_space, document_id=document,
-                                        language=language,
+                                        language=language,topic_id=topic,
                                         predicate_concept_url=predicate_concept['concept_url'],
                                         object_concept_url=object_concept['concept_url'],
                                         subject_concept_url=source_concept['concept_url'],
@@ -1138,7 +1145,7 @@ def insert_new_relationship_if_exists(source_mention,predicate_mention,target_me
             to_up = True
 
             CreateFact.objects.create(username=user, name_space=name_space, document_id=document,
-                                      language=language, insertion_time=Now(),
+                                      language=language, insertion_time=Now(),topic_id=topic,
                                       predicate_concept_url=predicate_concept['concept_url'],
                                       object_concept_url=object_concept['concept_url'],
                                       subject_concept_url=source_concept['concept_url'],
@@ -2034,7 +2041,7 @@ def generate_associations_list_splitted(username,name_space,document,language,to
     topic = Topic.objects.get(id=topic)
     user = User.objects.get(username=username, name_space=name_space)
     document = Document.objects.get(document_id=document, language=language)
-    annotations = Annotate.objects.filter(username=user, name_space=name_space, document_id=document,
+    annotations = Annotate.objects.filter(username=user, name_space=name_space, document_id=document,topic_id=topic,
                                           language=language).order_by('insertion_time')
     c = 0
 
@@ -2047,7 +2054,7 @@ def generate_associations_list_splitted(username,name_space,document,language,to
         if Associate.objects.filter(username=user,topic_id=topic, name_space=name_space, document_id=document,
                                             language=language, start = mention, stop = mention.stop).exists():
             annotations_concepts = Associate.objects.filter(username=user, name_space=name_space, document_id=document,
-                                            language=language, start = mention, stop = mention.stop)
+                                            language=language, topic_id=topic,start = mention, stop = mention.stop)
             for annotation in annotations_concepts:
                 json_m = {}
 

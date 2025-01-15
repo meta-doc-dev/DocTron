@@ -224,7 +224,7 @@ export default function DownloadDocument(props){
                     <MenuItem value={'concepts'}>Concepts</MenuItem>
                     <MenuItem value={'tags'}>Tags</MenuItem>
                     <MenuItem value={'relationships'}>Relationships</MenuItem>
-                    {FormatValue !== 'xml' && <MenuItem value={'assertions'}>Document assertions</MenuItem>}
+                    {FormatValue !== 'xml' && <MenuItem value={'assertions'}>Fact</MenuItem>}
                     {FormatValue !== 'xml' && <MenuItem value={'labels'}>Document labels</MenuItem>}
                     {FormatValue === 'json' && <MenuItem value={'all'}>All</MenuItem>}
 

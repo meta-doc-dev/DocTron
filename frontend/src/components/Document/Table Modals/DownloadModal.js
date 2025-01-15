@@ -137,7 +137,7 @@ export default function DownloadModal(props) {
                             <MenuItem style={{display:"block",padding:'6px 8px'}} value={'mentions'}>Mentions</MenuItem>
                             <MenuItem style={{display:"block",padding:'6px 8px'}} value={'concepts'}>Concepts</MenuItem>
                             <MenuItem style={{display:"block",padding:'6px 8px'}} value={'relationships'}>Relationships</MenuItem>
-                            <MenuItem style={{display:"block",padding:'6px 8px'}} value={'assertions'}>Document assertions</MenuItem>
+                            <MenuItem style={{display:"block",padding:'6px 8px'}} value={'assertions'}>Facts</MenuItem>
                             <MenuItem style={{display:"block",padding:'6px 8px'}} value={'labels'}>Document labels</MenuItem>
 
                         </Select></FormControl>

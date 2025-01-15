@@ -69,6 +69,9 @@ import DescriptionDialog from "./DescriptionDialog";
 export default function Concept(props){
     const { username,concepts,modality,inarel,documentdescription,areascolors,curannotator,mentions,relationshipslist,mentiontohighlight,startrange,endrange } = useContext(AppContext);
     const [RelationshipsList,SetRelationshipsList] = relationshipslist
+    const [Concept,SetConcept] = useState(false)
+    const [Comment,SetComment] = useState(false)
+    const [ShowComment,SetShowComment] = useState(false)
 
     const [ConceptsList,SetConceptsList] = concepts
     const [ShowDelete,SetShowDelete] = useState(false)
@@ -83,6 +86,43 @@ export default function Concept(props){
     const [Color,SetColor] = useState('rgba(65,105,225,1)')
     const [ColorOver,SetColorOver] = useState('rgba(65,105,225,0.7)')
     const [DocumentDesc,SetDocumentDesc] = documentdescription
+
+
+    useEffect(() => {
+        if(Concept){
+            if (props.mention && props.mention.mention_text) {
+                delete props.mention.mention_text;
+            }
+            axios.get('concepts/comment',{params:{concept:Concept,mention:props.mention}})
+                .then(response=>{
+
+                    SetComment(response.data['comment'] === '' ? false : response.data['comment'])
+                })
+        }else{
+            SetComment(false)
+            SetShowComment(false)
+        }
+
+
+
+
+    }, [Concept]);
+
+
+    function uploadComment(){
+        if(Concept){
+            var comment = document.getElementById("comment").value
+            axios.post('concepts/comment',{concept:Concept,comment:comment,mention:props.mention})
+                .then(response=>{
+
+                    SetShowComment(false)
+                    SetComment(false)
+                    SetConcept(false)
+                })
+        }
+
+
+    }
 
 
     const handleDelete = (event,i) => {
@@ -193,22 +233,40 @@ export default function Concept(props){
 
 
     return (
-        <div>
-            {((props.concepts && props.concepts.length === 1 && Color && ColorOver && !InARel)) &&
-                <div style={{textAlign:'center'}}>
+        <div style={{textAlign:'center'}}>
+            {((props.concepts && props.concepts.length >= 1 && Color && ColorOver && !InARel)) &&
+                <>{props.concepts.map(concept =>
+                    <span>
+
+                     {CurAnnotator === Username ?<CustomChip label={concept['concept'].concept_name}
+                                                             onDelete={()=>SetShowDelete(prev=>!prev)} onClick={(e) => {
+                             e.preventDefault()
+                             SetConcept(concept['concept'].concept_url)
+                             SetShowComment(prev => !prev)
+                         }}  /> :
+                         <CustomChip label={concept['concept'].concept_name}
+                                     onClick={(e) => {
+                                         e.preventDefault()
+                                         SetConcept(concept['concept'].concpet_url)
+                                         SetShowComment(prev => !prev)
+                                     }}  />}
+                    </span>
+                )
+                }</>}
+
+
+
+
+
+              {/*  <div style={{textAlign:'center'}}>
 
                     {CurAnnotator === Username ?<CustomChip label={props.concepts[0]['concept'].concept_name}
                             onDelete={()=>SetShowDelete(prev=>!prev)} onClick={()=>SetShowDescription(prev=>!prev)}  /> :
                     <CustomChip label={props.concepts[0]['concept'].concept_name}
                                  onClick={()=>SetShowDescription(prev=>!prev)}  />}
-            </div>}
-            {props.concepts && props.concepts.length > 1 &&  Color && ColorOver && !InARel &&
-            <div style={{textAlign:'center'}}>
-                <CustomChip label={props.concepts.length} color="primary" onClick={()=>SetShowMultiple(prev=>!prev)}
-                       />
-            </div>}
+            </div>}*/}
+
             {((props.concepts && props.concepts.length === 1 && Color && ColorOver && InARel)) &&
-            // <div className='concepts' >
             <div style={{textAlign:'center'}}>
 
                 <ChipRel role={props.role} variant = {(props.role.toLowerCase() === 'source' || props.role.toLowerCase() === 'predicate' || props.role.toLowerCase() === 'target') ? "filled":"outlined"} color={Color} label={props.concepts[0]['concept'].concept_name} />
@@ -219,54 +277,48 @@ export default function Concept(props){
             </div>}
 
 
-            {ShowDescription && <DescriptionDialog show={ShowDescription} setshow={SetShowDescription} area={props.concepts[0]['concept']['area']}  name={props.concepts[0]['concept']['concept_name']} url={props.concepts[0]['concept']['concept_url']} description={props.concepts[0]['concept']['concept_description']} />
-            // <Dialog
-            //     open={props.show}
-            //     onClose={()=>props.setshow(false)}
-            //     aria-labelledby="alert-dialog-title"
-            //     aria-describedby="alert-dialog-description"
-            //     maxWidth={'sm'}
-            //     fullWidth={'sm'}
-            // >
-            //     <DialogTitle id="alert-dialog-title">
-            //         <h2><i>{props.area}</i>: {props.name}</h2>
-            //     </DialogTitle>
-            //     <DialogContent>
-            //         <DialogContentText id="alert-dialog-description">
-            //             <div>
-            //
-            //                 <div style={{marginBottom:'3%'}}>
-            //                     <a href={props.url} > {props.url}</a>
-            //                 </div>
-            //                 {/*<b>Name</b>*/}
-            //                 {/*<div style={{marginBottom:'3%'}}>*/}
-            //                 {/*    {props.concepts[0]['concept'].concept_name}*/}
-            //                 {/*</div>*/}
-            //                 {/*<b>Description</b>*/}
-            //                 <div style={{marginBottom:'3%'}}>
-            //                     {props.description}
-            //                 </div>
-            //                 {/*<b>Concept Type</b>*/}
-            //                 {/*<div style={{marginBottom:'3%'}}>*/}
-            //                 {/*    {props.concepts[0]['concept'].area}*/}
-            //                 {/*</div>*/}
-            //
-            //
-            //             </div>
-            //
-            //         </DialogContentText>
-            //     </DialogContent>
-            //     <DialogActions>
-            //         <Button onClick={()=> {
-            //             SetShowDescription(false)
-            //         }}>Close</Button>
-            //
-            //     </DialogActions>
-            // </Dialog>
+{/*
+            {ShowDescription && <DescriptionDialog show={ShowDescription} setshow={SetShowDescription} area={props.concepts[0]['concept']['area']}  name={props.concepts[0]['concept']['concept_name']} url={props.concepts[0]['concept']['concept_url']} description={props.concepts[0]['concept']['concept_description']} />}
+*/}
 
 
+            {ShowComment &&   <Dialog
+                open={ShowComment}
+                onClose={(e)=> {
+                    e.preventDefault()
+                    SetShowComment(false)
+                    SetComment(false)
+                    SetConcept(false)
+                }}
+                maxWidth={'lg'}
+                sx={{width:'100%'}}
 
-            }
+
+            >
+                <DialogTitle>Leave a comment about your annotation</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+
+                    </DialogContentText>
+                    <div>
+                        <TextField           multiline
+                                             rows={4} id="comment" sx={{margin:'10px 0',width:'100%'}} label="Comment" variant="outlined" />
+
+                        {Comment && <><h5>Your comment:</h5>
+                            <div>{Comment}</div>
+                        </>}
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button        onClick={(e)=> {
+                        e.preventDefault()
+                        SetShowComment(false)
+                        SetComment(false)
+                        SetConcept(false)
+                    }}>Cancel</Button>
+                    <Button onClick={uploadComment}>Confirm</Button>
+                </DialogActions>
+            </Dialog>}
 
             {ShowDelete &&
             <Dialog

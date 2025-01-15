@@ -69,7 +69,7 @@ export default function SelectMentionToDelete(props) {
         e.stopPropagation()
         let v = e.target.value
         SetValue(parseInt(v))
-        SetSetSelectedMention(MentionsInvolved[value])
+        SetSetSelectedMention(MentionsInvolved[parseInt(v)])
 
     }
 

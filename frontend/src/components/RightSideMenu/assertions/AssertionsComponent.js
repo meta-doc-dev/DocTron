@@ -283,7 +283,7 @@ export default function AssertionsList(props){
     return(
         <div id='rightsiderelationshipsclass'>
             <h5>
-                Document Assertions
+                Facts
             </h5>
             {(NewFactInterno) ? <><RelationshipComponent /></> :
             <div>
