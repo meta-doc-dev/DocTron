@@ -61,9 +61,9 @@ export default function Collection(props) {
         users,
         collectionslist,
         collection,
-        document_id,
-        labels,
-        areascolors,
+        document_id,role,
+        annotationtype,
+        areascolors,topic,
         modality
     } = useContext(AppContext);
     const [ShowTransfer, SetShowTransfer] = useState(false)
@@ -76,6 +76,7 @@ export default function Collection(props) {
     const [OpenNewRoundDialog, SetOpenNewRoundDialog] = useState(false)
     const [OpenSplitCollection, SetOpenSplitCollection] = useState(false)
     const [Users, SetUsers] = users
+    const [Topic, SetTopic] = topic
     const [Profile, SetProfile] = profile
     const [MemberFrom, SetMemberFrom] = useState(false)
     const [MemberTo, SetMemberTo] = useState(false)
@@ -87,8 +88,8 @@ export default function Collection(props) {
     const [OpenAddMemberDialog, SetOpenAddMemberDialog] = useState(false)
     const [OpenAddLabelsDialog, SetOpenAddLabelsDialog] = useState(false)
     const [Members, SetMembers] = useState(props.collection.members)
-    const [Labels, SetLabels] = useState(props.collection.labels)
-    const [LabelsAll, SetLabelsAll] = labels
+    const [Labels, SetLabels] = useState(false)
+    const [Role, SetRole] = role
     const [CollectionDocuments, SetCollectionDocuments] = useState([])
     const [MembersToAdd, SetMembersToAdd] = useState([])
     const [MemberToDel, SetMemberToDel] = useState(false)
@@ -136,7 +137,7 @@ export default function Collection(props) {
     const [CollectionTags, SetCollectionTags] = useState([])
     const [CollectionAreas, SetCollectionAreas] = useState([])
     const [MembersToSplit, SetMembersToSplit] = useState([])
-    const [AnnotationTypes, SetAnnotationTypes] = useState([])
+    const [AnnotationType, SetAnnotationType] = useState(false)
     const [TopicsSplit,SetTopicsSplit] = useState(false);
     const [DocsSplit,SetDocsSplit] = useState(false);
 
@@ -153,13 +154,26 @@ export default function Collection(props) {
 
 
     useEffect(() => {
+        axios.get('collections/labels', {params: {collection: props.collection.id}})
+            .then(response => {
+                SetLabels(response.data)
+                // SetLabelsAll(response.data['labels'])
+            })
+            .catch(error => {
+                console.log('error', error)
+
+            })
+    }, [props.collection]);
+
+
+    useEffect(() => {
         SetInvitation(props.collection.status)
 
         if (props.collection) {
 
             var reviewers = []
             var admins = []
-            SetAnnotationTypes(props.collection.types)
+            SetAnnotationType(props.collection.annotation_type)
             props.collection.members.map(member => {
                 if (member.reviewer) {
                     reviewers.push(member.username)
@@ -349,6 +363,7 @@ export default function Collection(props) {
                 let collections = CollectionsList.map(x => x)
                 collections = collections.filter(x => x.id !== props.collection['id'])
                 SetCollectionsList(collections)
+                SetCollection(null)
                 handleCloseCollectionDialog()
             })
             .catch(error => {
@@ -588,7 +603,7 @@ export default function Collection(props) {
         if (UpdateLabels) {
             axios.get('collections/labels', {params: {collection: props.collection.id}})
                 .then(response => {
-                    SetLabels(response.data['labels'])
+                    SetLabels(response.data)
                     // SetLabelsAll(response.data['labels'])
                 })
                 .catch(error => {
@@ -764,7 +779,8 @@ export default function Collection(props) {
                 SetAreasColorsCollection(AreasColors)
                 SetDocumentID(rs.data['document_id'])
                 SetRedir(true)
-
+                SetRole("Annotator")
+                SetTopic(rs.data['topic'])
             })
 
     }
@@ -975,8 +991,8 @@ export default function Collection(props) {
                     <Collapse in={ShowCollectionDetails && AreasColors}>
                         <Typography variant="body2">
                             <hr/>
-                            <h6 style={{marginBottom: '1%', marginTop: '1%'}}>Annotation types: </h6>
-                            <div>
+                            <h6 style={{marginBottom: '1%', marginTop: '1%'}}>Template: {AnnotationType}</h6>
+                      {/*      <div>
                                 {['Labels annotation', 'Passages annotation', 'Entity linking', 'Entity tagging', 'Relationships annotation', 'Facts annotation'].map(annotation =>
                                     <Chip label={annotation} sx={{margin: '1%'}}
                                           disabled={props.collection.creator !== Username} onClick={(e) => {
@@ -989,11 +1005,11 @@ export default function Collection(props) {
                                             .then(response => {
                                                 SetAnnotationTypes(types)
                                             })
-                                    }} variant={AnnotationTypes.indexOf(annotation) !== -1 ? 'filled' : "outlined"}
+                                    }} variant={AnnotationType === annotation ? 'filled' : "outlined"}
                                           color={'info'}/>
                                 )}
 
-                            </div>
+                            </div>*/}
 
                             <h6 style={{marginBottom: '1%', marginTop: '1%'}}>Members: </h6>
                             <div>
@@ -1086,16 +1102,63 @@ export default function Collection(props) {
                             </div>
 
                             <hr/>
-                            <ThemeProvider theme={theme}>
+                            {Labels && <ThemeProvider theme={theme}>
                                 <h6 style={{marginBottom: '1%'}}>Labels </h6>
+                                {Labels['labels'].map((label, i) => <div>{label} - [{Labels['values'][i][0]}, {Labels['values'][i][1]}]</div>)}
                                 <Button size={'small'} onClick={() => SetAddLabel(prev => !prev)}>Add label</Button>
-                                {AddLabel && <div>
-                                    add
+                                {AddLabel && <Row>
+                                    <Col md={6}>
+                                        <TextField
+                                            placeholder="Label"
+                                            variant='outlined'
+                                            size={'small'}
+                                            id={`label_0`}
+                                            rows={1}
+                                            sx={{width: '100%', marginTop: '15px'}}
 
-                                </div>}
-                            </ThemeProvider>
+                                        />
+                                    </Col>
+                                    <Col md={2}>
+                                        <TextField
+                                            placeholder="Min"
+                                            variant='outlined'
+                                            id={`min_0`}
+                                            type="number"
+                                            size={'small'}
+                                            rows={1}
+                                            sx={{width: '100%', marginTop: '15px'}}
+
+                                        />
+                                    </Col>
+                                    <Col md={2}>
+                                        <TextField
+                                            placeholder="Max"
+                                            size={'small'}
+                                            variant='outlined'
+                                            id={`max_0`}
+                                            type="number"
+                                            rows={1}
+                                            sx={{width: '100%', marginTop: '15px'}}
+                                        />
+                                    </Col>
+                                    <Col md={2}><Button sx={{marginTop:'15px'}}  onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        axios.post('collections/add_labels', {
+                                            collection: props.collection.id,
+                                            label: document.getElementById("label_0").value,
+                                            min: document.getElementById("min_0").value,
+                                            max: document.getElementById("max_0").value
+                                        })
+                                            .then(response => {
+                                                SetLabels(response.data);
+                                                SetAddLabel(false)
+                                            })
+                                    }}>Add</Button></Col>
+                                </Row>}
+                            </ThemeProvider>}
                             <hr/>
-                            {AnnotationTypes.indexOf() !== -1 && <ThemeProvider theme={theme}>
+                            {AnnotationType === 'Entity tagging' && <ThemeProvider theme={theme}>
                                 <h6 style={{marginBottom: '1%'}}>Tags: </h6>
                                 <div>
                                     {CollectionTags.map((m, i) =>
@@ -1158,7 +1221,7 @@ export default function Collection(props) {
                     </Collapse>
                 </CardContent>
                 <CardActions>
-                    {Invitation !== 'Invited' ? <>
+                    {Invitation !== 'invited' ? <>
                         <Button size="small" style={{marginRight: '1%'}}
                                 onClick={() => SetShowCollectionDetails(prev => !prev)}>More</Button>
                         {(Username === props.collection.creator || Admins.indexOf(Username) !== -1) &&

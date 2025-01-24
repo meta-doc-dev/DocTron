@@ -37,7 +37,7 @@ export default function LabelsClass(props) {
         document_id,
         labels,
         modality,
-        annotationtypes,
+        annotationtype,
         snackmessage,
         opensnack,
         curannotator,
@@ -46,7 +46,6 @@ export default function LabelsClass(props) {
         labelstosave,
         annotatedlabels
     } = useContext(AppContext);
-    const [ShowList, SetShowList] = useState(true)
     const [Labels, SetLabels] = labels
     const [NotAdded, SetNotAdded] = useState([])
     const [AnnotatedLabels, SetAnnotatedLabels] = annotatedlabels
@@ -57,7 +56,9 @@ export default function LabelsClass(props) {
     const [OpenSnack, SetOpenSnack] = opensnack
     const [Modality, SetModality] = modality
     const [View, SetView] = view
-    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+    const [InARel, SetInARel] = inarel
+    const [AnnotationType, SetAnnotationType] = annotationtype
+    const [ShowList, SetShowList] = useState(AnnotationType === 'Graded labeling')
 
 
 
@@ -88,13 +89,12 @@ export default function LabelsClass(props) {
     });
 
     return (
-        <div style={{margin:'10px 0px'}}>
+        <div>
 
-            <Button disabled={View === 4} onClick={() => SetShowList(prev => !prev)} variant="text">Document
-                Labels</Button>
-            <Collapse in={ShowList}>
+            <Button disabled={View === 4 || InARel} onClick={() => SetShowList(prev => !prev)} variant="text">Labels</Button>
+            <Collapse in={ShowList && !InARel}>
                 <div>Click on the slider to set the grade for each label</div>
-                <div>
+                <div style={{fontSize:'1rem'}}>
                     {AnnotatedLabels ? <ThemeProvider theme={labelstheme}>
                         {Labels['labels'].map((o, i) =>
                                 <div>

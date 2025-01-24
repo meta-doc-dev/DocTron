@@ -1165,8 +1165,8 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
     #                                         language=language)
     link_annotations = Link.objects.filter(username=user,topic_id=topic, name_space=name_space, subject_document_id=document.document_id,
                                           subject_language=language).order_by('insertion_time')
-    facts_annotations = CreateFact.objects.filter(username=user,topic_id=topic, name_space=name_space, document_id=document,
-                                          language=language).order_by('insertion_time')
+    # facts_annotations = CreateFact.objects.filter(username=user,topic_id=topic, name_space=name_space, document_id=document,
+    #                                       language=language).order_by('insertion_time')
     objment_annotations = RelationshipObjMention.objects.filter(username=user,topic_id=topic, name_space=name_space, document_id=document,
                                           language=language).order_by('insertion_time')
     subjment_annotations = RelationshipSubjMention.objects.filter(username=user,topic_id=topic, name_space=name_space, document_id=document,
@@ -1234,10 +1234,11 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
         json_m['subject']['mention']['stop'] = mention_source.stop
         json_m['predicate']['mention']['stop'] = mention_predicate.stop
         json_m['object']['mention']['stop'] = mention_target.stop
-
         json_mention_source = return_start_stop_for_frontend(mention_source.start, mention_source.stop, document.document_content)
         json_mention_predicate = return_start_stop_for_frontend(mention_predicate.start, mention_predicate.stop, document.document_content)
         json_mention_target = return_start_stop_for_frontend(mention_target.start, mention_target.stop, document.document_content)
+
+
 
         if gt == False:
             json_m['subject']['mention']['start'] = json_mention_source['start']
@@ -1269,6 +1270,7 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
             json_m['subject']['concept']['concept_description'] = concepts_source.first().description
             json_m['subject']['concept']['concept_area'] = concepts_source.first().name_id
             source_txt = concepts_source.first().concept_name
+
         if concepts_target.exists():
             json_m['object']['concept']['concept_url'] = concepts_target.first().concept_url_id
             json_m['object']['concept']['concept_name'] = concepts_target.first().concept_name
@@ -1305,56 +1307,56 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
         json_mentions.append(json_m)
         c += 1
 
-    for annotation_mention in facts_annotations:
-        json_m = {}
-        json_m['start'] = -1
-        json_m['subject'] = {}
-        json_m['subject']['mention'] = {}
-        json_m['subject']['concept'] = {}
-        json_m['subject']['tag'] = {}
-        json_m['predicate'] = {}
-        json_m['predicate']['mention'] = {}
-        json_m['predicate']['concept'] = {}
-        json_m['predicate']['tag'] = {}
-        json_m['object'] = {}
-        json_m['object']['mention'] = {}
-        json_m['object']['concept'] = {}
-        json_m['object']['tag'] = {}
-
-        concept_predicate = Concept.objects.get(concept_url=annotation_mention.predicate_concept_url)
-        predicate_area = SemanticArea.objects.get(name=annotation_mention.predicate_name)
-        concept_subject = Concept.objects.get(concept_url=annotation_mention.subject_concept_url)
-        subject_area = SemanticArea.objects.get(name=annotation_mention.subject_name)
-        concept_target = Concept.objects.get(concept_url=annotation_mention.object_concept_url)
-        target_area = SemanticArea.objects.get(name=annotation_mention.object_name)
-        count_rel = CreateFact.objects.filter(document_id=annotation_mention.document_id, language = annotation_mention.language,
-                                              subject_concept_url = annotation_mention.subject_concept_url,predicate_concept_url = annotation_mention.predicate_concept_url,
-                                              object_concept_url = annotation_mention.object_concept_url,subject_name=annotation_mention.subject_name,predicate_name = annotation_mention.predicate_name,
-                                              object_name=annotation_mention.object_name).count()
-        json_m['subject']['concept'] = {}
-        json_m['subject']['concept']['concept_url'] = concept_subject.concept_url
-        json_m['subject']['concept']['concept_name'] = concept_subject.concept_name
-        json_m['subject']['concept']['concept_description'] = concept_subject.description
-        json_m['subject']['concept']['concept_area'] = subject_area.name
-        json_m['predicate']['concept'] = {}
-        json_m['predicate']['concept']['concept_url'] = concept_predicate.concept_url
-        json_m['predicate']['concept']['concept_name'] = concept_predicate.concept_name
-        json_m['predicate']['concept']['concept_description'] = concept_predicate.description
-        json_m['predicate']['concept']['concept_area'] = predicate_area.name
-        json_m['object']['concept'] = {}
-        json_m['object']['concept']['concept_url'] = concept_target.concept_url
-        json_m['object']['concept']['concept_name'] = concept_target.concept_name
-        json_m['object']['concept']['concept_description'] = concept_target.description
-        json_m['object']['concept']['concept_area'] = target_area.name
-
-        json_m['text'] = f'{concept_subject.concept_name} - {concept_predicate.concept_name} - {concept_target.concept_name}'
-
-        json_m['time'] = str(annotation_mention.insertion_time).split('.')[0:-1]
-        json_m['count'] = count_rel
-
-        # json_mentions.append([testo,json_mention['start'],json_mention['stop'],json_mention['position']])
-        json_mentions.append(json_m)
-        c += 1
+    # for annotation_mention in facts_annotations:
+    #     json_m = {}
+    #     json_m['start'] = -1
+    #     json_m['subject'] = {}
+    #     json_m['subject']['mention'] = {}
+    #     json_m['subject']['concept'] = {}
+    #     json_m['subject']['tag'] = {}
+    #     json_m['predicate'] = {}
+    #     json_m['predicate']['mention'] = {}
+    #     json_m['predicate']['concept'] = {}
+    #     json_m['predicate']['tag'] = {}
+    #     json_m['object'] = {}
+    #     json_m['object']['mention'] = {}
+    #     json_m['object']['concept'] = {}
+    #     json_m['object']['tag'] = {}
+    #
+    #     concept_predicate = Concept.objects.get(concept_url=annotation_mention.predicate_concept_url)
+    #     predicate_area = SemanticArea.objects.get(name=annotation_mention.predicate_name)
+    #     concept_subject = Concept.objects.get(concept_url=annotation_mention.subject_concept_url)
+    #     subject_area = SemanticArea.objects.get(name=annotation_mention.subject_name)
+    #     concept_target = Concept.objects.get(concept_url=annotation_mention.object_concept_url)
+    #     target_area = SemanticArea.objects.get(name=annotation_mention.object_name)
+    #     count_rel = CreateFact.objects.filter(document_id=annotation_mention.document_id, language = annotation_mention.language,
+    #                                           subject_concept_url = annotation_mention.subject_concept_url,predicate_concept_url = annotation_mention.predicate_concept_url,
+    #                                           object_concept_url = annotation_mention.object_concept_url,subject_name=annotation_mention.subject_name,predicate_name = annotation_mention.predicate_name,
+    #                                           object_name=annotation_mention.object_name).count()
+    #     json_m['subject']['concept'] = {}
+    #     json_m['subject']['concept']['concept_url'] = concept_subject.concept_url
+    #     json_m['subject']['concept']['concept_name'] = concept_subject.concept_name
+    #     json_m['subject']['concept']['concept_description'] = concept_subject.description
+    #     json_m['subject']['concept']['concept_area'] = subject_area.name
+    #     json_m['predicate']['concept'] = {}
+    #     json_m['predicate']['concept']['concept_url'] = concept_predicate.concept_url
+    #     json_m['predicate']['concept']['concept_name'] = concept_predicate.concept_name
+    #     json_m['predicate']['concept']['concept_description'] = concept_predicate.description
+    #     json_m['predicate']['concept']['concept_area'] = predicate_area.name
+    #     json_m['object']['concept'] = {}
+    #     json_m['object']['concept']['concept_url'] = concept_target.concept_url
+    #     json_m['object']['concept']['concept_name'] = concept_target.concept_name
+    #     json_m['object']['concept']['concept_description'] = concept_target.description
+    #     json_m['object']['concept']['concept_area'] = target_area.name
+    #
+    #     json_m['text'] = f'{concept_subject.concept_name} - {concept_predicate.concept_name} - {concept_target.concept_name}'
+    #
+    #     json_m['time'] = str(annotation_mention.insertion_time).split('.')[0:-1]
+    #     json_m['count'] = count_rel
+    #
+    #     # json_mentions.append([testo,json_mention['start'],json_mention['stop'],json_mention['position']])
+    #     json_mentions.append(json_m)
+    #     c += 1
 
     # MENTION MENTION CONCETTO
     c = 0
@@ -1437,7 +1439,7 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
 
         if tags_predicate.exists():
             json_m['predicate']['tag'] = tags_predicate.first().name_id
-            predicate_txt = json_m['predicate']['concept']['concept_name']
+            predicate_txt = json_m['predicate']['tag']
 
         if tags_source.exists():
             json_m['subject']['tag'] = tags_source.first().name_id
@@ -1599,7 +1601,7 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
         json_m['object']['mention']['start'] = mention_target.start
         json_m['predicate']['mention']['stop'] = mention_predicate.stop
         json_m['object']['mention']['stop'] = mention_target.stop
-
+        json_m['start'] = mention_predicate.start
 
         json_mention_predicate = return_start_stop_for_frontend(mention_predicate.start, mention_predicate.stop,
                                                                 document.document_content)
@@ -1687,7 +1689,7 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
         json_m['object']['mention']['mention_text'] = testo_target
         json_m['object']['mention']['start'] = mention_target.start
         json_m['object']['mention']['stop'] = mention_target.stop
-
+        json_m['start'] = mention_target.start
         json_mention_target = return_start_stop_for_frontend(mention_target.start, mention_target.stop,
                                                              document.document_content)
 
@@ -1758,6 +1760,7 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
         json_m['object']['mention'] = {}
         json_m['object']['concept'] = {}
         json_m['object']['tag'] = {}
+        json_m['start'] = -1
 
         mention_predicate = Mention.objects.get(document_id=document, start=annotation_mention.start_id,
                                              stop=annotation_mention.stop, language=language)
@@ -1766,7 +1769,7 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
         concepts_predicate = Associate.objects.filter(username=user,topic_id=topic, name_space=name_space, document_id=document,
                                                    start=mention_predicate, stop=mention_predicate.stop)
         # mention = annotation.start
-
+        json_m['start'] = mention_predicate.start
         testo_target = mention_predicate.mention_text
         json_m['predicate']['mention']['mention_text'] = testo_target
         json_m['predicate']['mention']['start'] = mention_predicate.start
@@ -1907,35 +1910,40 @@ def generate_relationships_list(username,name_space,document,language,topic,gt=F
         c += 1
     json_mentions = sorted(json_mentions, key=lambda k: k['start'], reverse=False)
 
-
-
     return json_mentions
 
 
 
-def generate_assertions_list(username,name_space,document,language):
-    # CONCETTO CONCETTO CONCETTO
+def generate_assertions_list(username,name_space,document,language,topic,gt=False):
 
+    """This view returns the list of metnions annotated by a user for a document"""
+
+    json_mentions = []
     name_space = NameSpace.objects.get(name_space=name_space)
+    topic = Topic.objects.get(id=topic)
     user = User.objects.get(username=username, name_space=name_space)
     document = Document.objects.get(document_id=document, language=language)
 
-    facts_annotations = CreateFact.objects.filter(username=user, name_space=name_space, document_id=document,
+    facts_annotations = CreateFact.objects.filter(username=user,topic_id=topic, name_space=name_space, document_id=document,
                                           language=language).order_by('insertion_time')
-    json_assertions = []
-    c = 0
+
+
+
     for annotation_mention in facts_annotations:
         json_m = {}
+        json_m['start'] = -1
         json_m['subject'] = {}
         json_m['subject']['mention'] = {}
         json_m['subject']['concept'] = {}
+        json_m['subject']['tag'] = {}
         json_m['predicate'] = {}
         json_m['predicate']['mention'] = {}
         json_m['predicate']['concept'] = {}
+        json_m['predicate']['tag'] = {}
         json_m['object'] = {}
         json_m['object']['mention'] = {}
         json_m['object']['concept'] = {}
-
+        json_m['object']['tag'] = {}
 
         concept_predicate = Concept.objects.get(concept_url=annotation_mention.predicate_concept_url)
         predicate_area = SemanticArea.objects.get(name=annotation_mention.predicate_name)
@@ -1943,7 +1951,10 @@ def generate_assertions_list(username,name_space,document,language):
         subject_area = SemanticArea.objects.get(name=annotation_mention.subject_name)
         concept_target = Concept.objects.get(concept_url=annotation_mention.object_concept_url)
         target_area = SemanticArea.objects.get(name=annotation_mention.object_name)
-
+        count_rel = CreateFact.objects.filter(document_id=annotation_mention.document_id, language = annotation_mention.language,
+                                              subject_concept_url = annotation_mention.subject_concept_url,predicate_concept_url = annotation_mention.predicate_concept_url,
+                                              object_concept_url = annotation_mention.object_concept_url,subject_name=annotation_mention.subject_name,predicate_name = annotation_mention.predicate_name,
+                                              object_name=annotation_mention.object_name).count()
         json_m['subject']['concept'] = {}
         json_m['subject']['concept']['concept_url'] = concept_subject.concept_url
         json_m['subject']['concept']['concept_name'] = concept_subject.concept_name
@@ -1959,20 +1970,25 @@ def generate_assertions_list(username,name_space,document,language):
         json_m['object']['concept']['concept_name'] = concept_target.concept_name
         json_m['object']['concept']['concept_description'] = concept_target.description
         json_m['object']['concept']['concept_area'] = target_area.name
-        json_m['count'] = CreateFact.objects.filter(document_id=document,
-                                          language=language,predicate_concept_url = annotation_mention.predicate_concept_url,
-                                                    object_concept_url=annotation_mention.object_concept_url,subject_concept_url=annotation_mention.subject_concept_url,
-                                                    object_name = annotation_mention.object_name,subject_name=annotation_mention.subject_name,
-                                                    predicate_name = annotation_mention.predicate_name).count()
-        json_m['time'] = str(annotation_mention.insertion_time).split('.')[0:-1]
 
-        # print(timezone.now().date(),type(timezone.now()))
-        # print(annotation_mention.insertion_time.date(),type(annotation_mention.insertion_time))
-        # print(timezone.now().date() == annotation_mention.insertion_time.date())
+        json_m['text'] = f'{concept_subject.concept_name} - {concept_predicate.concept_name} - {concept_target.concept_name}'
+
+        json_m['time'] = str(annotation_mention.insertion_time).split('.')[0:-1]
+        json_m['count'] = count_rel
+
         # json_mentions.append([testo,json_mention['start'],json_mention['stop'],json_mention['position']])
-        json_assertions.append(json_m)
-        c += 1
-    return json_assertions
+        json_mentions.append(json_m)
+
+
+
+    json_mentions = sorted(json_mentions, key=lambda k: k['start'], reverse=False)
+
+
+
+    return json_mentions
+
+
+
 
 
 def generate_tag_list_splitted(username,name_space,document,language,topic):

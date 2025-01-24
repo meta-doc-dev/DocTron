@@ -53,6 +53,8 @@ import ShowTypes from "./components/SideBar/ShowTypes";
 import RolesComponent from "./components/SideBar/RolesComponent";
 import ChangeTopic from "./components/SideBar/ChangeTopic";
 import CreateFact from "./components/Document/ToolBar/CreateFactComponent";
+import DocumentImage from "./components/Document/DocumentImage";
+import DocumentImageSelect from "./components/Document/DocumentImageSelect";
 
 export const ConceptContext = createContext('')
 export const RelSearchContext = createContext('')
@@ -135,13 +137,17 @@ function BaseIndex() {
         annotation,
         mentions,
         document_id,
-        concepts
+        concepts,topicType,
+        collType
     } = useContext(AppContext);
     const [UsersList, SetUsersList] = users
+
     const [CurMention, SetCurMention] = curmention;
     const [ShowFacts, SetShowFacts] = showfactspannel
     const [Start, SetStart] = startrange
     const [End, SetEnd] = endrange
+    const [CollectionType,SetCollectionType] = collType
+    const [TopicType,SetTopicType] = topicType
     const [Annotation, SetAnnotation] = annotation
     const [Relationship, SetRelationship] = relationship
     const [ShowRoles, SetShowRoles] = showroles
@@ -232,15 +238,50 @@ function BaseIndex() {
     const [ColDx, SetColDx] = useState(0)
     const [ColDoc, SetColDoc] = useState(9)
 
-    const [MentionsList, SetMentionsList] = mentions
-    const [ConceptsList, SetConceptsList] = concepts
-    const [RelationshipsList, SetRelationshipsList] = relationshipslist
+
 
     useEffect(() => {
         if (!InARel) {
             SetBinaryRel(false)
+            SetNewRelation(false)
+            SetExpand(false)
         }
+
+
     }, [InARel])
+
+    useEffect(() => {
+        if (!NewRelation) {
+            SetShowAnnoTypes(true)
+            SetNewRelation(false)
+            SetExpand(false)
+            SetNewFact(false)
+        }
+
+
+    }, [NewRelation])
+
+    useEffect(()=>{
+        if(NewRelation){
+            SetExpand(true)
+            SetShowAnnoTypes(false)
+        }else{
+            SetExpand(false)
+            SetShowAnnoTypes(true)
+        }
+    },[NewRelation])
+
+
+    useEffect(()=>{
+        if(Modify){
+            SetShowAnnoTypes(false)
+            SetExpand(true)
+        }else{
+            SetShowAnnoTypes(true)
+            SetExpand(false)
+        }
+    },[Modify])
+
     const [state, setState] = React.useState({
         vertical: 'top',
         horizontal: 'right',
@@ -408,7 +449,7 @@ function BaseIndex() {
     }, [Expand])
 
     useEffect(() => {
-        if (Expand && (ShowSettings || ShowAnnoTypes || ShowDocs || ShowTopics || ShowAutoAnno || ShowRoles || ShowDownload || ShowCollections || ShowUpload || ShowStats || ShowMembers || ShowFilter || ShowView || NewFact) && (!ShowLabels && !ShowMentions && !ShowConcepts && !ShowTags && !ShowRels && !ShowFacts)) {
+        if (Expand && (Modify || ShowSettings || ShowAnnoTypes || ShowDocs || ShowTopics || ShowAutoAnno || ShowRoles || ShowDownload || ShowCollections || ShowUpload || ShowStats || ShowMembers || ShowFilter || ShowView || NewRelation || NewFact) && (!ShowLabels && !ShowMentions && !ShowConcepts && !ShowTags && !ShowRels && !ShowFacts)) {
             let element = document.getElementById('left-side-bar')
             if (element) {
 
@@ -421,7 +462,7 @@ function BaseIndex() {
                 element.classList.remove('active')
             }
         }
-    }, [Expand,NewFact, ShowSettings, ShowDocs, ShowTopics, ShowAnnoTypes, ShowRoles, ShowAutoAnno, ShowDownload, ShowUpload, ShowStats, ShowMembers, ShowFilter, ShowView, ShowCollections, ShowLabels, ShowMentions, ShowRels, ShowFacts, ShowTags, ShowConcepts])
+    }, [Expand, NewRelation, NewFact, ShowSettings, ShowDocs, ShowTopics, ShowAnnoTypes, ShowRoles, ShowAutoAnno, ShowDownload, ShowUpload, ShowStats, ShowMembers, ShowFilter, ShowView, ShowCollections, ShowLabels, ShowMentions, ShowRels, ShowFacts, ShowTags, Modify, ShowConcepts])
 
 
     /*
@@ -517,6 +558,9 @@ function BaseIndex() {
 
     }, [CurAnnotator])
 
+
+
+
     useEffect(() => {
         if (NewFact) {
             SetShowConcepts(false)
@@ -606,7 +650,7 @@ function BaseIndex() {
 
                             DeleteRange(SetStart, SetEnd, SetFirstSelected, SetSecondSelected, SetCurrentDiv)
                         }}>
-                            {(ShowAnnoTypes || InARel || !(ShowAutoAnno || ShowTopics || ShowUpload || ShowDownload || ShowSettings || ShowRoles || ShowFilter || ShowView || ShowDocs || ShowMembers || ShowRels || ShowCollections || NewFact)) &&
+                            {(ShowAnnoTypes || (InARel && !NewRelation) || !( ShowAutoAnno || ShowTopics || ShowUpload || ShowDownload || ShowSettings || ShowRoles || ShowFilter || ShowView || ShowDocs || ShowMembers || ShowRels || ShowCollections || NewFact || Modify || NewRelation)) &&
                                 <div className={'foo-enter-active'}><ShowTypes/></div>}
 
                             {/*{<Col md={(!ShowLabels && !ShowMentions && !ShowConcepts && !ShowRels && !ShowFacts && !InARel && !NewFact  ) ? 2 : 1}>*/}
@@ -621,7 +665,7 @@ function BaseIndex() {
                                                onExited={(e) => {
                                                    SetClickedSideBut(false)
                                                }}>
-                                    <>{(!InARel && !ShowLabels && !ShowConcepts && !ShowMentions && !ShowRels && !ShowFacts ) &&
+                                    <>{((!InARel || NewRelation) && !ShowLabels && !ShowConcepts && !ShowMentions && !ShowRels && !ShowFacts ) &&
                                         <div id='left-side-bar'>
                                             {ClickedSideBut && ShowStats && <><SummaryStatsComponent/></>}
                                             {/*// I cannot show Members in Competitive modality}*/}
@@ -640,7 +684,7 @@ function BaseIndex() {
                                             {ClickedSideBut && ShowUpload && <><UploadDocument/></>}
                                             {ClickedSideBut && ShowAutoAnno && <><AutomaticAnnotation/></>}
                                             {ClickedSideBut && ShowAnnoTypes && <><ShowTypes/></>}
-                                            {ClickedSideBut && NewFact && <><RelationshipComponent /> </>}
+                                            {ClickedSideBut && (NewFact || Modify || NewRelation ) && <><RelationshipComponent /> </>}
 
 
                                         </div>}
@@ -658,12 +702,12 @@ function BaseIndex() {
 
                         <Col md={ColDoc}>
 
-                            {/*<Paper elevation={2} className='paper'>*/}
                             {(Collection && Collection !== '') ? <div style={{padding: '1%', textAlign: 'justify'}}>
                                     <DocumentToolBar key={DisplayDocuments} documentList={DisplayDocuments}/>
-                                    <TopicInfo/>
-                                    <Document/>
 
+                                    {TopicType === 'Textual' && <TopicInfo/>}
+                                    {CollectionType === 'Textual' && <Document />}
+                                    {CollectionType === 'Image' && <DocumentImageSelect/>}
                                     {/*{document_comp}*/}
                                 </div> :
                                 <div>

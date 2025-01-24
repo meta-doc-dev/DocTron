@@ -39,7 +39,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 
 export default function AddCollectionForm() {
     const {addcollection, updatecollection} = useContext(CollectionContext);
-    const {users, task, username, snackmessage, opensnack} = useContext(AppContext);
+    const {users, annotationtypes,annotationtype, username, snackmessage, opensnack} = useContext(AppContext);
     const [SnackMessage, SetSnackMessage] = snackmessage;
     const [OpenSnack, SetOpenSnack] = opensnack
     const [AddCollection, SetAddCollection] = addcollection
@@ -70,14 +70,16 @@ export default function AddCollectionForm() {
     const [AddLabelPassage, SetAddLabelPassage] = useState([1, 2, 3])
     const [AddTag, SetAddTag] = useState([1, 2, 3])
     const [AddMember, SetAddMember] = useState([1, 2, 3])
-    const [AnnotationTypes, SetAnnotationTypes] = useState([])
-    const [Task, SetTask] = task
+    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+    const [AnnotationType, SetAnnotationType] = annotationtype
+
+    //const [Task, SetTask] = task
     const [isChecked, SetisChecked] = useState(false)
     const [isCheckedQ, SetisCheckedQ] = useState(false)
     const [IRDataset, SetIRDataset] = useState("")
-    const [AllTypes] = useState(['Entity tagging', 'Labels annotation', 'Passages annotation', 'Entity linking', 'Relationships annotation', 'Facts annotation'])
+    //const [AllTypes] = useState(['Entity tagging', 'Labels annotation', 'Passages annotation', 'Entity linking', 'Relationships annotation', 'Facts annotation'])
 
-    useEffect(() => {
+/*    useEffect(() => {
         var types = []
         if (Task === 'Deep learning') {
             types = ['Labels annotation']
@@ -97,7 +99,7 @@ export default function AddCollectionForm() {
         }
         SetAnnotationTypes(types)
 
-    }, [Task])
+    }, [Task])*/
 
 
     const handleChangeDesc = (event) => {
@@ -159,14 +161,11 @@ export default function AddCollectionForm() {
             var files = []
             if (input.files[0] !== undefined || input.files[0] !== null) {
                 for (let ind = 0; ind < input.files.length; ind++) {
-                    if (input.files[ind].name.endsWith('csv') || input.files[ind].name.endsWith('json') || input.files[ind].name.endsWith('txt') || input.files[ind].name.endsWith('pdf')) {
+                    if (input.files[ind].name.endsWith('csv') || input.files[ind].name.endsWith('json') || input.files[ind].name.endsWith('txt') || input.files[ind].name.endsWith('pdf') || input.files[ind].name.toLowerCase().endsWith('jpg') || input.files[ind].name.toLowerCase().endsWith('jpeg') || input.files[ind].name.toLowerCase().endsWith('png') || input.files[ind].name.toLowerCase().endsWith('pdf')) {
                         files.push(input.files[ind])
-
                     }
                 }
-
             }
-
             SetFiles(files)
         } else if (type === 'topics') {
             var input = document.getElementById('topics_to_upload');
@@ -174,7 +173,7 @@ export default function AddCollectionForm() {
             var files = []
             if (input.files[0] !== undefined || input.files[0] !== null) {
                 for (let ind = 0; ind < input.files.length; ind++) {
-                    if (input.files[ind].name.endsWith('json')) {
+                    if (input.files[ind].name.endsWith('json') || input.files[ind].name.toLowerCase().endsWith('jpg') || input.files[ind].name.toLowerCase().endsWith('jpeg')|| input.files[ind].name.toLowerCase().endsWith('png')|| input.files[ind].name.toLowerCase().endsWith('pdf')) {
                         files.push(input.files[ind])
 
                     }
@@ -236,13 +235,19 @@ export default function AddCollectionForm() {
     function GetFiles(type) {
         var formData = new FormData();
         var files = []
+        var type_coll = 'Textual'
+        var type_topic = 'Textual'
         if (Files && (type === 'documents' || type === 'all')) {
 
             for (let ind = 0; ind < Files.length; ind++) {
                 formData.append('document_' + ind.toString(), Files[ind]);
+                if(Files[ind].name.toLowerCase().endsWith('pdf') ||Files[ind].name.toLowerCase().endsWith('jpeg') || Files[ind].name.toLowerCase().endsWith('jpg') || Files[ind].name.toLowerCase().endsWith('png')) {
+                    type_coll = "Image"
+                }
             }
 
         }
+        formData.append('type_collection', type_coll);
         if (ConceptsFiles && (type === 'concepts' || type === 'all')) {
 
             for (let ind = 0; ind < ConceptsFiles.length; ind++) {
@@ -251,13 +256,18 @@ export default function AddCollectionForm() {
         }
         if (Topics && (type === 'topics' || type === 'all')) {
 
-            for (let ind = 0; ind < ConceptsFiles.length; ind++) {
+            for (let ind = 0; ind < Topics.length; ind++) {
                 formData.append('topics_' + ind.toString(), Topics[ind]);
+                if(Topics[ind].name.toLowerCase().endsWith('pdf') || Topics[ind].name.toLowerCase().endsWith('jpeg') || Topics[ind].name.toLowerCase().endsWith('jpg') || Topics[ind].name.toLowerCase().endsWith('png')) {
+                    type_topic = "Image"
+                }
             }
         }
+        formData.append('topic_type', type_topic);
+
         if (Qrels && (type === 'qrels' || type === 'all')) {
 
-            for (let ind = 0; ind < ConceptsFiles.length; ind++) {
+            for (let ind = 0; ind < Qrels.length; ind++) {
                 formData.append('qrels' + ind.toString(), Qrels[ind]);
             }
         }
@@ -278,31 +288,36 @@ export default function AddCollectionForm() {
         var all_max_lab = []
         var all_min_lab = []
         var tags = []
-        AddTag.map(el => {
-            var inputl = document.getElementById(`tag_${el}`);
-            if (inputl.value !== '') {
-                tags.push(inputl.value)
-            }
-        })
-        AddLabel.map(el => {
-            var inputl = document.getElementById(`label_${el}`);
-            lab.push(inputl.value)
-            if (inputl.value !== '') {
-                all_lab.push(inputl.value)
-            }
-            var inputmin = document.getElementById(`min_${el}`);
-            if (inputmin.value !== '') {
-                all_min_lab.push(inputmin.value)
-            }
-            var inputmax = document.getElementById(`max_${el}`);
-            if (inputmax.value !== '') {
-                all_max_lab.push(inputmax.value)
-            }
-            if (parseInt(inputmax.value) >= parseInt(inputmin.value)) {
-                max_lab.push(inputmax.value)
-                min_lab.push(inputmin.value)
-            }
-        })
+        if (AnnotationType === 'Entity tagging'){
+            AddTag.map(el => {
+                var inputl = document.getElementById(`tag_${el}`);
+                if (inputl.value !== '') {
+                    tags.push(inputl.value)
+                }
+            })
+        }
+        if (['Graded labeling','Object detection'].indexOf(AnnotationType) !== -1) {
+
+            AddLabel.map(el => {
+                var inputl = document.getElementById(`label_${el}`);
+                lab.push(inputl.value)
+                if (inputl.value !== '') {
+                    all_lab.push(inputl.value)
+                }
+                var inputmin = document.getElementById(`min_${el}`);
+                if (inputmin.value !== '') {
+                    all_min_lab.push(inputmin.value)
+                }
+                var inputmax = document.getElementById(`max_${el}`);
+                if (inputmax.value !== '') {
+                    all_max_lab.push(inputmax.value)
+                }
+                if (parseInt(inputmax.value) >= parseInt(inputmin.value)) {
+                    max_lab.push(inputmax.value)
+                    min_lab.push(inputmin.value)
+                }
+            })
+        }
         if (all_lab.length !== all_min_lab.length || all_lab.length !== all_max_lab.length || all_max_lab.length !== all_min_lab.length) {
             SetShowError('You have to provide label, min and max values for all the labels provided. Max maust be greater or equal than min.')
             SetLoading(false)
@@ -315,36 +330,39 @@ export default function AddCollectionForm() {
         var all_lab = []
         var all_max_lab = []
         var all_min_lab = []
-        AddLabelPassage.map(el => {
-            var inputl = document.getElementById(`label_p_${el}`);
-            lab.push(inputl.value)
-            if (inputl.value !== '') {
-                all_lab.push(inputl.value)
-            }
-            var inputmin = document.getElementById(`min_p_${el}`);
-            if (inputmin.value !== '') {
-                all_min_lab.push(inputmin.value)
-            }
-            var inputmax = document.getElementById(`max_p_${el}`);
-            if (inputmax.value !== '') {
-                all_max_lab.push(inputmax.value)
-            }
-            if (parseInt(inputmax.value) >= parseInt(inputmin.value)) {
-                max_lab.push(inputmax.value)
-                min_lab.push(inputmin.value)
-            }
-        })
+        if(AnnotationType === "Passages annotation"){
+            AddLabelPassage.map(el => {
+                var inputl = document.getElementById(`label_p_${el}`);
+                lab.push(inputl.value)
+                if (inputl.value !== '') {
+                    all_lab.push(inputl.value)
+                }
+                var inputmin = document.getElementById(`min_p_${el}`);
+                if (inputmin.value !== '') {
+                    all_min_lab.push(inputmin.value)
+                }
+                var inputmax = document.getElementById(`max_p_${el}`);
+                if (inputmax.value !== '') {
+                    all_max_lab.push(inputmax.value)
+                }
+                if (parseInt(inputmax.value) >= parseInt(inputmin.value)) {
+                    max_lab.push(inputmax.value)
+                    min_lab.push(inputmin.value)
+                }
+            })
+        }
+
         if (all_lab.length !== all_min_lab.length || all_lab.length !== all_max_lab.length || all_max_lab.length !== all_min_lab.length) {
             SetShowError('You have to provide label, min and max values for all the labels provided. Max maust be greater or equal than min.')
             SetLoading(false)
             upload = false
         }
 
-        if (Task === '' || !Task) {
+       /* if (Task === '' || !Task) {
             SetShowError('Please, set the task on the left.')
             SetLoading(false)
             upload = false
-        }
+        }*/
         if (AnnotationTypes.length === 0) {
             SetShowError('Please, add at least one annotation type')
             SetLoading(false)
@@ -397,65 +415,74 @@ export default function AddCollectionForm() {
             var max_labels_p = []
             var tags = []
             var members = []
+            if(AnnotationType === "Graded labeling" || AnnotationType === 'Object detection') {
 
-            AddLabel.map((el, index) => {
-                input = document.getElementById(`label_${el}`);
-                if (input.value !== '') {
-                    labels.push(input.value)
-                    input = document.getElementById(`min_${el}`);
-                    if (input.value === '') {
-                        min_labels.push(0)
-                        max_labels.push(1)
-                    } else {
-                        min_labels.push(input.value)
+                AddLabel.map((el, index) => {
+                    input = document.getElementById(`label_${el}`);
+                    if (input.value !== '') {
+                        labels.push(input.value)
+                        input = document.getElementById(`min_${el}`);
+                        if (input.value === '') {
+                            min_labels.push(0)
+                            max_labels.push(1)
+                        } else {
+                            min_labels.push(input.value)
+                        }
+
+                        input = document.getElementById(`max_${el}`);
+                        if (input.value === '') {
+                            max_labels.push(1)
+                            min_labels[index] = 0
+                        } else {
+                            max_labels.push(input.value)
+                        }
                     }
 
-                    input = document.getElementById(`max_${el}`);
-                    if (input.value === '') {
-                        max_labels.push(1)
-                        min_labels[index] = 0
-                    } else {
-                        max_labels.push(input.value)
+                })
+            }
+            if(AnnotationType === "Passages annotation" ) {
+
+                AddLabelPassage.map((el, index) => {
+                    input = document.getElementById(`label_p_${el}`);
+                    if (input.value !== '') {
+                        labels_p.push(input.value)
+                        input = document.getElementById(`min_p_${el}`);
+                        if (input.value === '') {
+                            min_labels_p.push(0)
+                            max_labels_p.push(1)
+                        } else {
+                            min_labels_p.push(input.value)
+                        }
+
+                        input = document.getElementById(`max_p_${el}`);
+                        if (input.value === '') {
+                            max_labels_p.push(1)
+                            min_labels_p[index] = 0
+                        } else {
+                            max_labels_p.push(input.value)
+                        }
                     }
-                }
 
-            })
-            AddLabelPassage.map((el, index) => {
-                input = document.getElementById(`label_p_${el}`);
-                if (input.value !== '') {
-                    labels_p.push(input.value)
-                    input = document.getElementById(`min_p_${el}`);
-                    if (input.value === '') {
-                        min_labels_p.push(0)
-                        max_labels_p.push(1)
-                    } else {
-                        min_labels_p.push(input.value)
-                    }
+                })
+            }
+            if(AnnotationType === "Entity tagging"){
+                AddTag.map(el => {
+                    input = document.getElementById(`tag_${el}`);
+                    tags.push(input.value)
 
-                    input = document.getElementById(`max_p_${el}`);
-                    if (input.value === '') {
-                        max_labels_p.push(1)
-                        min_labels_p[index] = 0
-                    } else {
-                        max_labels_p.push(input.value)
-                    }
-                }
+                })
+            }
 
-            })
-            AddTag.map(el => {
-                input = document.getElementById(`tag_${el}`);
-                tags.push(input.value)
-
-            })
             AddMember.map(el => {
                 input = document.getElementById(`member_${el}`);
                 members.push(input.value)
 
             })
-            formData.append('task', Task);
+            //formData.append('task', Task);
             formData.append('name', name1);
             formData.append('description', desc)
-            AnnotationTypes.forEach(item => formData.append('annotationtypes[]', item));
+            formData.append('annotation_type', AnnotationType)
+            //AnnotationTypes.forEach(item => formData.append('annotationtypes[]', item));
             tags.filter(x => x !== '').forEach(item => formData.append('tags[]', item));
             labels.forEach(item => formData.append('labels[]', item));
             max_labels.forEach(item => formData.append('max_labels[]', item));
@@ -498,7 +525,9 @@ export default function AddCollectionForm() {
 
 
     }
-
+    const handleChangeTags = (event)=>{
+        SetTagsToAdd(event.target.value)
+    }
 
     function DownloadTemplate(type) {
         axios.get('download_template_concepts', {params: {type: type}})
@@ -522,7 +551,7 @@ export default function AddCollectionForm() {
 
     return (
         <div className='addcontainer'>
-            <h3>Add a new <i>{Task}</i> collection</h3>
+            <h3>Add a new collection for <i>{AnnotationType}</i></h3>
             <div><i>In order to create a new collection you need to set the name and to add at least a document.</i>
             </div>
             {Loading === false ? <div>
@@ -589,18 +618,18 @@ export default function AddCollectionForm() {
                 </Row>
 
                 <hr/>
-                <div style={{marginTop: '15px'}}>
+                {/*<div style={{marginTop: '15px'}}>
                     <div><h5>Select the annotation types</h5></div>
                     <div>The already selected types are related to the selected task. If you want to add some extra
                         types, click on the related button.
                     </div>
 
                     <div>
-                        {AllTypes.map(el =>
+                        {AnnotationTypes.map(el =>
                             <span><Chip sx={{margin: '1%'}} label={el}
                                         variant={AnnotationTypes.indexOf(el) !== -1 ? 'filled' : "outlined"}
                                         color={'info'} onClick={(e) => {
-                                if (AnnotationTypes.indexOf(el) === -1) {
+                                if (AnnotationType === el) {
                                     var types = AnnotationTypes.map(t => t)
                                     types.push(el)
                                     SetAnnotationTypes(types)
@@ -612,13 +641,13 @@ export default function AddCollectionForm() {
                     </div>
 
 
-                </div>
+                </div>*/}
                 <hr/>
-                {AnnotationTypes.length > 0 && <div>
+                {AnnotationType && <div>
                     <div><h5>Customize annotation</h5></div>
 
 
-                    {(AnnotationTypes.indexOf('Labels annotation') !== -1) &&
+                    {(["Graded labeling","Object detection"].indexOf(AnnotationType) !== -1) &&
                         <div>
                             <div>
                                 <h6>Labels <i></i></h6>
@@ -669,7 +698,7 @@ export default function AddCollectionForm() {
 
                             </div>
                         </div>}
-                    {(AnnotationTypes.indexOf('Passages annotation') !== -1) &&
+                    {(['Passages annotation'].indexOf(AnnotationType) !== -1) &&
                         <div>
                             <div>
                                 <h6>Labels for passage annotation<i></i></h6>
@@ -720,7 +749,7 @@ export default function AddCollectionForm() {
 
                             </div>
                         </div>}
-                    {AnnotationTypes.indexOf('Entity tagging') !== -1 && <div>
+                    {AnnotationType === 'Entity tagging'  && <div>
                         <div>
                             <h6>Tags </h6>
                             <div>Provide a set of tags; one or more of these tags can be associated to each mention to
@@ -747,7 +776,7 @@ export default function AddCollectionForm() {
                         </div>
                     </div>}
 
-                    {AnnotationTypes.indexOf('Entity linking') !== -1 && <div style={{marginTop: '15px'}}>
+                    {AnnotationType === 'Entity linking' && <div style={{marginTop: '15px'}}>
                         <h6>Concepts</h6>
                         <div>Add one or more files containing the concepts used to perform <b>entity linking</b>. Files
                             can be CSV, or json.
@@ -846,8 +875,9 @@ export default function AddCollectionForm() {
                         <>
                             <div><h6>Upload custom documents</h6></div>
                             <div>
-                                <i>Documents can be uploaded in CSV, JSON, TXT, PDF
-                                    formats. This is optional if you provided a URL of a
+                                <i>Textual documents can be uploaded in CSV, JSON, TXT, PDF
+                                    formats. Images instead, can be uploaded in JPG or PNG.
+                                    This is optional if you provided a URL of a
                                     ir-dataset. <>{window.location.hostname === "doctron.dei.unipd.it" &&
                                         <i>(Max 10 documents allowed)</i>}</></i>
 
@@ -949,7 +979,8 @@ export default function AddCollectionForm() {
                             <div>
                                 <div><h5>Upload custom topics</h5></div>
                                 <div>
-                                    <i>Topics can be uploaded in JSON format.</i>
+                                        <i>Textual topics can be uploaded in JSON format. Image topics can be a PNG, JPG or JPEG file..</i> :
+
 
                                     <div style={{fontSize: '0.8rem'}}>
 

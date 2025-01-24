@@ -26,7 +26,7 @@ export default function LabelsRadio(props) {
         document_id,
         labels,
         modality,
-        annotationtypes,
+        annotationtype,
         snackmessage,
         opensnack,
         curannotator,
@@ -48,7 +48,7 @@ export default function LabelsRadio(props) {
     const [Modality, SetModality] = modality
     const [View, SetView] = view
 
-    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+    const [AnnotationType, SetAnnotationType] = annotationtype
     const [OpenDetails,SetOpenDetails] = useState(false)
     const [value, setValue] = useState(null); // Stato locale
 
@@ -89,7 +89,7 @@ export default function LabelsRadio(props) {
         if (Modality === 2 || View === 4) {
             SetOpenSnack(true)
             SetSnackMessage({'message': 'You cannot annotate this document'})
-        } else if (AnnotationTypes.indexOf('Labels annotation') === -1) {
+        } else if (AnnotationType !== 'Graded labeling') {
             SetOpenSnack(true)
             SetSnackMessage({'message': 'Labels annotation is not allowed here'})
         } else {

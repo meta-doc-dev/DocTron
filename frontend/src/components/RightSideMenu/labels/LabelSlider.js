@@ -99,7 +99,7 @@ export default function LabelSlider(props) {
         if (Modality === 2 || View === 4) {
             SetOpenSnack(true)
             SetSnackMessage({'message': 'You cannot annotate this document'})
-        } else if (AnnotationTypes.indexOf('Labels annotation') === -1) {
+        } else if (AnnotationTypes !== 'Graded labeling') {
             SetOpenSnack(true)
             SetSnackMessage({'message': 'Labels annotation is not allowed here'})
         } else {

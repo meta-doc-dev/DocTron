@@ -31,7 +31,7 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 
 export default function TagsListClass(props){
-    const { showtagspannel,concepts,view,tags_split,areascolors } = useContext(AppContext);
+    const { showtagspannel,inarel,concepts,view,tags_split,areascolors,annotationtypes } = useContext(AppContext);
     const [Tags,SetTags] = useState([]);
     const [TagsSplitted,SetTagsSplitted] = tags_split
     const [ConceptsList,SetConceptsList] = concepts
@@ -39,8 +39,11 @@ export default function TagsListClass(props){
     const [AreasColors,SetAreasColors] = areascolors
     const [ShowTags,SetShowTags] = showtagspannel
     const [FullTagsList,SetFullTagsList] = useState([])
-    const [ShowList,SetShowList] = useState(false)
+
+    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+    const [ShowList, SetShowList] = useState(AnnotationTypes.includes('Entity tagging'))
     const [View,SetView] = view
+    const [InARel,SetInARel] = inarel
 
 
     useEffect(()=>{
@@ -100,9 +103,9 @@ export default function TagsListClass(props){
 
     return(
         <div>
-            <Button disabled={View === 4} onClick={()=>SetShowList(prev=>!prev)} variant="text">Tags <i>({TagsSplitted.length})</i></Button>
+            <Button disabled={View === 4 || InARel} onClick={()=>SetShowList(prev=>!prev)} variant="text">Tags <i>({TagsSplitted.length})</i></Button>
 
-            <Collapse in={ShowList}>
+            <Collapse in={ShowList && !InARel}>
                 {Tags  && <div>
                     {(Object.keys(Tags)).filter(x=>x !== 'total_list').map(a =>
                         <>

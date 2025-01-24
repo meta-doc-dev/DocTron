@@ -20,16 +20,40 @@ class Annotate(models.Model):
     stop = models.IntegerField()
     username = models.ForeignKey('User', models.DO_NOTHING, db_column='username')
     name_space = models.ForeignKey('NameSpace', models.DO_NOTHING, db_column='name_space') # This field type is a guess.
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
     topic_id = models.ForeignKey('Topic', models.DO_NOTHING, db_column='topic_id')
 
     class Meta:
         managed = False
         db_table = 'annotate'
-        unique_together = (('start', 'stop', 'document_id', 'language', 'username', 'name_space'),)
 
 
+class AnnotateObject(models.Model):
+    document_id = models.ForeignKey('Document', models.DO_NOTHING, db_column='document_id')
+    language = models.TextField()
+    points = models.TextField()
+    comment = models.TextField()
+    admin_comment = models.TextField()
+    reviewer_comment = models.TextField()
+    username = models.ForeignKey('User', models.DO_NOTHING, db_column='username')
+    name_space = models.ForeignKey('NameSpace', models.DO_NOTHING, db_column='name_space') # This field type is a guess.
+    insertion_time = models.DateTimeField(primary_key=True)
+    topic_id = models.ForeignKey('Topic', models.DO_NOTHING, db_column='topic_id')
 
+    class Meta:
+        managed = False
+        db_table = 'annotate_object'
+
+
+class DocumentObject(models.Model):
+    document_id = models.ForeignKey('Document', models.DO_NOTHING, db_column='document_id')
+    language = models.TextField()
+    points = models.TextField(primary_key=True)
+    image = models.BinaryField()
+
+    class Meta:
+        managed = False
+        db_table = 'document_object'
 
 class Associate(models.Model):
 
@@ -41,7 +65,7 @@ class Associate(models.Model):
     stop = models.IntegerField()
     comment = models.TextField()
     name = models.ForeignKey('SemanticArea', models.DO_NOTHING, db_column='name')
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
     concept_url = models.ForeignKey('Concept', models.DO_NOTHING, db_column='concept_url')
     topic_id = models.ForeignKey('Topic', models.DO_NOTHING, db_column='topic_id')
 
@@ -60,7 +84,7 @@ class AssociateTag(models.Model):
     start = models.OneToOneField('Mention', models.DO_NOTHING, db_column='start',primary_key=True)
     stop = models.IntegerField()
     name = models.ForeignKey('Tag', models.DO_NOTHING, db_column='name')
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
     topic_id = models.ForeignKey('Topic', models.DO_NOTHING, db_column='topic_id')
 
     class Meta:
@@ -102,12 +126,15 @@ class AuthPermission(models.Model):
 
 class Topic(models.Model):
     id = models.IntegerField(primary_key=True)
+    topic_id = models.TextField()
     collection_id = models.ForeignKey('Collection', models.DO_NOTHING,db_column='collection_id')
     parent_topic = models.ForeignKey('Topic', models.DO_NOTHING,db_column='parent_topic')
     details = models.JSONField()
     title = models.TextField()
     description = models.TextField()
     narrative = models.TextField()
+    image = models.BinaryField()
+
     class Meta:
         managed = False
         db_table = 'topic'
@@ -156,10 +183,12 @@ class Collection(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True, null=True)
     insertion_time = models.DateTimeField()
-    username = models.TextField()
-    name_space = models.TextField()
     options = models.JSONField()
     modality = models.TextField()
+    type = models.TextField()
+    topic_type = models.TextField()
+    annotation_type = models.ForeignKey('AnnotationType', models.DO_NOTHING,db_column='annotation_type')
+
     class Meta:
         managed = False
         db_table = 'collection'
@@ -238,8 +267,9 @@ class Document(models.Model):
     document_content = models.JSONField()
     honeypot = models.BooleanField()
     batch = models.IntegerField()
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
     collection_id = models.ForeignKey('Collection', models.DO_NOTHING, db_column='collection_id')
+    image = models.BinaryField()
 
     class Meta:
         managed = False
@@ -249,7 +279,7 @@ class Document(models.Model):
 class AddConcept(models.Model):
     username = models.OneToOneField('User', models.DO_NOTHING, db_column='username',primary_key=True)
     name_space = models.ForeignKey('NameSpace', models.DO_NOTHING, db_column='name_space')
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
     collection_id = models.ForeignKey('Collection', models.DO_NOTHING, db_column='collection_id')
     concept_url = models.ForeignKey('Concept', models.DO_NOTHING, db_column='concept_url')
     name = models.ForeignKey('SemanticArea', models.DO_NOTHING, db_column='name')
@@ -294,7 +324,7 @@ class Link(models.Model):
     predicate_stop = models.IntegerField()
     object_start = models.IntegerField()
     object_stop = models.IntegerField()
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
 
 
     class Meta:
@@ -367,13 +397,14 @@ class RelationshipPredConcept(models.Model):
     subject_language = models.TextField()
     object_document_id = models.TextField()
     object_language = models.TextField()
+    comment = models.TextField()
     subject_start = models.IntegerField()
     subject_stop = models.IntegerField()
     object_start = models.IntegerField()
     object_stop = models.IntegerField()
     concept_url = models.ForeignKey('Concept', models.DO_NOTHING,db_column='concept_url')
     name = models.ForeignKey('SemanticArea', models.DO_NOTHING,db_column='name')
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
 
     class Meta:
         managed = False
@@ -388,13 +419,14 @@ class RelationshipObjConcept(models.Model):
     subject_language = models.TextField()
     predicate_document_id = models.TextField()
     predicate_language = models.TextField()
+    comment = models.TextField()
     subject_start = models.IntegerField()
     subject_stop = models.IntegerField()
     predicate_start = models.IntegerField()
     predicate_stop = models.IntegerField()
     concept_url = models.ForeignKey('Concept', models.DO_NOTHING,db_column='concept_url')
     name = models.ForeignKey('SemanticArea', models.DO_NOTHING,db_column='name')
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
 
     class Meta:
         managed = False
@@ -409,13 +441,15 @@ class RelationshipSubjConcept(models.Model):
     predicate_document_id = models.TextField()
     predicate_language = models.TextField()
     object_document_id = models.TextField()
+    comment = models.TextField()
     object_language = models.TextField()
     predicate_start = models.IntegerField()
     predicate_stop = models.IntegerField()
     object_start = models.IntegerField()
     object_stop = models.IntegerField()
     concept_url = models.ForeignKey('Concept', models.DO_NOTHING,db_column='concept_url')
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
+    comment = models.TextField()
     name = models.ForeignKey('SemanticArea', models.DO_NOTHING,db_column='name')
 
 
@@ -435,9 +469,10 @@ class RelationshipPredMention(models.Model):
     stop = models.IntegerField()
     subject_concept_url = models.TextField()
     object_concept_url = models.TextField()
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
     subject_name = models.TextField()
     object_name = models.TextField()
+    comment = models.TextField()
 
     class Meta:
         managed = False
@@ -454,9 +489,10 @@ class RelationshipSubjMention(models.Model):
     stop = models.IntegerField()
     predicate_name = models.TextField()
     object_name = models.TextField()
+    comment = models.TextField()
     predicate_concept_url = models.TextField()
     object_concept_url = models.TextField()
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
 
     class Meta:
         managed = False
@@ -469,13 +505,14 @@ class RelationshipObjMention(models.Model):
     name_space = models.ForeignKey('NameSpace', models.DO_NOTHING, db_column='name_space')
     document_id =  models.ForeignKey('Document', models.DO_NOTHING, db_column='document_id')
     language = models.TextField()
+    comment = models.TextField()
     start = models.ForeignKey('Mention', models.DO_NOTHING, db_column='start')
     stop = models.IntegerField()
     predicate_concept_url = models.TextField()
     subject_concept_url = models.TextField()
     subject_name = models.TextField()
     predicate_name = models.TextField()
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
 
     class Meta:
         managed = False
@@ -495,7 +532,7 @@ class CreateFact(models.Model):
     predicate_name = models.TextField()
     object_name = models.TextField()
     comment = models.TextField()
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
     class Meta:
         managed = False
         db_table = 'create_fact'
@@ -507,6 +544,7 @@ class ShareCollection(models.Model):
     name_space = models.ForeignKey('NameSpace', models.DO_NOTHING, db_column='name_space')
     status = models.TextField()
     reviewer = models.BooleanField()
+    creator = models.BooleanField()
     admin = models.BooleanField()
 
     class Meta:
@@ -659,7 +697,7 @@ class AnnotateLabel(models.Model):
     comment = models.TextField()
     topic_id = models.ForeignKey('Topic', models.DO_NOTHING, db_column='topic_id')
     label = models.OneToOneField(Label, models.DO_NOTHING, db_column='label',primary_key=True)
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
 
     class Meta:
         managed = False
@@ -674,7 +712,7 @@ class AnnotatePassage(models.Model):
     username = models.ForeignKey('User', models.DO_NOTHING, db_column='username')
     name_space = models.ForeignKey('NameSpace', models.DO_NOTHING,
                                    db_column='name_space')  # This field type is a guess.
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
     grade = models.IntegerField()
     comment = models.TextField()
     label = models.ForeignKey(Label, models.DO_NOTHING, db_column='label')
@@ -698,7 +736,7 @@ class ShareDocumentsStats(models.Model):
     relationships = models.FloatField()
     assertions = models.FloatField()
     labels = models.FloatField()
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
 
     class Meta:
         managed = False
@@ -717,6 +755,21 @@ class Split(models.Model):
         db_table = 'split'
         unique_together = (('username', 'name_space','collection_id','document_id','language'),)
 
+
+class SplitTopic(models.Model):
+    username = models.ForeignKey('User', models.DO_NOTHING, db_column='username')
+    name_space = models.ForeignKey('NameSpace', models.DO_NOTHING,
+                                   db_column='name_space')  # This field type is a guess.
+    collection_id = models.ForeignKey('Collection', models.DO_NOTHING, db_column='collection_id')
+    topic_id = models.ForeignKey('Topic', models.DO_NOTHING, db_column='topic_id')
+
+    class Meta:
+        managed = False
+        db_table = 'split_topic'
+        unique_together = (('username', 'name_space','collection_id','topic_id'),)
+
+
+
 class ShareCollectionStats(models.Model):
     username = models.ForeignKey('User', models.DO_NOTHING, db_column='username')
     name_space = models.ForeignKey('NameSpace', models.DO_NOTHING,
@@ -727,7 +780,7 @@ class ShareCollectionStats(models.Model):
     relationships = models.FloatField()
     assertions = models.FloatField()
     labels = models.FloatField()
-    insertion_time = models.TimeField()
+    insertion_time = models.DateTimeField()
 
     class Meta:
         managed = False

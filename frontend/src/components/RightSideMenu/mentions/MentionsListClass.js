@@ -56,7 +56,7 @@ import LabelsRadio from "../labels/LabelsRadio";
 import LabelSlider from "../labels/LabelSlider";
 
 export default function MentionsListClass(props) {
-    const {view, labels, mentions, concepts, tags_split, documentdescription} = useContext(AppContext);
+    const {view, labels, mentions,inarel, concepts,annotationtypes, tags_split, documentdescription} = useContext(AppContext);
 
     const [MentionsList, SetMentionsList] = mentions
     const [Labels, SetLabels] = labels
@@ -70,34 +70,22 @@ export default function MentionsListClass(props) {
     })
 
     const [View, SetView] = view
-    const [ShowList, SetShowList] = useState(false)
+    const [InARel, SetInARel] = inarel
+    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+
+    const [ShowList, SetShowList] = useState(AnnotationTypes.includes('Passages annotation'))
+
     const [MentionsListHigh, SetMentionsListHigh] = useState([])
 
-    /*    useEffect(()=>{
-            var m = ''
-            if (MentionToHighlight) {
-                m = MentionsListHigh.includes(MentionToHighlight)
-                    ? MentionsListHigh.filter(x => x !== MentionToHighlight) // Rimuovi se esiste
-                    : [...MentionsListHigh, MentionToHighlight];             // Aggiungi se non esiste
-                SetMentionsListHigh(m);
-            } else if (MentionsListHigh.length > 0) {
-                m = MentionsListHigh.filter(x => x.mentions !== MentionToHighlight);
-                SetMentionsListHigh(m);
-            }
-            console.log('liste')
-            console.log(MentionToHighlight)
-            console.log(m)
 
-
-        },[MentionToHighlight])*/
 
 
     return (
         <div id='rightsidementionsclass'>
-            <Button disabled={View === 4} onClick={() => SetShowList(prev => !prev)}
+            <Button disabled={View === 4 || InARel} onClick={() => SetShowList(prev => !prev)}
                     variant="text">Passages <i>({MentionsList.length})</i></Button>
 
-            <Collapse in={ShowList}>
+            <Collapse in={ShowList && !InARel}>
                 <div>
                     {MentionsList ? <>
 

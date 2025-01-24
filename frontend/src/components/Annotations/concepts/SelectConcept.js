@@ -29,9 +29,10 @@ import {ConceptContext} from "../../../BaseIndex";
 
 export default function SelectConcept(props){
 
-    const {inarel,newfact,newfactin} =  useContext(AppContext);
+    const {inarel,newfact,newfactin,modifyrel} =  useContext(AppContext);
     const [InARel,SetInARel] = inarel
     const [NewFact,SetNewFact] = newfact
+    const [Modify,SetModify] = modifyrel
     const [NewFactInterno,SetNewFactInterno] = newfactin
 
     const {area,url,name,urlname,description,areas,conceptslist} =  useContext(ConceptContext);
@@ -41,7 +42,7 @@ export default function SelectConcept(props){
     // const [ConceptsList,SetConceptsList] = InARel ? conceptslist1 : conceptslist
 
     // const [Name,SetName] =InARel ? name1 : name
-    const [Url,SetUrl] = (InARel || NewFact || NewFactInterno) ? url1 : url
+    const [Url,SetUrl] = (InARel || NewFact || Modify || NewFactInterno) ? url1 : url
     // const [Description,SetDescription] = InARel ? description1 : description
     // const [Area,SetArea] = InARel ? area1 : area
     // const [Areas,SetAreas] = InARel ? areas1 : areas

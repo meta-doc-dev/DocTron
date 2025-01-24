@@ -36,6 +36,7 @@ import ArrowLabelComponent from "../Annotations/relationship/ArrowLabelComponent
 import SelectArrowComponent from "../Annotations/relationship/SelectArrowComponent";
 import {ConceptContext} from "../../BaseIndex";
 import OverlayConceptComponent from "../Annotations/relationship/OverlayConceptComponent";
+import OverlayRelComponent from "../Annotations/relationship/OverlayRelComponent";
 
 export const ArrowContext = createContext('')
 
@@ -51,7 +52,7 @@ const DraggableBoxPredicate = ({id}) => {
 const DraggableBoxSource = ({id}) => {
     const updateXarrow = useXarrow();
     return (
-        <Draggable onDrag={updateXarrow} onStop={updateXarrow}>
+        <Draggable onDrag={updateXarrow} onStop={updateXarrow} bounds="parent">
             <div style={boxStyle} id={id} className={'cover-left'}><OverlayConceptComponent type={'source'}/></div>
 
         </Draggable>
@@ -67,6 +68,41 @@ const DraggableBoxTarget = ({id}) => {
         </Draggable>
     );
 };
+
+
+const DraggableRelsBoxSo = ({id, index, label}) => {
+    const updateXarrow = useXarrow();
+    return (
+        <Draggable onDrag={updateXarrow} onStop={updateXarrow}>
+            <div style={boxStyle} id={id} className={'cover-left'}><OverlayRelComponent index={index} label={label}/>
+            </div>
+
+        </Draggable>
+    );
+};
+const DraggableRelsBoxPt = ({id, index, label}) => {
+    const updateXarrow = useXarrow();
+    return (
+        <Draggable onDrag={updateXarrow} onStop={updateXarrow}>
+            <div style={boxStyle} id={id} className={'cover-right'}><OverlayRelComponent index={index} label={label}/>
+            </div>
+
+        </Draggable>
+    );
+};
+const DraggableRelsBoxTgt = ({id, index, label}) => {
+    const updateXarrow = useXarrow();
+    return (
+        <Draggable onDrag={updateXarrow} onStop={updateXarrow}>
+            <div style={boxStyle} id={id} className={'cover-right-more'}><OverlayRelComponent index={index} label={label}/>
+            </div>
+
+        </Draggable>
+    );
+};
+
+
+
 const boxStyle = {padding: '5px'};
 
 export default function Document(props) {
@@ -94,7 +130,7 @@ export default function Document(props) {
         modifyrel,
         curannotator,
         sourceconcepts,
-        predicateconcepts,
+        predicateconcepts, factslist,
         targetconcepts,
         predicatetext,
         sourcetext,
@@ -179,6 +215,8 @@ export default function Document(props) {
     const [SourceConcepts, SetSourceConcepts] = sourceconcepts
     const [PredicateConcepts, SetPredicateConcepts] = predicateconcepts
     const [TargetConcepts, SetTargetConcepts] = targetconcepts
+    const [FactsList, SetFactsList] = factslist
+
     const [SourceText, SetSourceText] = sourcetext
     const [PredicateText, SetPredicateText] = predicatetext
     const [TargetText, SetTargetText] = targettext
@@ -280,7 +318,9 @@ export default function Document(props) {
             var sources_all = []
             var predicates_all = []
             var targets_all = []
+
             RelationshipsList.map(rel => {
+                var tipo = []
                 var cur_rel = []
                 var rels = rel.subject.mention
                 var concs = rel.subject.concept
@@ -290,12 +330,15 @@ export default function Document(props) {
                     var mention = MentionsList.find(x => x['start'] === start && x['stop'] === end && x['position'] === rels.position)
                     if (mention) {
                         cur_rel.push(mention.mentions)
+                        tipo.push('m')
                     }
                     if (mention && sources_all.indexOf(mention.mentions) === -1) {
                         sources_all.push(mention.mentions)
                     }
                 } else {
                     cur_rel.push(concs.concept_name)
+                    tipo.push('c')
+
                 }
                 var relp = rel.object.mention
                 var conp = rel.object.concept
@@ -305,6 +348,8 @@ export default function Document(props) {
                     var mention = MentionsList.find(x => x['start'] === start && x['stop'] === end && x['position'] === rels.position)
                     if (mention) {
                         cur_rel.push(mention.mentions)
+                        tipo.push('m')
+
                     }
                     if (mention && targets_all.indexOf(mention.mentions) === -1) {
                         targets_all.push(mention.mentions)
@@ -312,6 +357,8 @@ export default function Document(props) {
                     }
                 } else {
                     cur_rel.push(conp.concept_name)
+                    tipo.push('c')
+
                 }
                 var relt = rel.predicate.mention
                 var conct = rel.predicate.concept
@@ -321,6 +368,8 @@ export default function Document(props) {
                     var mention = MentionsList.find(x => x['start'] === start && x['stop'] === end && x['position'] === rels.position)
                     if (mention) {
                         cur_rel.push(mention.mentions)
+                        tipo.push('m')
+
                     }
                     if (mention && predicates_all.indexOf(mention.mentions) === -1) {
                         predicates_all.push(mention.mentions)
@@ -329,14 +378,17 @@ export default function Document(props) {
                     }
                 } else {
                     cur_rel.push(conct.concept_name)
+                    tipo.push('c')
+
                 }
+                //all_rels.push([cur_rel,tipo])
                 all_rels.push(cur_rel)
-                SetAllRels(all_rels)
+
             })
             SetSourceAll(sources_all)
             SetPredicateAll(predicates_all)
             SetTargetAll(targets_all)
-
+            SetAllRels(all_rels)
         }
     }, [RelationshipsList, MentionsList]);
 
@@ -465,8 +517,17 @@ export default function Document(props) {
             fetchRelationships()
 
 
+            async function fetchFacts() {
+                const response = await axios.get('facts', {params: {user: CurAnnotator}});
+                console.log('request', response)
+                SetFactsList(response.data)
+                return response
+            }
+
+            fetchFacts()
+
         }
-    }, [DocumentID, CurAnnotator, AutoAnnotate, LoadingNewAnn,Topic])
+    }, [DocumentID, CurAnnotator, AutoAnnotate, LoadingNewAnn, Topic])
 
 
     function AddMention(skip = false) {
@@ -1139,18 +1200,6 @@ export default function Document(props) {
     }, [PTArrow])
 
 
-    useEffect(() => {
-        if (Source) {
-            waitForElm('#source').then(r => {
-                SetSourceElem(true)
-
-            })
-        } else {
-            SetSourceElem(false)
-        }
-
-
-    }, [Source])
 
 
     useEffect(() => {
@@ -1220,17 +1269,29 @@ export default function Document(props) {
         }
         // ho solo target, source è floating, non ho predicate
         else if (TargetElem && Target && !Source && SourceConcepts && !Predicate && !PredicateConcepts) {
-            waitForElm('#predicatebox').then(r => {
+            waitForElm('#sourcebox').then(r => {
                 SetSTArrowFloat(true)
             })
         }
 
     }, [SourceElem, TargetElem, PredicateElem, Target, Source, Predicate, PredicateConcepts, SourceConcepts, TargetConcepts])
 
+    useEffect(() => {
+        if (Source) {
+            waitForElm('.source').then(r => {
+                SetSourceElem(true)
+
+            })
+        } else {
+            SetSourceElem(false)
+        }
+
+
+    }, [Source])
 
     useEffect(() => {
         if (Predicate) {
-            waitForElm('#predicate').then(r => {
+            waitForElm('.predicate').then(r => {
                 SetPredicateElem(true)
             })
         } else {
@@ -1241,7 +1302,7 @@ export default function Document(props) {
     }, [Predicate])
     useEffect(() => {
         if (Target) {
-            waitForElm('#target').then(r => {
+            waitForElm('.target').then(r => {
                 SetTargetElem(true)
             })
         } else {
@@ -1316,7 +1377,7 @@ export default function Document(props) {
 
 
                                                         <span //prima c'era display inline block
-                                                              className={'mention_span'}>
+                                                            className={'mention_span'}>
                                                             {!InARel && <Mention id={mention_key + '_' + i.toString()}
 
                                                                                  start={obj['start']} stop={obj['stop']}
@@ -1336,308 +1397,229 @@ export default function Document(props) {
                                                                 tagsList={TagsSplitted.filter(x => (x.position.includes(mention_key) || mention_key.includes(x.position)) && x.start === obj['start'] && x.stop === obj['stop'])}
                                                                 concepts={ConceptsList.filter(x => (x.position.includes(mention_key) || mention_key.includes(x.position)) && x.start === obj['start'] && x.stop === obj['stop'])}/>
 
-                                                                {/*COLLEGO A OGGETI NON DRAGGABLE*/}
-                                                                {/*{!Source && !SourceConcepts && !Target && !TargetConcepts &&  !Predicate && PredicateConcepts  &&<div style={{display: 'flex', justifyContent: 'space-evenly', width: '100%'}}>*/}
-
-                                                                {/*    <Xwrapper>*/}
-                                                                {/*        <DraggableBoxSource id={'predicatebox'}/>*/}
-                                                                {/*    </Xwrapper>*/}
-
-                                                                {/*</div>}*/}
-                                                                {/*{!Source && SourceConcepts && !Target && !TargetConcepts &&  !Predicate && !PredicateConcepts  &&<div style={{display: 'flex', justifyContent: 'space-evenly', width: '100%'}}>*/}
-
-                                                                {/*    <Xwrapper>*/}
-                                                                {/*        <DraggableBoxSource id={'sourcebox'}/>*/}
-                                                                {/*    </Xwrapper>*/}
-
-                                                                {/*</div>}*/}
-                                                                {/*{!Source && !SourceConcepts && !Target && TargetConcepts &&  !Predicate && !PredicateConcepts  &&<div style={{display: 'flex', justifyContent: 'space-evenly', width: '100%'}}>*/}
-
-                                                                {/*    <Xwrapper>*/}
-                                                                {/*        <DraggableBoxSource id={'targetbox'}/>*/}
-                                                                {/*    </Xwrapper>*/}
-
-                                                                {/*</div>}*/}
                                                                 {/*predicato stabile, source e target no*/}
-                                                                {!Source && SourceConcepts && !Target && TargetConcepts && (Predicate === obj['mentions']) && PredicateElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*{!Source && SourceConcepts && !Target && TargetConcepts && (Predicate === obj['mentions']) && PredicateElem &&*/}
+                                                                {/*    <div style={{*/}
+                                                                {/*        display: 'flex',*/}
+                                                                {/*        justifyContent: 'space-evenly',*/}
+                                                                {/*        width: '100%'*/}
+                                                                {/*    }}>*/}
 
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxSource id={'sourcebox'}/>
-                                                                            {SPArrowFloat && <Xarrow start={'sourcebox'}
-                                                                                                     end={"predicate"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}/>}
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxSource id={'sourcebox'}/>*/}
+                                                                {/*            {SPArrowFloat && <Xarrow start={'sourcebox'}*/}
+                                                                {/*                                     end={"predicate"}*/}
+                                                                {/*                                     color={'#495057'}*/}
+                                                                {/*                                     strokeWidth={1.8}*/}
+                                                                {/*                                     headSize={7}*/}
+                                                                {/*                                     curveness={1}*/}
+                                                                {/*                                     zIndex={20}*/}
+                                                                {/*                                     animateDrawing={0.2}/>}*/}
 
-                                                                        </Xwrapper>
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxTarget id={'targetbox'}/>
-                                                                            {PTArrowFloat && <Xarrow start={'predicate'}
-                                                                                                     end={"targetbox"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}/>}
+                                                                {/*        </Xwrapper>*/}
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxTarget id={'targetbox'}/>*/}
+                                                                {/*            {PTArrowFloat && <Xarrow start={'predicate'}*/}
+                                                                {/*                                     end={"targetbox"}*/}
+                                                                {/*                                     color={'#495057'}*/}
+                                                                {/*                                     strokeWidth={1.8}*/}
+                                                                {/*                                     headSize={7}*/}
+                                                                {/*                                     curveness={1}*/}
+                                                                {/*                                     zIndex={20}*/}
+                                                                {/*                                     animateDrawing={0.2}/>}*/}
 
-                                                                        </Xwrapper>
-                                                                    </div>}
+                                                                {/*        </Xwrapper>*/}
+                                                                {/*    </div>}*/}
                                                                 {/*source stabile, e predicate target no*/}
-                                                                {!Target && TargetConcepts && !Predicate && PredicateConcepts && (Source === obj['mentions']) && SourceElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
-                                                                        {/*<DraggableBoxTarget id={'targetbox'}/>*/}
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxTarget id={'targetbox'}/>
+                                                                {/*{!Target && TargetConcepts && !Predicate && PredicateConcepts && (Source === obj['mentions']) && SourceElem &&*/}
+                                                                {/*    <div style={{*/}
+                                                                {/*        display: 'flex',*/}
+                                                                {/*        justifyContent: 'space-evenly',*/}
+                                                                {/*        width: '100%'*/}
+                                                                {/*    }}>*/}
+                                                                {/*        <DraggableBoxTarget id={'targetbox'}/>*/}
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxTarget id={'targetbox'}/>*/}
 
-                                                                            {STArrowFloat && <Xarrow start={'source'}
-                                                                                                     end={"targetbox"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}
+                                                                {/*            {STArrowFloat && <Xarrow start={'source'}*/}
+                                                                {/*                                     end={"targetbox"}*/}
+                                                                {/*                                     color={'#495057'}*/}
+                                                                {/*                                     strokeWidth={1.8}*/}
+                                                                {/*                                     headSize={7}*/}
+                                                                {/*                                     curveness={1}*/}
+                                                                {/*                                     zIndex={20}*/}
+                                                                {/*                                     animateDrawing={0.2}*/}
 
-                                                                                                     labels={{
-                                                                                                         middle:
-                                                                                                             <ArrowLabelComponent/>
-                                                                                                     }}
-                                                                            />}
+                                                                {/*                                     labels={{*/}
+                                                                {/*                                         middle:*/}
+                                                                {/*                                             <ArrowLabelComponent/>*/}
+                                                                {/*                                     }}*/}
+                                                                {/*            />}*/}
 
-                                                                        </Xwrapper>
+                                                                {/*        </Xwrapper>*/}
 
-                                                                    </div>}
-                                                                {/*target stabile, e source, predicate no*/}
-                                                                {!Source && SourceConcepts && !Predicate && PredicateConcepts && (Target === obj['mentions']) && TargetElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*    </div>}*/}
 
-                                                                        <Xwrapper>
-
-                                                                            <DraggableBoxSource id={'sourcebox'}/>
-                                                                            {STArrowFloat && <Xarrow start={'sourcebox'}
-                                                                                                     end={"target"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}
-                                                                                                     labels={{
-                                                                                                         middle:
-                                                                                                             <ArrowLabelComponent/>
-                                                                                                     }}
-                                                                            />}
-                                                                            {/*</Xwrapper>*/}
-                                                                        </Xwrapper>
-
-                                                                    </div>}
 
 
                                                                 {/*target pred stabile, e source no*/}
-                                                                {!Source && SourceConcepts && Target && TargetElem && (Predicate === obj['mentions']) && PredicateElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*{!Source && SourceConcepts && Target && TargetElem && (Predicate === obj['mentions']) && PredicateElem &&*/}
+                                                                {/*    <div style={{*/}
+                                                                {/*        display: 'flex',*/}
+                                                                {/*        justifyContent: 'space-evenly',*/}
+                                                                {/*        width: '100%'*/}
+                                                                {/*    }}>*/}
 
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxSource id={'sourcebox'}/>
-                                                                            {SPArrowFloat && <Xarrow start={'sourcebox'}
-                                                                                                     end={"predicate"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}/>}
-                                                                        </Xwrapper>
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxSource id={'sourcebox'}/>*/}
+                                                                {/*            {SPArrowFloat && <Xarrow start={'sourcebox'}*/}
+                                                                {/*                                     end={"predicate"}*/}
+                                                                {/*                                     color={'#495057'}*/}
+                                                                {/*                                     strokeWidth={1.8}*/}
+                                                                {/*                                     headSize={7}*/}
+                                                                {/*                                     curveness={1}*/}
+                                                                {/*                                     zIndex={20}*/}
+                                                                {/*                                     animateDrawing={0.2}/>}*/}
+                                                                {/*        </Xwrapper>*/}
 
-                                                                    </div>}
+                                                                {/*    </div>}*/}
                                                                 {/*source pred stabile, e target no*/}
-                                                                {!Target && TargetConcepts && Source && SourceElem && (Predicate === obj['mentions']) && PredicateElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*{!Target && TargetConcepts && Source && SourceElem && (Predicate === obj['mentions']) && PredicateElem &&*/}
+                                                                {/*    <div style={{*/}
+                                                                {/*        display: 'flex',*/}
+                                                                {/*        justifyContent: 'space-evenly',*/}
+                                                                {/*        width: '100%'*/}
+                                                                {/*    }}>*/}
 
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxTarget id={'targetbox'}/>
-                                                                            {PTArrowFloat && <Xarrow start={'predicate'}
-                                                                                                     end={"targetbox"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}/>}
-                                                                        </Xwrapper>
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxTarget id={'targetbox'}/>*/}
+                                                                {/*            {PTArrowFloat && <Xarrow start={'predicate'}*/}
+                                                                {/*                                     end={"targetbox"}*/}
+                                                                {/*                                     color={'#495057'}*/}
+                                                                {/*                                     strokeWidth={1.8}*/}
+                                                                {/*                                     headSize={7}*/}
+                                                                {/*                                     curveness={1}*/}
+                                                                {/*                                     zIndex={20}*/}
+                                                                {/*                                     animateDrawing={0.2}/>}*/}
+                                                                {/*        </Xwrapper>*/}
 
-                                                                    </div>}
+                                                                {/*    </div>}*/}
                                                                 {/*ho solo source, predicate floating, no target*/}
-                                                                {!Predicate && PredicateConcepts && !Target && !TargetConcepts && (Source === obj['mentions']) && SourceElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*{!Predicate && PredicateConcepts && !Target && !TargetConcepts && (Source === obj['mentions']) && SourceElem &&*/}
+                                                                {/*    <div style={{*/}
+                                                                {/*        display: 'flex',*/}
+                                                                {/*        justifyContent: 'space-evenly',*/}
+                                                                {/*        width: '100%'*/}
+                                                                {/*    }}>*/}
 
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxPredicate id={'predicatebox'}/>
-                                                                            {SPArrowFloat && <Xarrow start={'source'}
-                                                                                                     end={"predicatebox"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}/>}
-                                                                        </Xwrapper>
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxPredicate id={'predicatebox'}/>*/}
+                                                                {/*            {SPArrowFloat && <Xarrow start={'source'}*/}
+                                                                {/*                                     end={"predicatebox"}*/}
+                                                                {/*                                     color={'#495057'}*/}
+                                                                {/*                                     strokeWidth={1.8}*/}
+                                                                {/*                                     headSize={7}*/}
+                                                                {/*                                     curveness={1}*/}
+                                                                {/*                                     zIndex={20}*/}
+                                                                {/*                                     animateDrawing={0.2}/>}*/}
+                                                                {/*        </Xwrapper>*/}
 
-                                                                    </div>}
+                                                                {/*    </div>}*/}
                                                                 {/*ho solo source, target floating, no predicate*/}
-                                                                {!Target && TargetConcepts && !Predicate && !PredicateConcepts && (Source === obj['mentions']) && SourceElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*{!Target && TargetConcepts && !Predicate && !PredicateConcepts && (Source === obj['mentions']) && SourceElem &&*/}
+                                                                {/*    <div style={{*/}
+                                                                {/*        display: 'flex',*/}
+                                                                {/*        justifyContent: 'space-evenly',*/}
+                                                                {/*        width: '100%'*/}
+                                                                {/*    }}>*/}
 
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxTarget id={'targetbox'}/>
-                                                                            {STArrowFloat && <Xarrow start={'source'}
-                                                                                                     end={"targetbox"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}
-                                                                                                     labels={{
-                                                                                                         middle:
-                                                                                                             <ArrowLabelComponent/>
-                                                                                                     }}
-                                                                            />}
-                                                                        </Xwrapper>
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxTarget id={'targetbox'}/>*/}
+                                                                {/*            {STArrowFloat && <Xarrow start={'source'}*/}
+                                                                {/*                                     end={"targetbox"}*/}
+                                                                {/*                                     color={'#495057'}*/}
+                                                                {/*                                     strokeWidth={1.8}*/}
+                                                                {/*                                     headSize={7}*/}
+                                                                {/*                                     curveness={1}*/}
+                                                                {/*                                     zIndex={20}*/}
+                                                                {/*                                     animateDrawing={0.2}*/}
+                                                                {/*                                     labels={{*/}
+                                                                {/*                                         middle:*/}
+                                                                {/*                                             <ArrowLabelComponent/>*/}
+                                                                {/*                                     }}*/}
+                                                                {/*            />}*/}
+                                                                {/*        </Xwrapper>*/}
 
-                                                                    </div>}
+                                                                {/*    </div>}*/}
                                                                 {/*ho solo predicate, source floating, no target*/}
-                                                                {!Source && SourceConcepts && !Target && !TargetConcepts && (Predicate === obj['mentions']) && PredicateElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*{!Source && SourceConcepts && !Target && !TargetConcepts && (Predicate === obj['mentions']) && PredicateElem &&*/}
+                                                                {/*    <div style={{*/}
+                                                                {/*        display: 'flex',*/}
+                                                                {/*        justifyContent: 'space-evenly',*/}
+                                                                {/*        width: '100%'*/}
+                                                                {/*    }}>*/}
 
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxSource id={'sourcebox'}/>
-                                                                            {SPArrowFloat && <Xarrow start={'sourcebox'}
-                                                                                                     end={"predicate"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}
-                                                                            />}
-                                                                        </Xwrapper>
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxSource id={'sourcebox'}/>*/}
+                                                                {/*            {SPArrowFloat && <Xarrow start={'sourcebox'}*/}
+                                                                {/*                                     end={"predicate"}*/}
+                                                                {/*                                     color={'#495057'}*/}
+                                                                {/*                                     strokeWidth={1.8}*/}
+                                                                {/*                                     headSize={7}*/}
+                                                                {/*                                     curveness={1}*/}
+                                                                {/*                                     zIndex={20}*/}
+                                                                {/*                                     animateDrawing={0.2}*/}
+                                                                {/*            />}*/}
+                                                                {/*        </Xwrapper>*/}
 
-                                                                    </div>}
+                                                                {/*    </div>}*/}
                                                                 {/*ho solo predicate, target floating, no source*/}
-                                                                {!Target && TargetConcepts && !Source && !SourceConcepts && (Predicate === obj['mentions']) && PredicateElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*{!Target && TargetConcepts && !Source && !SourceConcepts && (Predicate === obj['mentions']) && PredicateElem &&*/}
+                                                                {/*    <div style={{*/}
+                                                                {/*        display: 'flex',*/}
+                                                                {/*        justifyContent: 'space-evenly',*/}
+                                                                {/*        width: '100%'*/}
+                                                                {/*    }}>*/}
 
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxTarget id={'targetbox'}/>
-                                                                            {PTArrowFloat && <Xarrow start={'predicate'}
-                                                                                                     end={"targetbox"}
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}
-                                                                            />}
-                                                                        </Xwrapper>
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxTarget id={'targetbox'}/>*/}
+                                                                {/*            {PTArrowFloat && <Xarrow start={'predicate'}*/}
+                                                                {/*                                     end={"targetbox"}*/}
+                                                                {/*                                     color={'#495057'}*/}
+                                                                {/*                                     strokeWidth={1.8}*/}
+                                                                {/*                                     headSize={7}*/}
+                                                                {/*                                     curveness={1}*/}
+                                                                {/*                                     zIndex={20}*/}
+                                                                {/*                                     animateDrawing={0.2}*/}
+                                                                {/*            />}*/}
+                                                                {/*        </Xwrapper>*/}
 
-                                                                    </div>}
+                                                                {/*    </div>}*/}
                                                                 {/*ho solo target, predicate floating, no source*/}
-                                                                {!Predicate && PredicateConcepts && !Source && !SourceConcepts && (Target === obj['mentions']) && TargetElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*{!Predicate && PredicateConcepts && !Source && !SourceConcepts && (Target === obj['mentions']) && TargetElem &&*/}
+                                                                {/*    <div style={{*/}
+                                                                {/*        display: 'flex',*/}
+                                                                {/*        justifyContent: 'space-evenly',*/}
+                                                                {/*        width: '100%'*/}
+                                                                {/*    }}>*/}
 
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxPredicate id={'predicatebox'}/>
-                                                                            {PTArrowFloat &&
-                                                                                <Xarrow start={'predicatebox'}
-                                                                                        end={"target"}
-                                                                                        color={'#495057'}
-                                                                                        strokeWidth={1.8}
-                                                                                        headSize={7}
-                                                                                        curveness={1}
-                                                                                        zIndex={20}
-                                                                                        animateDrawing={0.2}
-                                                                                />}
-                                                                        </Xwrapper>
+                                                                {/*        <Xwrapper>*/}
+                                                                {/*            <DraggableBoxPredicate id={'predicatebox'}/>*/}
+                                                                {/*            {PTArrowFloat &&*/}
+                                                                {/*                <Xarrow start={'predicatebox'}*/}
+                                                                {/*                        end={"target"}*/}
+                                                                {/*                        color={'#495057'}*/}
+                                                                {/*                        strokeWidth={1.8}*/}
+                                                                {/*                        headSize={7}*/}
+                                                                {/*                        curveness={1}*/}
+                                                                {/*                        zIndex={20}*/}
+                                                                {/*                        animateDrawing={0.2}*/}
+                                                                {/*                />}*/}
+                                                                {/*        </Xwrapper>*/}
 
-                                                                    </div>}
-                                                                {/*ho solo target, source floating, no predicate*/}
-                                                                {!Source && SourceConcepts && !Predicate && !PredicateConcepts && (Target === obj['mentions']) && TargetElem &&
-                                                                    <div style={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-evenly',
-                                                                        width: '100%'
-                                                                    }}>
+                                                                {/*    </div>}*/}
 
-                                                                        <Xwrapper>
-                                                                            <DraggableBoxSource id={'sourcebox'}/>
-                                                                            {STArrowFloat && <Xarrow start={'sourcebox'}
-                                                                                                     end={"target"}
 
-                                                                                                     color={'#495057'}
-                                                                                                     strokeWidth={1.8}
-                                                                                                     headSize={7}
-                                                                                                     curveness={1}
-                                                                                                     zIndex={20}
-                                                                                                     animateDrawing={0.2}
-                                                                                                     labels={{
-                                                                                                         middle:
-                                                                                                             <ArrowLabelComponent/>
-                                                                                                     }}
-                                                                            />}
-                                                                        </Xwrapper>
-
-                                                                    </div>}
-                                                                {/*{!Source && SourceConcepts &&  (Predicate === obj['mentions'] || Target === obj['mentions']) && <div  className={'cover-left'}><OverlayConceptComponent type={'source'} /></div>}*/}
-                                                                {/*{!Predicate && PredicateConcepts && (Source === obj['mentions'] || Target === obj['mentions']) && <div  className={!Source?'cover-right' : 'cover-left'}><OverlayConceptComponent type={'predicate'}/></div>}*/}
-                                                                {/*{!Target && TargetConcepts && (Source === obj['mentions'] || Predicate === obj['mentions']) && <div  className={'cover-right'}><OverlayConceptComponent type={'target'}/></div>}*/}
-
-                                                                {/* */}
                                                             </>}
                                                         </span>}
 
@@ -1645,61 +1627,8 @@ export default function Document(props) {
 
                                             }</>)}
 
-                                        {(OpenAll && SourceAll && PredicateAll && TargetAll && AllRels && AllRels.length > 0 && InARel) && AllRels.map((rel, k) => <>{Array.from(document.getElementsByClassName(rel[0])).length > 0 && Array.from(document.getElementsByClassName(rel[1])).length > 0 &&
-                                            <Xarrow
 
-                                                start={Array.from(document.getElementsByClassName(rel[0]))[0].id} //can be react ref
-                                                end={Array.from(document.getElementsByClassName(rel[1]))[0].id} //or an id
-                                                path='straight'
-                                                curveness={1}
-                                                startAnchor={OverlappingST ? "top" : StartAnchorST}
-                                                endAnchor={OverlappingST ? "top" : EndAnchorST}
-                                                strokeWidth={WidthArrowST}
-                                                headSize={7}
-                                                color={'#bcbcbc'}
-
-                                                _cpy2Offset={ChangeSTOff ? 0 : 0}
-                                                _cpy1Offset={ChangeSTOff ? 20 : -20}
-                                                _cpx1Offset={ChangeSTOff ? 0 : 0}
-                                                _cpx2Offset={ChangeSTOff ? -50 : 50}
-                                                animateDrawing={0.2}
-                                                labels={{
-                                                    middle: <ArrowLabelComponent index={k} source={rel[0]}
-                                                                                 target={rel[1]} label={rel[2]}/>
-                                                }}
-
-
-                                            />}</>)
-
-                                        }
-
-
-                                        {STArrow && Source && Target &&
-                                            // {STArrow && InARel && document.getElementById('source') && document.getElementById('target') &&
-                                            <Xarrow
-
-                                                start={Array.from(document.getElementsByClassName('source'))[0].id} //can be react ref
-                                                end={Array.from(document.getElementsByClassName('target'))[0].id} //or an id
-                                                path='straight'
-                                                curveness={1}
-                                                startAnchor={OverlappingST ? "top" : StartAnchorST}
-                                                endAnchor={OverlappingST ? "top" : EndAnchorST}
-                                                strokeWidth={WidthArrowST}
-                                                headSize={7}
-                                                color={'#495057'}
-
-                                                _cpy2Offset={ChangeSTOff ? 0 : 0}
-                                                _cpy1Offset={ChangeSTOff ? 20 : -20}
-                                                _cpx1Offset={ChangeSTOff ? 0 : 0}
-                                                _cpx2Offset={ChangeSTOff ? -50 : 50}
-                                                animateDrawing={0.2}
-                                                labels={{middle: <ArrowLabelComponent/>}}
-
-
-                                            />
-                                        }
-
-                                        {SPArrow && InARel && document.getElementById('source') && document.getElementById('predicate') &&
+                                        {/*{SPArrow && InARel && document.getElementById('source') && document.getElementById('predicate') &&
                                             <Xarrow
                                                 passProps={{
                                                     onClick: () => {
@@ -1749,8 +1678,8 @@ export default function Document(props) {
                                                 animateDrawing={0.2}
                                                 //labels={{ start: <SelectArrowComponent request={'sp'}/>}}
 
-                                            />}
-                                        {PTArrow && InARel && document.getElementById('predicate') && document.getElementById('target') &&
+                                            />}*/}
+                                        {/*{PTArrow && InARel && document.getElementById('predicate') && document.getElementById('target') &&
                                             <Xarrow
                                                 passProps={{
                                                     onClick: () => {
@@ -1804,12 +1733,472 @@ export default function Document(props) {
                                             />
 
 
-                                        }
+                                        }*/}
 
                                     </span>
                                 </div>
                             </>}
                         </>)}
+                        {(OpenAll && SourceAll && PredicateAll && TargetAll && AllRels && AllRels.length > 0 && InARel) && AllRels.map((rel, k) => <>
+                            {/*source mention, predicate concept, target concept (target mention già gestito)*/}
+                            {Array.from(document.getElementsByClassName(rel[1])).length === 0 && Array.from(document.getElementsByClassName(rel[2])).length === 0 && Array.from(document.getElementsByClassName(rel[0])).length > 0 &&
+                                <><Xwrapper>
+                                    <DraggableRelsBoxPt id={'predchip'} index={k} label={rel[2]}/>
+                                    <Xarrow
+                                        start={Array.from(document.getElementsByClassName(rel[0]))[0].id} //can be react ref
+                                        end={"predchip"} //or an id
+                                        path='straight'
+                                        curveness={1}
+                                        startAnchor={OverlappingSP ? "top" : StartAnchorSP}
+                                        endAnchor={OverlappingSP ? "top" : EndAnchorSP}
+                                        strokeWidth={WidthArrowSP}
+                                        headSize={7}
+                                        color={'#bcbcbc'}
+                                        animateDrawing={0.2}
+                                    /></Xwrapper>
+                                    <Xwrapper>
+                                        <DraggableRelsBoxTgt id={'targetchip'} index={k} label={rel[1]}/>
+                                        <Xarrow
+                                            start={"predchip"} //can be react ref
+                                            end={Array.from(document.getElementsByClassName(rel[1]))[0].id} //or an id
+                                            path='straight'
+                                            curveness={1}
+                                            startAnchor={OverlappingPT ? "top" : StartAnchorPT}
+                                            endAnchor={OverlappingPT ? "top" : EndAnchorPT}
+                                            strokeWidth={WidthArrowPT}
+                                            headSize={7}
+                                            color={'#bcbcbc'}
+                                            animateDrawing={0.2}
+                                        />
+                                    </Xwrapper></>}
+
+
+                            {/*source concept, predicate concept, target mention (source mention già gestito)*/}
+                            {Array.from(document.getElementsByClassName(rel[1])).length > 0 && Array.from(document.getElementsByClassName(rel[2])).length === 0 && Array.from(document.getElementsByClassName(rel[0])).length === 0 &&
+                                <><Xwrapper>
+                                    <DraggableRelsBoxSo id={'sourcechip'} index={k} label={rel[0]}/>
+                                    <DraggableRelsBoxPt id={'predchip'} index={k} label={rel[0]}/>
+                                    <Xarrow
+                                        start={"sourcechip"} //can be react ref
+                                        end={"predchip"} //or an id
+                                        path='straight'
+                                        curveness={1}
+                                        startAnchor={OverlappingSP ? "top" : StartAnchorSP}
+                                        endAnchor={OverlappingSP ? "top" : EndAnchorSP}
+                                        strokeWidth={WidthArrowSP}
+                                        headSize={7}
+                                        color={'#bcbcbc'}
+                                        animateDrawing={0.2}
+                                    /></Xwrapper>
+                                    <Xwrapper>
+                                        <DraggableRelsBoxTgt id={'targetchip'} index={k} label={rel[1]}/>
+                                        <Xarrow
+                                            start={"predchip"} //can be react ref
+                                            end={"targetchip"} //or an id
+                                            path='straight'
+                                            curveness={1}
+                                            startAnchor={OverlappingPT ? "top" : StartAnchorPT}
+                                            endAnchor={OverlappingPT ? "top" : EndAnchorPT}
+                                            strokeWidth={WidthArrowPT}
+                                            headSize={7}
+                                            color={'#bcbcbc'}
+                                            animateDrawing={0.2}
+                                        />
+                                    </Xwrapper></>}
+                            {/*source mention, predicate mention */}
+                            {Array.from(document.getElementsByClassName(rel[0])).length > 0 && Array.from(document.getElementsByClassName(rel[2])).length > 0 &&
+                                <Xarrow
+
+                                    start={Array.from(document.getElementsByClassName(rel[0]))[0].id} //can be react ref
+                                    end={Array.from(document.getElementsByClassName(rel[2]))[0].id} //or an id
+                                    path='straight'
+                                    curveness={1}
+                                    startAnchor={OverlappingSP ? "top" : StartAnchorSP}
+                                    endAnchor={OverlappingSP ? "top" : EndAnchorSP}
+                                    strokeWidth={WidthArrowSP}
+                                    headSize={7}
+                                    color={'#bcbcbc'}
+
+                                    _cpy2Offset={ChangeSTOff ? 0 : 0}
+                                    _cpy1Offset={ChangeSTOff ? 20 : -20}
+                                    _cpx1Offset={ChangeSTOff ? 0 : 0}
+                                    _cpx2Offset={ChangeSTOff ? -50 : 50}
+                                    animateDrawing={0.2}
+                                />}
+                            {/*predicate mention, target mention */}
+                            {Array.from(document.getElementsByClassName(rel[1])).length > 0 && Array.from(document.getElementsByClassName(rel[2])).length > 0 &&
+                                <Xarrow
+
+                                    start={Array.from(document.getElementsByClassName(rel[2]))[0].id} //can be react ref
+                                    end={Array.from(document.getElementsByClassName(rel[1]))[0].id} //or an id
+                                    path='straight'
+                                    curveness={1}
+                                    startAnchor={OverlappingPT ? "top" : StartAnchorPT}
+                                    endAnchor={OverlappingPT ? "top" : EndAnchorPT}
+                                    strokeWidth={WidthArrowPT}
+                                    headSize={7}
+                                    color={'#bcbcbc'}
+
+                                    _cpy2Offset={ChangeSTOff ? 0 : 0}
+                                    _cpy1Offset={ChangeSTOff ? 20 : -20}
+                                    _cpx1Offset={ChangeSTOff ? 0 : 0}
+                                    _cpx2Offset={ChangeSTOff ? -50 : 50}
+                                    animateDrawing={0.2}
+                                />}
+                            {/*source mention, predicate concept, target mention */}
+                            {Array.from(document.getElementsByClassName(rel[0])).length > 0 && Array.from(document.getElementsByClassName(rel[1])).length > 0 && Array.from(document.getElementsByClassName(rel[2])).length === 0 &&
+                                <Xarrow
+
+                                    start={Array.from(document.getElementsByClassName(rel[0]))[0].id} //can be react ref
+                                    end={Array.from(document.getElementsByClassName(rel[1]))[0].id} //or an id
+                                    path='straight'
+                                    curveness={1}
+                                    startAnchor={OverlappingST ? "top" : StartAnchorST}
+                                    endAnchor={OverlappingST ? "top" : EndAnchorST}
+                                    strokeWidth={WidthArrowST}
+                                    headSize={7}
+                                    color={'#bcbcbc'}
+
+                                    _cpy2Offset={ChangeSTOff ? 0 : 0}
+                                    _cpy1Offset={ChangeSTOff ? 20 : -20}
+                                    _cpx1Offset={ChangeSTOff ? 0 : 0}
+                                    _cpx2Offset={ChangeSTOff ? -50 : 50}
+                                    animateDrawing={0.2}
+                                    labels={{
+                                        middle: <ArrowLabelComponent index={k} source={rel[0]}
+                                                                     target={rel[1]} label={rel[2]}/>
+                                    }}
+
+
+                                />}
+
+                            {/*predicate mention, target concept*/}
+                            {Array.from(document.getElementsByClassName(rel[1])).length === 0 && Array.from(document.getElementsByClassName(rel[2])).length > 0 &&
+
+                                <Xwrapper>
+                                    <DraggableRelsBoxTgt id={'targetchip'} index={k} label={rel[1]}/>
+                                <Xarrow
+                                    start={Array.from(document.getElementsByClassName(rel[2]))[0].id} //can be react ref
+                                    end={"targetchip"} //or an id
+                                    path='straight'
+                                    curveness={1}
+                                    startAnchor={OverlappingPT ? "top" : StartAnchorPT}
+                                    endAnchor={OverlappingPT ? "top" : EndAnchorPT}
+                                    strokeWidth={WidthArrowPT}
+                                    headSize={7}
+                                    color={'#bcbcbc'}
+
+                                    _cpy2Offset={ChangeSTOff ? 0 : 0}
+                                    _cpy1Offset={ChangeSTOff ? 20 : -20}
+                                    _cpx1Offset={ChangeSTOff ? 0 : 0}
+                                    _cpx2Offset={ChangeSTOff ? -50 : 50}
+                                    animateDrawing={0.2}
+
+
+
+                                /></Xwrapper>}
+
+                            {/*source concept, predicate mention*/}
+                            {Array.from(document.getElementsByClassName(rel[0])).length === 0 && Array.from(document.getElementsByClassName(rel[2])).length > 0 &&
+
+                                <Xwrapper>
+                                    <DraggableRelsBoxSo id={'sourcechip'} index={k} label={rel[1]}/>
+                                    <Xarrow
+                                        start={"sourcechip"} //can be react ref
+                                        end={Array.from(document.getElementsByClassName(rel[2]))[0].id} //or an id
+                                        path='straight'
+                                        curveness={1}
+                                        startAnchor={OverlappingSP ? "top" : StartAnchorSP}
+                                        endAnchor={OverlappingSP ? "top" : EndAnchorSP}
+                                        strokeWidth={WidthArrowPT}
+                                        headSize={7}
+                                        color={'#bcbcbc'}
+
+
+                                        animateDrawing={0.2}
+
+
+
+                                    /></Xwrapper>}
+
+                        </>)
+
+
+                        }
+
+
+
+
+                        {/*predicate concept, target concept*/}
+                        {/*source concept, predicate concept*/}
+
+                        {/*source concept, predicate mention*/}
+                        {!Source && SourceConcepts  && Predicate && PredicateElem &&
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-evenly',
+                                width: '100%'
+                            }}>
+
+                                <Xwrapper>
+                                    <DraggableBoxSource id={'sourcebox'}/>
+                                    {SPArrowFloat && <Xarrow start={"sourcebox"}
+                                                             end={Array.from(document.getElementsByClassName("predicate"))[0].id}
+
+                                                             color={'#495057'}
+                                                             strokeWidth={1.8}
+                                                             headSize={7}
+                                                             curveness={1}
+                                                             zIndex={20}
+                                                             animateDrawing={0.2}
+
+                                    />}
+                                </Xwrapper>
+
+                            </div>}
+
+                        {/*source mention, predicate concept*/}
+                        {!Predicate && PredicateConcepts &&!Target && !TargetConcepts && Source && SourceElem &&
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-evenly',
+                                width: '100%'
+                            }}>
+
+                                <Xwrapper>
+                                    <DraggableBoxPredicate id={'predicatebox'}/>
+                                    {SPArrowFloat && <Xarrow start={Array.from(document.getElementsByClassName("source"))[0].id}
+                                                             end={"predicatebox"}
+
+                                                             color={'#495057'}
+                                                             strokeWidth={1.8}
+                                                             headSize={7}
+                                                             curveness={1}
+                                                             zIndex={20}
+                                                             animateDrawing={0.2}
+
+                                    />}
+                                </Xwrapper>
+
+                            </div>}
+
+
+                        {/*source mention, target concept*/}
+                        {!Target && TargetConcepts && !Predicate && Source && SourceElem &&
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-evenly',
+                                width: '100%'
+                            }}>
+
+                                <Xwrapper>
+                                    <DraggableBoxTarget id={'targetbox'}/>
+                                    {STArrowFloat && <Xarrow start={Array.from(document.getElementsByClassName("source"))[0].id}
+                                                                                  end={"targetbox"}
+
+                                                                                  color={'#495057'}
+                                                                                  strokeWidth={1.8}
+                                                                                  headSize={7}
+                                                                                  curveness={1}
+                                                                                  zIndex={20}
+                                                                                  animateDrawing={0.2}
+                                                                                  labels={{
+                                                                                      middle:
+                                                                                          <ArrowLabelComponent/>
+                                                                                  }}
+                                    />}
+                                </Xwrapper>
+
+                            </div>}
+
+
+                        {/*source concept, target mention*/}
+                        {!Source && SourceConcepts && !Predicate && Target && TargetElem &&
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-evenly',
+                                width: '100%'
+                            }}>
+
+                                <Xwrapper>
+                                    <DraggableBoxSource id={'sourcebox'}/>
+                                    {STArrowFloat && !ShowConceptModal && <Xarrow start={'sourcebox'}
+                                                                                  end={Array.from(document.getElementsByClassName("target"))[0].id}
+
+                                                                                  color={'#495057'}
+                                                                                  strokeWidth={1.8}
+                                                                                  headSize={7}
+                                                                                  curveness={1}
+                                                                                  zIndex={20}
+                                                                                  animateDrawing={0.2}
+                                                                                  labels={{
+                                                                                      middle:
+                                                                                          <ArrowLabelComponent/>
+                                                                                  }}
+                                    />}
+                                </Xwrapper>
+
+                            </div>}
+
+                        {/*source mention, target mention*/}
+                        {STArrow && Source && Target &&
+                            // {STArrow && InARel && document.getElementById('source') && document.getElementById('target') &&
+                            <Xarrow
+
+                                start={Array.from(document.getElementsByClassName('source'))[0].id} //can be react ref
+                                end={Array.from(document.getElementsByClassName('target'))[0].id} //or an id
+                                path='straight'
+                                curveness={1}
+                                startAnchor={OverlappingST ? "top" : StartAnchorST}
+                                endAnchor={OverlappingST ? "top" : EndAnchorST}
+                                strokeWidth={WidthArrowST}
+                                headSize={7}
+                                color={'#495057'}
+
+                                _cpy2Offset={ChangeSTOff ? 0 : 0}
+                                _cpy1Offset={ChangeSTOff ? 20 : -20}
+                                _cpx1Offset={ChangeSTOff ? 0 : 0}
+                                _cpx2Offset={ChangeSTOff ? -50 : 50}
+                                animateDrawing={0.2}
+                                labels={{middle: <ArrowLabelComponent/>}}
+
+
+                            />
+                        }
+                        {/*source mention, predicate mention*/}
+                        {SPArrow && Source && Predicate &&
+                            // {STArrow && InARel && document.getElementById('source') && document.getElementById('target') &&
+                            <Xarrow
+
+                                start={Array.from(document.getElementsByClassName('source'))[0].id} //can be react ref
+                                end={Array.from(document.getElementsByClassName('predicate'))[0].id} //or an id
+                                path='straight'
+                                curveness={1}
+                                startAnchor={OverlappingSP ? "top" : StartAnchorSP}
+                                endAnchor={OverlappingSP ? "top" : EndAnchorSP}
+                                strokeWidth={WidthArrowSP}
+                                headSize={7}
+                                color={'#495057'}
+
+                                _cpy2Offset={ChangeSTOff ? 0 : 0}
+                                _cpy1Offset={ChangeSTOff ? 20 : -20}
+                                _cpx1Offset={ChangeSTOff ? 0 : 0}
+                                _cpx2Offset={ChangeSTOff ? -50 : 50}
+                                animateDrawing={0.2}
+                                // labels={{middle: <ArrowLabelComponent/>}}
+
+
+                            />
+                        }
+                        {/*predicate mention, target concept*/}
+                        {!Target && TargetConcepts && Predicate && PredicateElem &&
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-evenly',
+                                width: '100%'
+                            }}>
+
+                                <Xwrapper>
+                                    <DraggableBoxTarget id={'targetbox'}/>
+                                    {PTArrowFloat && !ShowConceptModal && <Xarrow start={Array.from(document.getElementsByClassName("predicate"))[0].id}
+                                                                                  end={"targetbox"}
+
+                                                                                  color={'#495057'}
+                                                                                  strokeWidth={1.8}
+                                                                                  headSize={7}
+                                                                                  curveness={1}
+                                                                                  zIndex={20}
+                                                                                  animateDrawing={0.2}
+
+                                    />}
+                                </Xwrapper>
+
+                            </div>}
+
+
+                        {/*predicate mention, target mention*/}
+                        {PTArrow && Target && Predicate &&
+                            // {STArrow && InARel && document.getElementById('source') && document.getElementById('target') &&
+                            <Xarrow
+
+                                start={Array.from(document.getElementsByClassName('predicate'))[0].id} //can be react ref
+                                end={Array.from(document.getElementsByClassName('target'))[0].id} //or an id
+                                path='straight'
+                                curveness={1}
+                                startAnchor={OverlappingPT ? "top" : StartAnchorPT}
+                                endAnchor={OverlappingPT ? "top" : EndAnchorPT}
+                                strokeWidth={WidthArrowPT}
+                                headSize={7}
+                                color={'#495057'}
+
+                                _cpy2Offset={ChangeSTOff ? 0 : 0}
+                                _cpy1Offset={ChangeSTOff ? 20 : -20}
+                                _cpx1Offset={ChangeSTOff ? 0 : 0}
+                                _cpx2Offset={ChangeSTOff ? -50 : 50}
+                                animateDrawing={0.2}
+                                // labels={{middle: <ArrowLabelComponent/>}}
+
+
+                            />
+                        }
+
+
+                        {/*/!*predicate concept, target concept, source mention*!/*/}
+                        {/*{!Predicate && PredicateConcepts  && !Target && TargetConcepts && Source &&*/}
+                        {/*    <div style={{*/}
+                        {/*        display: 'flex',*/}
+                        {/*        justifyContent: 'space-evenly',*/}
+                        {/*        width: '100%'*/}
+                        {/*    }}>*/}
+
+                        {/*        <Xwrapper>*/}
+                        {/*            <DraggableBoxTarget id={'targetbox'}/>*/}
+                        {/*            {PTArrowFloat  && <Xarrow start={"predicatebox"}*/}
+                        {/*                                      end={"targetbox"}*/}
+
+                        {/*                                      color={'#495057'}*/}
+                        {/*                                      strokeWidth={1.8}*/}
+                        {/*                                      headSize={7}*/}
+                        {/*                                      curveness={1}*/}
+                        {/*                                      zIndex={20}*/}
+                        {/*                                      animateDrawing={0.2}*/}
+
+                        {/*            />}*/}
+                        {/*        </Xwrapper>*/}
+
+                        {/*    </div>}*/}
+
+
+
+
+
+
+                        {/*/!*source concept, predicate concept*!/*/}
+                        {/*{!Predicate && PredicateConcepts  && !Source && SourceConcepts && Target &&*/}
+                        {/*    <div style={{*/}
+                        {/*        display: 'flex',*/}
+                        {/*        justifyContent: 'space-evenly',*/}
+                        {/*        width: '100%'*/}
+                        {/*    }}>*/}
+
+                        {/*        <Xwrapper>*/}
+                        {/*            <DraggableBoxSource id={'sourcebox'}/>*/}
+                        {/*            {SPArrowFloat  && <Xarrow start={"sourcebox"}*/}
+                        {/*                                      end={"predicatebox"}*/}
+
+                        {/*                                      color={'#495057'}*/}
+                        {/*                                      strokeWidth={1.8}*/}
+                        {/*                                      headSize={7}*/}
+                        {/*                                      curveness={1}*/}
+                        {/*                                      zIndex={20}*/}
+                        {/*                                      animateDrawing={0.2}*/}
+
+                        {/*            />}*/}
+                        {/*        </Xwrapper>*/}
+
+                        {/*    </div>}*/}
+
+
 
                     </div>}
 

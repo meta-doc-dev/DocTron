@@ -31,9 +31,9 @@ const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 
 export default function ConceptsListClass(props){
-    const { view,inarel,showconceptspannel,concepts,mentions,mentiontohighlight,areascolors } = useContext(AppContext);
-    const [ShowList,SetShowList] = useState(false)
+    const { view,inarel,showconceptspannel,concepts,mentions,annotationtypes,areascolors } = useContext(AppContext);
     const [View,SetView] = view
+    const [InARel,SetInARel] = inarel
 
     const [Concepts,SetConcepts] = useState(false)
     const [ConceptsList,SetConceptsList] = concepts
@@ -42,6 +42,9 @@ export default function ConceptsListClass(props){
     const [ShowConcepts,SetShowConcepts] = showconceptspannel
     const [FullConceptsList,SetFullConceptsList] = useState([])
     const [MentionsList, SetMentionsList] = mentions
+    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+
+    const [ShowList, SetShowList] = useState(AnnotationTypes.includes('Entity linking'))
 
 
 
@@ -127,9 +130,9 @@ export default function ConceptsListClass(props){
 
     return(
         <div>
-            <Button disabled={View === 4} onClick={()=>SetShowList(prev=>!prev)} variant="text">Concepts <i>({ConceptsList.length})</i></Button>
+            <Button disabled={View === 4 || InARel} onClick={()=>SetShowList(prev=>!prev)} variant="text">Concepts <i>({ConceptsList.length})</i></Button>
 
-            <Collapse in={ShowList}>
+            <Collapse in={ShowList && !InARel}>
                 {ConceptsList && FullConceptsList && ShowArea && <div>
                     {(Object.keys(Concepts)).filter(x=>x !== 'total_list').map(a =>
                         <>

@@ -18,24 +18,26 @@ import TagsListClass from "../RightSideMenu/tags/TagsListClass";
 import RelationshipsListComp from "../RightSideMenu/relationships/RelationshipsListComp";
 import LabelsClass from "../RightSideMenu/labels/Labels";
 import FactsListComp from "../RightSideMenu/relationships/FactsListComp";
+import PointsListClass from "../RightSideMenu/mentions/PointsListClass";
 // "react-color": "^3.0.0-beta.3",
 
 export default function ShowTypes(props) {
     const {
-        collection,
+        collection, factslist,
         labels,
         labels_passage,
-        annotationtypes,
+        annotationtypes,points,
         tags_split,
         relationshipslist,
-        concepts,
-        view,annotatedlabels,
+        concepts,annotationtype,
+        view, annotatedlabels,
         mentions
     } = useContext(AppContext);
 
     const [value, setValue] = useState(4)
     const [View, SetView] = view
     const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+    const [AnnotationType, SetAnnotationType] = annotationtype
     const [Collection, SetCollection] = collection
     const [Labels, SetLabels] = labels
     const [LabelsPassage, SetLabelsPassage] = labels_passage
@@ -44,6 +46,8 @@ export default function ShowTypes(props) {
     const [TagsSplitted, SetTagsSplitted] = tags_split
     const [AnnotatedLabels, SetAnnotatedLabels] = annotatedlabels
     const [RelationshipsList, SetRelationshipsList] = relationshipslist
+    const [FactsList, SetFactsList] = factslist
+    const [Points, setPoints] = points
 
     useEffect(() => {
         setValue(View)
@@ -75,25 +79,34 @@ export default function ShowTypes(props) {
         <div className={'annOver'}>
 
             <h5>Annotations overview</h5>
-            <div style={{fontSize:'0.8rem'}}>
-                <div>The allowed annotation types are:
+            <div style={{fontSize: '0.8rem'}}>
+                {/*<div>The allowed annotation types are:
                     <ul> {AnnotationTypes.map(type => <li>{type}</li>)}</ul>
                     <hr/>
-                </div>
+                </div>*/}
 
                 <div>
-                    {Labels && AnnotatedLabels && AnnotationTypes && AnnotationTypes.indexOf("Labels annotation") !== -1 &&
-                        <LabelsClass/>}
-                    {MentionsList && MentionsList.length > 0 && AnnotationTypes && AnnotationTypes.indexOf("Passages annotation") !== -1 &&
-                        <MentionsListClass/>}
-                    {ConceptsList && ConceptsList.length > 0 && AnnotationTypes && AnnotationTypes.indexOf("Entity linking") !== -1 &&
-                        <ConceptsListClass/>}
-                    {TagsSplitted && TagsSplitted.length > 0 && AnnotationTypes && AnnotationTypes.indexOf("Entity tagging") !== -1 &&
-                        <TagsListClass/>}
-                    {ConceptsList && RelationshipsList && RelationshipsList.length > 0 && AnnotationTypes && (AnnotationTypes.indexOf("Relationships annotation") !== -1) &&
-                        <RelationshipsListComp/>}
-                    {ConceptsList && RelationshipsList && RelationshipsList.length > 0 && AnnotationTypes && (AnnotationTypes.indexOf("Facts annotation") !== -1) &&
-                        <FactsListComp/>}
+                    {Labels && AnnotatedLabels && AnnotationTypes && AnnotationType === "Graded labeling" &&
+                        <div style={{margin: '10px 0px'}}>
+                            <LabelsClass/></div>}
+                    {MentionsList && MentionsList.length > 0 && AnnotationTypes && AnnotationType === "Passages annotation" &&
+                        <div style={{margin: '10px 0px'}}>
+                            <MentionsListClass/></div>}
+                    {Points && Points.length > 0 && AnnotationTypes && AnnotationType === "Object detection" &&
+                        <div style={{margin: '10px 0px'}}>
+                            <PointsListClass /></div>}
+                    {ConceptsList && ConceptsList.length > 0 && AnnotationTypes && AnnotationType === "Entity linking" &&
+                        <div style={{margin: '10px 0px'}}>
+                            <ConceptsListClass/></div>}
+                    {TagsSplitted && TagsSplitted.length > 0 && AnnotationTypes && AnnotationType === "Entity tagging" &&
+                        <div style={{margin: '10px 0px'}}>
+                            <TagsListClass/></div>}
+                    {ConceptsList && RelationshipsList && RelationshipsList.length > 0 && AnnotationTypes && (AnnotationType === "Relationships annotation") &&
+                        <div style={{margin: '10px 0px'}}>
+                            <RelationshipsListComp/></div>}
+                    {ConceptsList && FactsList && FactsList.length > 0 && AnnotationTypes && (AnnotationType === "Facts annotation") &&
+                        <div style={{margin: '10px 0px'}}>
+                            <FactsListComp/></div>}
 
 
                 </div>

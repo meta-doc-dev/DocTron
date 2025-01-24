@@ -6,7 +6,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
-import EditIcon from '@mui/icons-material/Edit';
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
 import Divider from '@mui/material/Divider';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -62,8 +61,8 @@ import {ConceptContext} from "../../../BaseIndex";
 import Tag from "../tag/Tag";
 
 export default function RelMention(props){
-    const { view,concepts,inarel,sourceall,predicateall,targetall,relationship,tags_split,curannotator,binaryrel,username,predicateconcepts,predicatetext,targetconcepts,targettext,sourcetext,sourceconcepts,relationshipslist,areascolors,modifyrel,predicate,source,target,currentdiv,readonlyrelation,firstsel,curmention,secondsel,collection,mentions,addconceptmodal,mentiontohighlight,startrange,endrange } = useContext(AppContext);
-    const { startanchorsp,startanchorpt,endanchorsp,endanchorpt,endanchorst,selectedarrow,startanchorst,overlappingpt,overlappingsp,overlappingst } = useContext(ArrowContext);
+    const { view,concepts,inarel,newrelation,sourceall,predicateall,targetall,relationship,tags_split,curannotator,binaryrel,username,predicateconcepts,predicatetext,targetconcepts,targettext,sourcetext,sourceconcepts,relationshipslist,areascolors,modifyrel,predicate,source,target,currentdiv,readonlyrelation,firstsel,curmention,secondsel,collection,mentions,addconceptmodal,mentiontohighlight,startrange,endrange } = useContext(AppContext);
+    const { startanchorsp,startanchorpt,endanchorsp,endanchorpt,endanchorst,selectedarrow,startanchorst } = useContext(ArrowContext);
     const { sparrow,ptarrow,starrow } = useContext(ConceptContext);
     const [MentionToHighlight,SetMentionToHighlight] = mentiontohighlight
     const [Click,SetClick] = useState(false)
@@ -85,7 +84,7 @@ export default function RelMention(props){
     const [PredicateText,SetPredicateText] = predicatetext
     const [TargetText,SetTargetText] =targettext
     const [TagsSplitted,SetTagsSplitted] = tags_split
-
+    const [Modify,SetModify] = modifyrel
     const [EndAnchorSP,SetEndAnchorSP] = endanchorsp
     const [EndAnchorPT,SetEndAnchorPT] = endanchorpt
     const [View,SetView] = view
@@ -94,9 +93,7 @@ export default function RelMention(props){
     const [Start,SetStart] = startrange
     const [End,SetEnd] = endrange
     const [Source,SetSource] = source
-    const [Sources,SetSources] = sourceall
-    const [Predicates,SetPredicates] = predicateall
-    const [Targets,SetTargets] = targetall
+
     const [SourceAll,SetSourceAll] = sourceall
     const [PredicateAll,SetPredicateAll] = predicateall
     const [TargetAll,SetTargetAll] = targetall
@@ -113,6 +110,7 @@ export default function RelMention(props){
     const [CurMention,SetCurMention] = curmention
     const [FirstSelected,SetFirstSelected] = firstsel
     const [SecondSelected,SetSecondSelected] = secondsel
+    const [NewRelation,SetNewRelation] = newrelation
     const [Mentions,SetMentions] = useState(false)
     const [ShowSelectMentionModal,SetShowSelectMentionModal] = useState(false)
     const [value,SetValue] = useState(0)
@@ -1004,11 +1002,15 @@ export default function RelMention(props){
 
 
                              if(!Source && !Predicate && !Target){
+                                 SetNewRelation(true)
                                  removeAllChildren('source')
                                  changeRole('Source');
                                  // console.log('SOURCE')
                              }
                              else if(Source && Predicate && Target){
+                                 if(!Modify){
+                                     SetNewRelation(true)
+                                 }
                                  if(props.mention.mentions.split(' ').indexOf(Source) !== -1){
                                      removeAllChildren('source')
                                      SetSource(false)
@@ -1032,13 +1034,19 @@ export default function RelMention(props){
 
                              }
                              else if(Source && !Predicate && !Target){
-                                 // console.log('predicate')
+                                                      // console.log('predicate')
                                  if(props.mention.mentions.split(' ').indexOf(Source) !== -1){
                                      removeAllChildren('source')
                                      SetSource(false)
                                      SetSourceText(false)
                                      SetSourceConcepts(false)
+                                     if(!Modify){
+                                         SetNewRelation(false)
+                                     }
                                  }else{
+                                     if(!Modify){
+                                         SetNewRelation(true)
+                                     }
                                      if (BinaryRel === false){
                                          removeAllChildren('target')
                                          changeRole('Target');
@@ -1054,6 +1062,9 @@ export default function RelMention(props){
 
                              }
                              else if(!Source && Predicate && !Target){
+                                 if(!Modify){
+                                     SetNewRelation(true)
+                                 }
                                  if(props.mention.mentions.split(' ').indexOf(Predicate) !== -1){
                                      removeAllChildren('predicate')
                                      SetPredicate(false)
@@ -1066,12 +1077,19 @@ export default function RelMention(props){
                                  }
                              }
                              else if(!Source && !Predicate && Target){
+
                                  if(props.mention.mentions.split(' ').indexOf(Target) !== -1){
+                                     if(!Modify){
+                                         SetNewRelation(false)
+                                     }
                                      removeAllChildren('target')
                                      SetTarget(false)
                                      SetTargetText(false)
                                      SetTargetConcepts(false)
                                  }else{
+                                     if(!Modify){
+                                         SetNewRelation(true)
+                                     }
                                      removeAllChildren('source')
                                      changeRole('Source');
                                      // console.log('SOURCE')
@@ -1079,6 +1097,9 @@ export default function RelMention(props){
 
                              }
                              else if(!Source && Predicate && Target){
+                                 if(!Modify){
+                                     SetNewRelation(true)
+                                 }
                                  if(props.mention.mentions.split(' ').indexOf(Target) !== -1){
                                      removeAllChildren('target')
                                      SetTarget(false)
@@ -1097,6 +1118,9 @@ export default function RelMention(props){
 
                              }
                              else if(Source && !Predicate && Target){
+                                 if(!Modify){
+                                     SetNewRelation(true)
+                                 }
                                  if(props.mention.mentions.split(' ').indexOf(Target) !== -1){
                                      removeAllChildren('target')
                                      SetTarget(false)
@@ -1115,6 +1139,9 @@ export default function RelMention(props){
                                  // console.log('predicate')
                              }
                              else if(Source && Predicate && !Target){
+                                 if(!Modify){
+                                     SetNewRelation(true)
+                                 }
                                  // console.log('target')
                                  if(props.mention.mentions.split(' ').indexOf(Predicate) !== -1){
                                      removeAllChildren('predicate')
@@ -1179,6 +1206,9 @@ export default function RelMention(props){
 
                         e.preventDefault()
                         e.stopPropagation()
+                        if(!Modify){
+                            SetNewRelation(true)
+                        }
                         setContextMenu(null);
                         removeAllChildren('source')
                         SetSPArrow(false)
@@ -1226,6 +1256,9 @@ export default function RelMention(props){
 
                             e.preventDefault()
                             e.stopPropagation()
+                            if(!Modify){
+                                SetNewRelation(true)
+                            }
                             setContextMenu(null);
                             removeAllChildren('predicate')
 
@@ -1276,6 +1309,9 @@ export default function RelMention(props){
 
                             e.preventDefault()
                             e.stopPropagation()
+                            if(!Modify){
+                                SetNewRelation(true)
+                            }
                             setContextMenu(null);
                             removeAllChildren('target')
 

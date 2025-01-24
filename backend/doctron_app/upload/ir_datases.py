@@ -55,7 +55,11 @@ def load_ir_url(ir_url, name_space, username, users, ir_preanno, collection):
                 value = getattr(query, field)
                 details[field] = value
             topic['details'] = details
-            Topic.objects.create(id=query_id,collection_id=collection,parent_topic=None,details=details)
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO topic (topic_id,collection_id,title,description,narrative,details) values (%s,%s,%s,%s,%s,%s)""",
+                    [query_id, collection.collection_id, None, None, None, json.dumps(details)])
+            # Topic.objects.create(topic_id=query_id,collection_id=collection,details=details)
 
         for qrel in dataset.qrels_iter():
             rel = {}

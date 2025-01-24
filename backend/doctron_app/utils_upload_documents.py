@@ -953,12 +953,16 @@ def upload_topics(file, collection):
             file_loaded = json.load(file)
             topics = file_loaded['topics']
             for topic in topics:
-                id = topic['id']
-                title = topic['title']
-                narrative = topic['narrative']
-                description = topic['description']
-                details = topic['details']
-                Topic.objects.create(topic_id=id,collection_id=collection, name=title, description=description,narrative=narrative,details=details)
+                id = topic.get('id', None)
+                title = topic.get('title',None)
+                narrative = topic.get('narrative',None)
+                description = topic.get('description',None)
+                details = topic.get('details',None)
+
+                with connection.cursor() as cursor:
+                    cursor.execute("""INSERT INTO topic (topic_id,collection_id,title,description,narrative,details) values (%s,%s,%s,%s,%s,%s)""",
+                                  [id, collection.collection_id, title, description, narrative, json.dumps(topic)] )
+                #Topic.objects.create(topic_id=id,collection_id=collection, title=title, description=description,narrative=narrative,details=details)
 
     except Exception as e:
         print(e)
@@ -989,6 +993,8 @@ def new_collection(request):
     username = request.session['username']
     msg = 'The task has started, it will take some time. Please, be patient.'
     name = request.POST.get('name', None)
+    type_collection = request.POST.get('type_collection', None)
+    topic_type = request.POST.get('topic_type', None)
     task = request.POST.get('task', None)
     tags = request.POST.getlist('tags[]', None)
     labels = request.POST.getlist('labels[]', None)
@@ -997,12 +1003,14 @@ def new_collection(request):
     labels_p = request.POST.getlist('labels_p[]', None)
     min_labels_p = [int(n) for n in request.POST.getlist('min_p_labels[]', None)]
     max_labels_p = [int(n) for n in request.POST.getlist('max_p_labels[]', None)]
-    annotation_types = request.POST.getlist('annotationtypes[]', None)
+    #annotation_types = request.POST.getlist('annotationtypes[]', None)
     description = request.POST.get('description', None)
     to_enc = name + request.session['username']
     collection_id = hashlib.md5(to_enc.encode()).hexdigest()
     share_with = request.POST.get('members', None)
     ir_url = request.POST.get('ir_dataset', None)
+    if ir_url == '':
+        ir_url = None
     ir_preanno = request.POST.get('ir_preanno', None)
     if ir_preanno == 'false':
         ir_preanno = False
@@ -1014,20 +1022,19 @@ def new_collection(request):
         share_with = share_with.replace('\\n', '\n').split('\n')
         share_with = [x.replace('\r', '').strip() for x in share_with if x != '']
     with transaction.atomic():
-        collection = Collection.objects.create(collection_id=collection_id, description=description,
-                                               name=name, modality='Collaborative open',
-                                               insertion_time=Now(), username=request.session['username'],
-                                               name_space=request.session['name_space'])
-        task = Task.objects.get(name=task)
-        for type in annotation_types:
-            type = AnnotationType.objects.get(name=type)
-            CollectionHasTask.objects.create(collection_id=collection, task_id=task, annotation_type=type)
+        collection = Collection.objects.create(collection_id=collection_id, description=description,annotation_type=AnnotationType.objects.get(name=request.session['annotation_type']),
+                                               name=name, modality='Collaborative open',type = type_collection,topic_type = topic_type,
+                                               insertion_time=Now())
+        # task = Task.objects.get(name=task)
+        # for type in annotation_types:
+        #     type = AnnotationType.objects.get(name=type)
+        #     CollectionHasTask.objects.create(collection_id=collection, task_id=task, annotation_type=type)
 
         name_space = NameSpace.objects.get(name_space=request.session['name_space'])
         creator = User.objects.filter(username=request.session['username'], name_space=name_space)
         for c in creator:  # gestisco i vari name space
             ShareCollection.objects.create(collection_id=collection, username=c,
-                                           name_space=c.name_space, status='Creator')
+                                           name_space=c.name_space, creator=True,status = 'accepted')
         for user in share_with:
             print(user)
             if user != request.session['username']:
@@ -1037,14 +1044,14 @@ def new_collection(request):
                     us = us.first()
                     ShareCollection.objects.create(collection_id=collection, username=us,
                                                    name_space=us.name_space,
-                                                   status='Invited')
+                                                   status='invited')
 
         for i,label in enumerate(labels):
             min_lab = min_labels[i]
             max_lab = max_labels[i]
             label = Label.objects.get_or_create(name=label)[0]
-            for field in CollectionHasLabel._meta.get_fields():
-                print(field.name)
+            # for field in CollectionHasLabel._meta.get_fields():
+            #     print(field.name)
             if not CollectionHasLabel.objects.filter(collection_id=collection, label=label).exists():
                 CollectionHasLabel.objects.create(collection_id=collection,labels_annotation=True,passage_annotation=False, label=label,values=str(NumericRange(int(min_lab), int(max_lab), bounds='[]')))
 
@@ -1052,8 +1059,7 @@ def new_collection(request):
             min_lab = min_labels_p[i]
             max_lab = max_labels_p[i]
             label = Label.objects.get_or_create(name=label)[0]
-            for field in CollectionHasLabel._meta.get_fields():
-                print(field.name)
+
             if not CollectionHasLabel.objects.filter(collection_id=collection, label=label).exists():
                 CollectionHasLabel.objects.create(collection_id=collection,labels_annotation=False,passage_annotation=True, label=label,values=str(NumericRange(int(min_lab), int(max_lab), bounds='[]')))
 
@@ -1067,21 +1073,20 @@ def new_collection(request):
             if not CollectionHasTag.objects.filter(collection_id=collection, name=tag).exists():
                 CollectionHasTag.objects.create(collection_id=collection, name=tag)
 
-        if ir_url is not None:
+        if ir_url is not None and ir_url != '':
             load_ir_url(ir_url, name_space.name_space, username, share_with, ir_preanno, collection)
         else:
             files = request.FILES.items()
             for filename, file in files:
                 if filename.startswith('concept'):
-
                     if file.name.endswith('json'):
                         upload_json_concepts(file, name_space.name_space, username, collection)
                     elif file.name.endswith('csv'):
                         upload_csv_concepts(file, name_space.name_space, username, collection)
+
                 elif filename.startswith('topic') and ir_url is None:
                     upload_topics(file, collection)
-                elif filename.startswith('qrels') and ir_url is None:
-                    upload_qrels(file, name_space.name_space, share_with, collection)
+
                 elif filename.startswith('document') and ir_url is None:
                     json_contents = create_json_content_from_file(file)
                     for json_content in json_contents:
@@ -1093,10 +1098,15 @@ def new_collection(request):
                                                                                'language'].lower() == 'english':
                             language = json_content['language']
 
-                        if not Document.objects.filter(document_id=pid).exists():
-                            Document.objects.create(batch=1, collection_id=collection, provenance='user',
-                                                    document_id=pid, language=language,honeypot=False,
-                                                    document_content=json_content, insertion_time=Now())
+                        if not Document.objects.filter(document_id=pid).exists() :
+                            if (file.name.endswith('json') or file.name.endswith('csv') or file.name.endswith('txt') or file.name.endswith('pdf')):
+                                Document.objects.create(batch=1, collection_id=collection, provenance='user',
+                                                        document_id=pid, language=language,honeypot=False,
+                                                        document_content=json_content, insertion_time=Now())
+                            elif (file.name.endswith('png') or file.name.endswith('jpg') or file.name.endswith('jpeg')):
+                                Document.objects.create(batch=1, collection_id=collection, provenance='user',
+                                                        document_id=pid, language=language, honeypot=False,
+                                                        document_content=json_content, insertion_time=Now(),image=file.read())
 
             pubmed_ids = request.POST.get('pubmed_ids', None)
             if pubmed_ids is not None and pubmed_ids != '' and ir_url is None:

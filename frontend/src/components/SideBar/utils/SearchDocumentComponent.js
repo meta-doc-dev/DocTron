@@ -136,7 +136,7 @@ export default function SearchComponent(props){
             </h5>
             <div>
                 {AnnotatedLabels ? <ThemeProvider theme={labelstheme}>
-                    {Labels.map(o=>
+                    {Labels['labels'].map(o=>
                         <span><Chip color={'not_added'} variant={NotAdded.indexOf(o) !== -1 ? "outlined": "filled"} label={o} size="small" onClick={()=>AdddeleteLabel(o)}/>{' '}</span>
 
                     )}

@@ -39,7 +39,7 @@ export default function RelationshipModal(props) {
         username,snackmessage,opensnack,relationshipslist,binaryrel,
         concepts,collectionslist,newfactin,curannotator,modality,view,showrelspannel,inarel,
         document_id,relationship,
-        collection,
+        collection,annotationtype,
         mentions,curconcept,newfact,
         mentiontohighlight,modifyrel,readonlyrelation,
         startrange,sourcetext,sourceconcepts,targettext,targetconcepts,predicatetext,predicateconcepts,
@@ -68,6 +68,7 @@ export default function RelationshipModal(props) {
     const [NewFactInterno,SetNewFactInterno] = newfactin
 
     const [CurAnnotator,SetCurAnnotator] = curannotator
+    const [AnnotationType,SetAnnotationType] = annotationtype
     const [Modality,SetModality] = modality
     const [View,SetView] = view
     const [ShowRels, SetShowRels] = showrelspannel
@@ -176,7 +177,7 @@ export default function RelationshipModal(props) {
             if(Modality === 2 || View === 4) {
                 SetOpenSnack(true)
                 SetSnackMessage({'message': 'You cannot annotate this document'})
-            }else if(AnnotationTypes.indexOf('Relationships annotation') === -1){
+            }else if(AnnotationType !== 'Relationships annotation'){
                     SetOpenSnack(true)
                     SetSnackMessage({'message': 'Relationships annotation is not allowed here'})
             }else {
@@ -188,16 +189,6 @@ export default function RelationshipModal(props) {
                     }).then(response => {
                         SetRelationshipsList(response.data)
                         SetUpdateConcepts(true)
-
-                        /*SetSource(false)
-                        SetPredicate(false)
-                        SetTarget(false)
-                        SetTargetText(false)
-                        SetPredicateText(false)
-                        SetSourceText(false)
-                        SetTargetConcepts(false)
-                        SetPredicateConcepts(false)
-                        SetSourceConcepts(false)*/
                         SetShowAlertSuccess(true)
                         SetInARel(false)
                         SetBinaryRel(false)
@@ -220,26 +211,16 @@ export default function RelationshipModal(props) {
                         predicate: predicate,
                         target: target
                     }).then(response => {
-                        SetUpdateConcepts(true)
-
                         SetRelationshipsList(response.data)
-                        SetSource(false)
-                        SetPredicate(false)
-                        SetTarget(false)
-                        SetNewFact(false)
-                        SetTargetText(false)
-                        SetPredicateText(false)
-                        SetSourceText(false)
-                        SetTargetConcepts(false)
-                        SetPredicateConcepts(false)
-                        SetSourceConcepts(false)
+                        SetUpdateConcepts(true)
                         SetShowAlertSuccess(true)
                         SetInARel(false)
+                        SetBinaryRel(false)
+                        SetNewFact(false)
                         SetModify(false)
                         SetNewFactInterno(false)
-                        SetSnackMessage({'message': 'Saved'})
-
                         SetShowReadOnlyRelation(true);
+                        SetSnackMessage({'message': 'Saved'})
                     }).catch(error => {
                         SetShowAlertError(true);
                         console.log(error)
@@ -284,11 +265,6 @@ export default function RelationshipModal(props) {
             SetPredicateText(Name.name)
 
             if(Source && Target){
-                console.log('eccomi qua')
-                console.log(Source)
-                console.log(SourceText)
-                console.log(TargetText)
-                console.log(Target)
                 submitRelationship(new_list)
             }
         }

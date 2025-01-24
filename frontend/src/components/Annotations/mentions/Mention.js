@@ -61,7 +61,7 @@ import CommentModal from "./modals/CommentModal";
 
 export default function Mention(props){
     props.mention.position = props.loc
-    const { areascolors,concepts,inarel,annotationtypes,labels,modality,newmention,binaryrel,addtagmodal,relationshipslist,tags_split,curannotator,opensnack,sourcetext,predicatetext,targettext,targetconcepts,predicateconcepts,sourceconcepts,snackmessage,username,showrelspannel,predicate,target,newrelation,readonlyrelation,view,source,document_id,tags,currentdiv,firstsel,curmention,secondsel,documentdescription,mentions,addconceptmodal,mentiontohighlight,startrange,endrange } = useContext(AppContext);
+    const { areascolors,concepts,inarel,expand,annotationtypes,labels,modality,newmention,binaryrel,addtagmodal,relationshipslist,tags_split,curannotator,opensnack,sourcetext,predicatetext,targettext,targetconcepts,predicateconcepts,sourceconcepts,snackmessage,username,showrelspannel,predicate,target,newrelation,readonlyrelation,view,source,document_id,tags,currentdiv,firstsel,curmention,secondsel,documentdescription,mentions,addconceptmodal,mentiontohighlight,startrange,endrange } = useContext(AppContext);
     const [DocumentDesc,SetDocumentDesc] = documentdescription
     const [MentionsInvolved,SetMentionsInvolved] = useState([])
     const [OpenMenuTags,SetOpenMenuTags] = useState(false)
@@ -78,6 +78,7 @@ export default function Mention(props){
     const handleOpen = () => {
         setMenuOpen(true);
     };
+    const [Expand,SetExpand] = expand
     const [NewMention,SetNewMention] = newmention
     const [SourceConcepts,SetSourceConcepts] = sourceconcepts
     const [PredicateConcepts,SetPredicateConcepts] = predicateconcepts
@@ -730,7 +731,7 @@ export default function Mention(props){
         e.preventDefault();
         SetShowRels(false)
         SetShowReadOnlyRelation(false)
-        // SetNewRelation(true)
+        SetNewRelation(true)
         SetSource(false)
         SetPredicate(false)
         SetTarget(false)

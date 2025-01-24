@@ -56,9 +56,10 @@ function HomeIcon(props) {
 
 HomeIcon.propTypes = {fontSize: PropTypes.string};
 export default function ActualPosition(props){
-    const { collection,document_id,collectiondocuments,topic,showdocs,task } = useContext(AppContext);
+    const { collection,document_id,collectiondocuments,topic,annotationtype,showdocs,task } = useContext(AppContext);
     const [Collection,SetCollection] = collection
     const [DocumentID,SetDocumentID] = document_id
+    const [AnnotationType,SetAnnotationType] = annotationtype
     const [ShowDocs,SetShowDocs] = showdocs
     const [CollectionDescription,SetCollectionDescription] = useState(false)
     const [TopicComments,SetTopicComments] = useState([])
@@ -163,6 +164,10 @@ export default function ActualPosition(props){
                             ccomponent="div"
                             label={`Task: ${Task}`}
                         />*/}
+                        <StyledBreadcrumb
+                            component="div"
+                            label={`${AnnotationType}`}
+                        />
                         <StyledBreadcrumb
                             component="div"
                             label={`Collection: ${CollectionDescription}`}

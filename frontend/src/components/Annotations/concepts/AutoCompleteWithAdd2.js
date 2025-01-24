@@ -31,13 +31,13 @@ import {ConceptContext, RelSearchContext} from "../../../BaseIndex";
 import {isElementOfType} from "react-dom/test-utils";
 
 export default function AutoCompleteWithAdd(props) {
-    const {inarel, showrelspannel, newfact, newfactin} = useContext(AppContext);
+    const {inarel, showrelspannel, newfact, newfactin,modifyrel} = useContext(AppContext);
 
     const [InARel, SetInARel] = inarel
     const [NewFact, SetNewFact] = newfact
     const [NewFactInterno, SetNewFactInterno] = newfactin
 
-    const [ShowRels, SetShowRels] = showrelspannel
+    const [Modify, SetModify] = modifyrel
 
     const {
         area,
@@ -53,13 +53,8 @@ export default function AutoCompleteWithAdd(props) {
         searchpredicate,
         searchobject
     } = useContext(ConceptContext);
-    const {area1, url1, name1, urlname1, description1, areas1, conceptslist1} = useContext(RelationConceptContext);
-    // const {areaSearch,urlSearch,nameSearch,areasSearch,searchsubject,searchpredicate,searchobject} =  useContext(RelSearchContext);
-    // const [Areas,SetAreas] = InARel ? areas1 : areas
-    // const [ConceptsList,SetConceptsList] = InARel ? conceptslist1 : conceptslist
-    // const [AreaValue,SetAreaValue] = InARel? area1 : area
-    // const [ConceptValue,SetConceptValue] =InARel ? name1 : name
-    // const [UrlValue,SetUrlValue] = InARel ? url1 : url
+    const {area1, url1, name1 } = useContext(RelationConceptContext);
+
     const [SearchSubject, SetSearchSubject] = searchsubject
     const [SearchPredicate, SetSearchPredicate] = searchpredicate
     const [SearchObject, SetSearchObject] = searchobject
@@ -72,9 +67,9 @@ export default function AutoCompleteWithAdd(props) {
     const [ConceptValue, SetConceptValue] = name
     const [UrlValue, SetUrlValue] = url
 
-    const [AreaValueRel, SetAreaValueRel] = (InARel || NewFact || NewFactInterno) ? area1 : useState(null)
-    const [ConceptValueRel, SetConceptValueRel] = (InARel || NewFact || NewFactInterno) ? name1 : useState(null)
-    const [UrlValueRel, SetUrlValueRel] = (InARel || NewFact || NewFactInterno) ? url1 : useState(null)
+    const [AreaValueRel, SetAreaValueRel] = (InARel || Modify || NewFact || NewFactInterno) ? area1 : useState(null)
+    const [ConceptValueRel, SetConceptValueRel] = (InARel || Modify || NewFact || NewFactInterno) ? name1 : useState(null)
+    const [UrlValueRel, SetUrlValueRel] = (InARel || NewFact  || Modify || NewFactInterno) ? url1 : useState(null)
 
 
     const [ConceptValueSearch, SetConceptValueSearch] = (SearchObject || SearchPredicate || SearchSubject) ? nameSearch : useState(null)

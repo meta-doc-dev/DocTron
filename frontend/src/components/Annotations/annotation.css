@@ -133,28 +133,30 @@
 
 .cover-left{
     position: absolute !important;
-    /*height: 200px;*/
-    /*width: 200px;*/
-    left: -50%;
-    top: -80%;
+
+    top: 10px;
     display: block;
     z-index: 10;
 }
+
+
 .cover-right{
     position: absolute !important;
-    /*height: 200px;*/
-    /*width: 200px;*/
-    right: -50%;
-    top: -80%;
+
+    top: 10px;
+
+    /*    right: -50%;
+        top: -80%;*/
     /*background-color:orange;*/
     display: block;
     z-index: 10;
 }
 .cover-right-more{
     position: absolute !important;
-
-    right: -50%;
-    top: -8%;
+    top: 10px;
+    right: -20px;
+/*    right: -50%;
+    top: -8%;*/
     /*background-color:orange;*/
     display: block;
     z-index: 10;

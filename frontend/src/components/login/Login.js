@@ -31,9 +31,11 @@ import Chip from "@mui/material/Chip";
 function Login() {
 
 
-    const { showbar,username,task,reports,languageList,curannotator,redir } = useContext(AppContext);
+    const { showbar,username,task,annotationtype,annotationtypes,curannotator,redir } = useContext(AppContext);
 
-    const [Task,SetTask] = task
+   // const [Task,SetTask] = task
+    const [AnnotationTypes,SetAnnotationTypes] = annotationtypes
+    const [AnnotationType,SetAnnotationType] = annotationtype
     const [Username,SetUsername] = useState('')
     const [User,SetUser] = username
     const [Password,SetPassword] = useState('')
@@ -62,10 +64,10 @@ function Login() {
         //     username: data.get('username'),
         //     password: data.get('password'),
         // });
-        data.append('task', Task);
+        data.append('annotation_type', AnnotationType);
         var username = data.get('username')
         // SetUser(username)
-        if (data.get('username','') !== '' && data.get('password','') !== '' && Task){
+        if (data.get('username','') !== '' && data.get('password','') !== '' && AnnotationType){
             axios({
                 method: "post",
                 url: "login",
@@ -182,13 +184,13 @@ function Login() {
                                     <div style={{fontSize:'0.65rem',margin:0,textAlign:'right'}}><a href={window.location.origin+'/password_reset'}>I forgot my password</a> </div>
                                 </div>
                                 <div style={{width:'350px'}}>
-                                    <h6>Tasks</h6>
+                                    <h6>Annotation type</h6>
                                     <div>
-                                        {['Deep learning','Ad hoc','Passage retrieval','Question answering','Conversational','Entity retrieval'].map(el=><span><Chip sx={{margin:'1%'}} label={el} variant={Task === el ? 'filled':"outlined"} color={'info'} onClick={(e)=>{
-                                            if(Task === el){
-                                                SetTask(false)
+                                        {AnnotationTypes && AnnotationTypes.map(el=><span><Chip sx={{margin:'1%'}} label={el} variant={AnnotationType === el ? 'filled':"outlined"} color={'info'} onClick={(e)=>{
+                                            if(AnnotationType === el){
+                                                SetAnnotationType(false)
                                             }else{
-                                                SetTask(el)
+                                                SetAnnotationType(el)
                                             }
                                         }} /></span>)}
                                     </div>

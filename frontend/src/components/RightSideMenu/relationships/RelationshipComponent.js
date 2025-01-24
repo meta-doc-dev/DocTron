@@ -37,12 +37,15 @@ const Alert = React.forwardRef(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 export default function RelationshipComponent(props){
-    const { concepts,annotationtypes,binaryrel,inarel,newfactin,opensnack,modality,snackmessage,curannotator,view,labels,newfact,mentions,collectionconcepts,showrelspannel,showfactspannel,modifyrel,readonlyrelation,sourcetext,relationshipslist,sourceconcepts,targettext,targetconcepts,predicatetext,predicateconcepts,relationship,predicate,source,target } = useContext(AppContext);
+    const { concepts,newrelation,annotationtypes,binaryrel,inarel,factslist,newfactin,opensnack,modality,snackmessage,curannotator,view,labels,newfact,mentions,collectionconcepts,showrelspannel,showfactspannel,modifyrel,readonlyrelation,sourcetext,relationshipslist,sourceconcepts,targettext,targetconcepts,predicatetext,predicateconcepts,relationship,predicate,source,target } = useContext(AppContext);
     const [ShowReadOnlyRelation,SetShowReadOnlyRelation] = readonlyrelation
     const [NewFact,SetNewFact] = newfact
+    const [NewRelation, SetNewRelation] = newrelation
+
     const [ShowInstructionModal,SetShowInstructionModal] = useState(false)
     const [CurAnnotator,SetCurAnnotator] = curannotator
     const [Modality,SetModality] = modality
+    const [FactsList,SetFactsList] = factslist
     const [View,SetView] = view
     const [ShowRels, SetShowRels] = showrelspannel
     const [ShowFacts, SetShowFacts] = showfactspannel
@@ -263,85 +266,162 @@ export default function RelationshipComponent(props){
                     SetSnackMessage({'message': 'Relationships annotation is not allowed here'})
             }else {
                 if (!Modify) {
-                    axios.post('relationships/insert', {
-                        source: source,
-                        predicate: predicate,
-                        target: target
-                    }).then(response => {
-                        SetRelationshipsList(response.data)
-                        SetUpdateConcepts(true)
-                        SetSource(false)
-                        SetPredicate(false)
-                        SetTarget(false)
-                        SetTargetText(false)
-                        SetPredicateText(false)
-                        SetShowReadOnlyRelation(false)
-                        SetSourceText(false)
-                        SetTargetConcepts(false)
-                        SetPredicateConcepts(false)
-                        SetSourceConcepts(false)
-                        SetShowAlertSuccess(true)
-                        //SetInARel(false)
-                        SetBinaryRel(false)
-                        SetNewFact(false)
-                        SetModify(false)
-                        SetNewFactInterno(false)
-                        SetShowReadOnlyRelation(true);
-                        SetShowAlertSuccess(true)
-                        //SetInARel(false)
-                        SetBinaryRel(false)
-                        SetNewFact(false)
-                        SetModify(false)
-                        SetNewFactInterno(false)
-                        SetShowReadOnlyRelation(true);
-                        SetSnackMessage({'message': 'Saved'})
+                    if(Source || Predicate || Target){
+                        axios.post('relationships/insert', {
+                            source: source,
+                            predicate: predicate,
+                            target: target
+                        }).then(response => {
+                            SetRelationshipsList(response.data)
+                            SetNewRelation(false)
+                            SetUpdateConcepts(true)
+                            SetSource(false)
+                            SetPredicate(false)
+                            SetTarget(false)
+                            SetTargetText(false)
+                            SetPredicateText(false)
+                            SetShowReadOnlyRelation(false)
+                            SetSourceText(false)
+                            SetTargetConcepts(false)
+                            SetPredicateConcepts(false)
+                            SetSourceConcepts(false)
+                            SetShowAlertSuccess(true)
+                            //SetInARel(false)
+                            SetBinaryRel(false)
+                            SetNewFact(false)
+                            SetModify(false)
+                            SetNewFactInterno(false)
+                            SetShowReadOnlyRelation(true);
+                            SetShowAlertSuccess(true)
+                            //SetInARel(false)
+                            SetBinaryRel(false)
+                            SetNewFact(false)
+                            SetModify(false)
+                            SetNewFactInterno(false)
+                            SetShowReadOnlyRelation(true);
+                            SetSnackMessage({'message': 'Saved'})
 
-                    }).catch(error => SetShowAlertError(true))
-                    console.log(source, predicate, target)
+                        }).catch(error => SetShowAlertError(true))
+                        console.log(source, predicate, target)
 
+
+                    }else{
+                        axios.post('facts/insert', {
+                            source: source,
+                            predicate: predicate,
+                            target: target
+                        }).then(response => {
+                            SetFactsList(response.data)
+                            SetUpdateConcepts(true)
+                            SetSource(false)
+                            SetPredicate(false)
+                            SetTarget(false)
+                            SetTargetText(false)
+                            SetPredicateText(false)
+                            SetShowReadOnlyRelation(false)
+                            SetSourceText(false)
+                            SetTargetConcepts(false)
+                            SetPredicateConcepts(false)
+                            SetSourceConcepts(false)
+                            SetShowAlertSuccess(true)
+                            //SetInARel(false)
+                            SetBinaryRel(false)
+                            SetNewFact(false)
+                            SetModify(false)
+                            SetNewFactInterno(false)
+                            SetShowReadOnlyRelation(true);
+                            SetShowAlertSuccess(true)
+                            //SetInARel(false)
+                            SetBinaryRel(false)
+                            SetNewFact(false)
+                            SetModify(false)
+                            SetNewFactInterno(false)
+                            SetShowReadOnlyRelation(true);
+                            SetSnackMessage({'message': 'Saved'})
+
+                        }).catch(error => SetShowAlertError(true))
+                        console.log(source, predicate, target)
+
+                    }
 
                 } else {
-                    axios.post('relationships/update', {
-                        prev_subject: Relationship['subject'],
-                        prev_predicate: Relationship['predicate'],
-                        prev_object: Relationship['object'],
-                        source: source,
-                        predicate: predicate,
-                        target: target
-                    }).then(response => {
-                        SetUpdateConcepts(true)
+                    if(Source || Predicate || Target){
+                        axios.post('relationships/update', {
+                            prev_subject: Relationship['subject'],
+                            prev_predicate: Relationship['predicate'],
+                            prev_object: Relationship['object'],
+                            source: source,
+                            predicate: predicate,
+                            target: target
+                        }).then(response => {
+                            SetRelationshipsList(response.data)
+                            SetNewRelation(false)
+                            SetUpdateConcepts(true)
+                            SetSource(false)
+                            SetPredicate(false)
+                            SetTarget(false)
+                            SetTargetText(false)
+                            SetPredicateText(false)
+                            SetShowReadOnlyRelation(false)
+                            SetSourceText(false)
+                            SetTargetConcepts(false)
+                            SetPredicateConcepts(false)
+                            SetSourceConcepts(false)
+                            SetShowAlertSuccess(true)
+                            //SetInARel(false)
+                            SetBinaryRel(false)
+                            SetNewFact(false)
+                            SetModify(false)
+                            SetNewFactInterno(false)
+                            SetShowReadOnlyRelation(true);
+                            SetShowAlertSuccess(true)
+                            //SetInARel(false)
+                            SetBinaryRel(false)
+                            SetNewFact(false)
+                            SetModify(false)
+                            SetNewFactInterno(false)
+                            SetShowReadOnlyRelation(true);
+                            SetSnackMessage({'message': 'Saved'})
+                        }).catch(error => {
+                            SetShowAlertError(true);
+                            console.log(error)
+                        })
+                    }else{
+                        axios.post('facts/update', {
+                            prev_subject: Relationship['subject'],
+                            prev_predicate: Relationship['predicate'],
+                            prev_object: Relationship['object'],
+                            source: source,
+                            predicate: predicate,
+                            target: target
+                        }).then(response => {
+                            SetUpdateConcepts(true)
 
-                        SetRelationshipsList(response.data)
-                  /*      SetSource(false)
-                        SetPredicate(false)
-                        SetTarget(false)
-                        SetTargetText(false)
-                        SetPredicateText(false)
-                        SetSourceText(false)
-                        SetTargetConcepts(false)
-                        SetPredicateConcepts(false)
-                        SetSourceConcepts(false)*/
-
-                        SetShowAlertSuccess(true)
-                        //SetInARel(false)
-                        SetBinaryRel(false)
-                        SetNewFact(false)
-                        SetModify(false)
-                        SetNewFactInterno(false)
-                        SetShowAlertSuccess(true)
-                        //SetInARel(true)
-                        SetModify(false)
-                        SetNewFactInterno(false)
-                        SetSnackMessage({'message': 'Saved'})
-
-                        SetShowReadOnlyRelation(true);
-                    }).catch(error => {
-                        SetShowAlertError(true);
-                        console.log(error)
-                    })
+                            SetFactsList(response.data)
 
 
-                    console.log(source, predicate, target)
+                            SetShowAlertSuccess(true)
+                            //SetInARel(false)
+                            SetBinaryRel(false)
+                            SetNewFact(false)
+                            SetModify(false)
+                            SetNewFactInterno(false)
+                            SetShowAlertSuccess(true)
+                            //SetInARel(true)
+                            SetModify(false)
+                            SetNewFactInterno(false)
+                            SetSnackMessage({'message': 'Saved'})
+
+                            SetShowReadOnlyRelation(true);
+                        }).catch(error => {
+                            SetShowAlertError(true);
+                            console.log(error)
+                        })
+
+                    }
+
+
+
                 }
             }
         }
@@ -436,7 +516,7 @@ export default function RelationshipComponent(props){
             {ShowConceptModal && NodeType === 'source' && <RelationshipModal relation={'source'} setconcepts_list={SetSourceConcepts} concepts_list={SourceConcepts} showconceptmodal={ShowConceptModal} setshowconceptmodal={SetShowConceptModal} settext={SetSourceText}/>  }
             {ShowConceptModal && NodeType === 'target' && <RelationshipModal relation={'target'} setconcepts_list = {SetTargetConcepts} concepts_list={TargetConcepts} showconceptmodal={ShowConceptModal} setshowconceptmodal={SetShowConceptModal} settext={SetTargetText}/>  }
             {ShowConceptModal && NodeType === 'predicate' && <RelationshipModal relation={'predicate'} setconcepts_list = {SetPredicateConcepts} concepts_list={PredicateConcepts} showconceptmodal={ShowConceptModal} setshowconceptmodal={SetShowConceptModal} settext={SetPredicateText}/>  }
-            <h3>
+            <h3 style={{color:'black'}}>
                 {(Source || Predicate || Target) ? <>Relationship</> : <>Fact</>}
             </h3>
             <div className={'rel_instr'} onClick={()=>SetShowInstructionModal(prev=>!prev)}>Help</div>
@@ -444,7 +524,7 @@ export default function RelationshipComponent(props){
 
             <div>
                 <ThemeProvider theme={roletheme}>
-                <i>To create a new relationship or a new assertion, define a <b>subject</b>, a <b>predicate</b>, and an <b>object</b>.</i>
+                <i style={{color:'black'}}>To create a new relationship or a new fact, define a <b>subject</b>, a <b>predicate</b>, and an <b>object</b>.</i>
 
                 <Accordion>
                     <AccordionSummary
@@ -465,9 +545,7 @@ export default function RelationshipComponent(props){
                                </IconButton>
                            </Typography>
                             {(!Source && (!SourceConcepts || SourceConcepts.length === 0)) && <>
-                                {/*<Typography sx={{ width: '10%', flexShrink: 0,color: 'text.secondary'  }}>*/}
 
-                                {/*</Typography>*/}
                                 <Typography >
                                     <Chip color="primary" size='small' variant={'outlined'} onClick={(e)=>handleClick(e,'source')} label={'Add subject'} />
                                 </Typography>

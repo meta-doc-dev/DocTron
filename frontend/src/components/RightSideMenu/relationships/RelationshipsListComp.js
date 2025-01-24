@@ -1,40 +1,30 @@
 import {Col, Row} from "react-bootstrap";
 import Button from "@mui/material/Button";
 import Collapse from '@mui/material/Collapse';
-
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
-import Badge from 'react-bootstrap/Badge'
 import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon from '@mui/icons-material/Save';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../rightsidestyles.css'
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 import axios from "axios";
-import { cloneDeep } from 'lodash';
-const checkedIcon = <CheckBoxIcon fontSize="small" />;
-
+import CommentIcon from '@mui/icons-material/Comment';
 import {AppContext} from "../../../App";
 import IconButton from "@mui/material/IconButton";
-import Chip from "@mui/material/Chip";
-import {CircularProgress} from "@mui/material";
-import RightSideConcept from "../associations/RightSideConcept";
+import {CircularProgress, Tooltip} from "@mui/material";
 import RightSideRelation from "./RightSideRelation";
-import SearchIcon from "@material-ui/icons/Search";
-import SearchRelationComponent from "./SearchRelationComponent";
 import {ConceptContext} from "../../../BaseIndex";
-import {RelSearchContext} from "../../../BaseIndex";
 import EditIcon from '@mui/icons-material/Edit';
 import {ClickOnBaseIndex, updateRelMentionColor, waitForElm} from "../../HelperFunctions/HelperFunctions";
 import RelationshipComponent from "./RelationshipComponent";
-// import * as URL from "url";
 import AddIcon from '@mui/icons-material/Add';
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import TextField from "@mui/material/TextField";
+import DialogActions from "@mui/material/DialogActions";
 
 export default function RelationshipsListComp(props){
-    const { modality,inarel,allrels,document_id,openall,sourceall,view,predicateall,targetall,username,curannotator,snackmessage,opensnack,mentions,showrelspannel,readonlyrelation,modifyrel,targettext,predicatetext,sourcetext,targetconcepts,predicateconcepts,predicate,target,source,relationship,relationshipslist,sourceconcepts } = useContext(AppContext);
+    const { modality,inarel,allrels,document_id,openall,annotationtypes,sourceall,view,predicateall,targetall,username,curannotator,snackmessage,opensnack,mentions,showrelspannel,readonlyrelation,modifyrel,targettext,predicatetext,sourcetext,targetconcepts,predicateconcepts,predicate,target,source,relationship,relationshipslist,sourceconcepts } = useContext(AppContext);
     const [Modality,SetModality] = modality
     const [DocumentID,SetDocumentID] = document_id
     const [MentionsList, SetMentionsList] = mentions
@@ -43,23 +33,19 @@ export default function RelationshipsListComp(props){
     const [OpenAll,SetOpenAll]=useState(0)
     const [Open,SetOpen]=openall
     const [RelationshipsList, SetRelationshipsList] = relationshipslist
-    const [RelationshipsListFiltered, SetRelationshipsListFiltered] = useState(false)
     const [LoadingRel,SetLoadingRel] = useState(false)
-    // const [RelationshipsList, SetRelationshipsList] = useState(false)
-    const [OpenSubject,SetOpenSubject] = useState(false)
-    const [OpenPredicate,SetOpenPredicate] = useState(false)
-    const [OpenObject,SetOpenObject] = useState(false)
-    const [OpenOther,SetOpenOther] = useState(false)
+    const [ShowComment,SetShowComment] = useState(false)
+    const [OpenComment,SetOpenComment] = useState(false)
     const {areaSearch,urlSearch,nameSearch,areasSearch,searchsubject,searchpredicate,searchobject} =  useContext(ConceptContext);
-    const [ShowList,SetShowList] = useState(false)
+    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+    const [ShowList, SetShowList] = useState(AnnotationTypes.includes('Relationships annotation'))
+
     const [OpenRelation,SetOpenRelation] = useState(false)
     // const {searchsubj,searchobj,searchpredicate} =  useContext(RelSearchContext);
     const [SearchSubject, SetSearchSubject] = searchsubject
     const [SearchPredicate, SetSearchPredicate] = searchpredicate
     const [SearchObject, SetSearchObject] = searchobject
-    // const [SearchSubject, SetSearchSubject] = useState(false)
-    // const [SearchPredicate, SetSearchPredicate] = useState(false)
-    // const [SearchObject, SetSearchObject] = useState(false)
+
     const [InARel,SetInARel] = inarel
     const [Source,SetSource] = source;
     const [SourceConcepts,SetSourceConcepts] = sourceconcepts
@@ -77,10 +63,6 @@ export default function RelationshipsListComp(props){
     const [RelCount,SetRelCount] = useState(0)
     const [ConceptsList,SetConceptsList] = conceptslist
     const [Relationship,SetRelationship] = relationship
-    const [SourceFilteredRelations,SetSourceFilteredRelations] = useState(false)
-    const [PredicateFilteredRelations,SetPredicateFilteredRelations] = useState(false)
-    const [TargetFilteredRelations,SetTargetFilteredRelations] = useState(false)
-    const [OtherFilteredRelations,SetOtherFilteredRelations] = useState(false)
     const [ShowRels,SetShowRels] = showrelspannel
     const [SourceAll,SetSourceAll] = sourceall;
     const [PredicateAll,SetPredicateAll] = predicateall;
@@ -94,36 +76,20 @@ export default function RelationshipsListComp(props){
     const [ConceptToFilter,SetConceptToFIlter] = useState(false)
     const [ShowReadOnlyRelation,SetShowReadOnlyRelation] = readonlyrelation
     const [Modify,SetModify] = modifyrel
-   /* let names = []
-    ConceptsList.map(x=>{
-        names.push(x.name)
-    })
-    let urls = []
-    ConceptsList.map(x=>{
-        urls.push(x.url)
-    })*/
-    // const [AreaValue,SetAreaValue] = area
-    // const [ConceptValue,SetConceptValue] =  name
-    // const [UrlValue,SetUrlValue] = url
+    const [Comment,SetComment] = useState(false)
     const [AllRels,SetAllRels] = allrels
     const [AreaValue,SetAreaValue] = areaSearch
     const [ConceptValue,SetConceptValue] = nameSearch
     const [UrlValue,SetUrlValue] = urlSearch
-    const [Value,SetValue] = useState(null)
-    // const sorted_mentions = RelationshipsList.sort(function(a, b) { return a.start - b.start; })
-    // const sorted_mentions_10 = sorted_mentions.slice(0,5)
 
-
-/*    useEffect(()=>{
-        async function fetchRelationships(){
-            const response = await axios.get('relationships',{params:{user:CurAnnotator}});
-            console.log('request',response)
-            SetRelationshipsList(response.data)
-            return response
+    useEffect(() => {
+        if(OpenComment >= 0) {
+            SetComment(OpenComment['comment'])
+        }else{
+            SetComment(false)
         }
-        fetchRelationships()
 
-    },[])*/
+    }, [OpenComment]);
 
 
 
@@ -179,6 +145,24 @@ export default function RelationshipsListComp(props){
         }
     }
 
+    useEffect(() => {
+        if(OpenComment >= 0){
+
+            axios.get('relationships/comment',{params:{relationship:OpenComment}})
+                .then(response=>{
+                    SetComment(response.data ['comment'] === '' ? false : response.data['comment'])
+                })
+        }else{
+            SetComment(false)
+            SetShowComment(false)
+        }
+
+
+
+
+    }, [OpenComment]);
+
+
     function deleteRelation(e,relation){
         e.preventDefault();
         e.stopPropagation();
@@ -186,7 +170,6 @@ export default function RelationshipsListComp(props){
         let predicate = relation['predicate']
         let target = relation['object']
         if(Modality === 2){
-            console.log('ecco')
             SetOpenSnack(true)
             SetSnackMessage({'message':'You cannot annotate this document'})
         }else {
@@ -224,7 +207,6 @@ export default function RelationshipsListComp(props){
 
     useEffect(()=>{
             if(!Modify){
-                SetRelationshipsListFiltered(RelationshipsList)
                 SetRelCount(RelationshipsList['counttotal'])
             }
 
@@ -459,8 +441,59 @@ export default function RelationshipsListComp(props){
         }
     }, [InARel]);
 
+    function uploadComment(){
+        if(OpenComment >= 0){
+
+            var comment = document.getElementById("comment").value
+            axios.post('relationships/comment',{relationship:OpenComment,comment:comment})
+                .then(response=>{
+
+                    SetShowComment(false)
+                    SetComment(false)
+                    SetOpenComment(false)
+                })
+        }
+    }
+
     return(
         <div id='rightsiderelationshipsclass'>
+            {ShowComment && OpenComment >= 0 && <Dialog
+                open={ShowComment}
+                onClose={(e)=> {
+                    e.preventDefault()
+                    SetShowComment(false)
+                    SetComment(false)
+                    SetOpenComment(false)
+                }}
+                maxWidth={'lg'}
+                sx={{width:'100%'}}
+
+
+            >
+                <DialogTitle>Leave a comment about your annotation</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+
+                    </DialogContentText>
+                    <div>
+                        <TextField           multiline
+                                             rows={4} id="comment" sx={{margin:'10px 0',width:'100%'}} label="Comment" variant="outlined" />
+
+                        {Comment && <><h5>Your comment:</h5>
+                            <div>{Comment}</div>
+                        </>}
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <Button        onClick={(e)=> {
+                        e.preventDefault()
+                        SetShowComment(false)
+                        SetComment(false)
+                        SetOpenComment(false)
+                    }}>Cancel</Button>
+                    <Button onClick={uploadComment}>Confirm</Button>
+                </DialogActions>
+            </Dialog>}
 
 
 
@@ -491,14 +524,15 @@ export default function RelationshipsListComp(props){
 
                                 {RelationshipsList.map((rel,i)=>
                                     <>
-                                        <div className='areas_header_instance' ><span onClick={(e)=> {
+                                        <div><div><span className={'areas_header_instance'}>
+                                            <span onClick={(e) => {
                                             e.preventDefault()
                                             e.stopPropagation()
-                                            if(OpenRelation === false || OpenRelation !== 'predicate' + '_' + i.toString()){
+                                            if (OpenRelation === false || OpenRelation !== 'predicate' + '_' + i.toString()) {
                                                 SetShowReadOnlyRelation(true)
-                                          /*      SetSourceAll(false)
-                                                SetPredicateAll(false)
-                                                SetTargetAll(false)*/
+                                                /*      SetSourceAll(false)
+                                                      SetPredicateAll(false)
+                                                      SetTargetAll(false)*/
                                                 SetSource(false)
                                                 SetPredicate(false)
                                                 SetTarget(false)
@@ -514,7 +548,7 @@ export default function RelationshipsListComp(props){
                                                 SetInARel(true)
                                                 SetRelationship(rel)
 
-                                            }else{
+                                            } else {
                                                 SetOpenRelation(false)
                                                 SetShowReadOnlyRelation(false)
                                                 SetModify(false)
@@ -532,26 +566,41 @@ export default function RelationshipsListComp(props){
                                                 SetInARel(true)
 
 
-
                                             }
-                                        }} className={OpenRelation === 'predicate_' + i.toString() ? 'selected_item':''}>{rel['text'] !== '' ? rel['text'] : 'Relation ' + i.toString()}</span>
+                                        }}
+                                                  className={OpenRelation === 'predicate_' + i.toString() ? 'selected_item' : ''}>{rel['text'] !== '' ? rel['text'] : 'Relation ' + i.toString()}</span></span></div>
 
                                             {CurAnnotator === Username ? <><div style={{display:"inline-block",marginLeft:'10px'}}>
                                                 {OpenRelation === 'predicate' + '_' + i.toString() &&
                                                 <div style={{display:"inline-block"}}>
+                                                    <Tooltip title={'Edit'}>
+
                                                     <IconButton onClick={(e)=> {
-                                                    // SetInARel(true);
                                                     e.preventDefault()
                                                     e.stopPropagation()
 
                                                     SetShowReadOnlyRelation(false);
                                                     SetModify(true)
                                                 }}>
-                                                    <EditIcon />
-                                                </IconButton>
-                                                    <IconButton onClick={(e)=>deleteRelation(e,rel)}>
-                                                    <DeleteIcon />
+                                                    <EditIcon fontSize={'small'}/>
+                                                    </IconButton></Tooltip>
+                                                    <Tooltip title={'Delete'}>
+                                                        <IconButton onClick={(e)=>deleteRelation(e,rel)}>
+                                                            <DeleteIcon fontSize={'small'}/>
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title={'Comment'}>
+                                                    <IconButton onClick={(e)=>{
+                                                        e.preventDefault()
+                                                        e.stopPropagation()
+                                                        SetShowComment(true)
+                                                        SetOpenComment(i)
+
+
+                                                    }}>
+                                                        <CommentIcon fontSize={'small'} />
                                                     </IconButton>
+                                                    </Tooltip>
 
                                                     </div>
 

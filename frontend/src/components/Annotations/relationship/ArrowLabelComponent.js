@@ -114,15 +114,20 @@ export default function ArrowLabelComponent(props){
         <>{InARel &&
     <div>
         {props.label ?
-            <div>
+            <>{props.label.startsWith('mention_') ? <></> :
 
-                <Chip label={props.label} size="small" color="info" onClick={(e)=>{
-                    e.preventDefault()
-                    SetRelationship(RelationshipsList[props.index])
-                }} variant="contained"/>
+                <div>
+
+                    <Chip label={props.label} size="small" color="info" onClick={(e) => {
+                        e.preventDefault()
+                        SetRelationship(RelationshipsList[props.index])
+                    }} variant="contained"/>
 
 
-            </div>
+                </div>
+
+            }</>
+
             :
             <>
                 {ShowModal && <QuickPredicateModal showconceptmodal={ShowModal}

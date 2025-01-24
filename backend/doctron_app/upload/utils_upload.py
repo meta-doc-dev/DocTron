@@ -1,4 +1,5 @@
 import hashlib
+from datetime import datetime
 
 from django.core.files.storage import FileSystemStorage
 import shutil
@@ -68,10 +69,10 @@ def create_json_content_from_file(file):
         sorting = df_file.columns
         for k in list(parsed.keys()):
             report_json = parsed[k]
-            if not 'document_id' not in list(report_json.keys()):
+            if not 'doc_id' not in list(report_json.keys()):
                 characters = string.ascii_letters + string.digits
                 lines = ''.join(random.choice(characters) for _ in range(32))
-                report_json['document_id'] = hashlib.md5(lines.encode()).hexdigest()
+                report_json['doc_id'] = hashlib.md5(lines.encode()).hexdigest()
 
             # report_json['sk_metatron'] = sorting
             # report_json['format'] = 'csv'
@@ -87,17 +88,17 @@ def create_json_content_from_file(file):
             for doc in documents:
                 # doc['format'] = 'json'
                 # doc['sk_metatron'] = list(doc.keys())
-                if not 'document_id' not in list(doc.keys()):
+                if not 'doc_id' not in list(doc.keys()):
                     characters = string.ascii_letters + string.digits
                     lines = ''.join(random.choice(characters) for _ in range(32))
-                    doc['document_id'] = hashlib.md5(lines.encode()).hexdigest()
+                    doc['doc_id'] = hashlib.md5(lines.encode()).hexdigest()
                 contents.append(doc)
         else:
             # files['sk_metatron'] = list(files.keys())
-            if not 'document_id' not in list(files.keys()):
+            if not 'doc_id' not in list(files.keys()):
                 characters = string.ascii_letters + string.digits
                 lines = ''.join(random.choice(characters) for _ in range(32))
-                files['document_id'] = hashlib.md5(lines.encode()).hexdigest()
+                files['doc_id'] = hashlib.md5(lines.encode()).hexdigest()
             contents.append(files)
 
     elif file.name.endswith('.txt'):
@@ -105,15 +106,23 @@ def create_json_content_from_file(file):
         report_json = {}
         lines = [line.decode("utf-8") for line in lines]
         if lines[0].startswith('ID: ') or lines[0].startswith('id: '):
-            report_json['document_id'] = lines[0].split('ID:')[0].strip()
+            report_json['doc_id'] = lines[0].split('ID:')[0].strip()
         else:
-            report_json['document_id'] = hashlib.md5(lines.encode()).hexdigest()
+            report_json['doc_id'] = hashlib.md5(lines.encode()).hexdigest()
 
         lines = '\n'.join([line.replace('\n', '') + ' ' for line in lines[1:]])
 
         report_json['content'] = lines
 
         contents.append(report_json)
+
+    elif file.name.endswith('.png') or file.name.endswith('.jpg') or file.name.endswith('.jpeg'):
+        doc_id = file.name[:-4]
+        report_json = {}
+        report_json['doc_id'] = doc_id
+
+        contents.append(report_json)
+
 
 
     elif file.name.endswith('.pdf'):
@@ -152,9 +161,9 @@ def create_json_content_from_file(file):
         parser = XMLParser(file_path)
         json_doc = parser.build_json_doc()
         title = parser.get_title() + parser.get_authors()
-        json_doc['document_id'] = hashlib.md5(title.encode()).hexdigest()
+        json_doc['doc_id'] = hashlib.md5(title.encode()).hexdigest()
         json_new_doc = {}
-        json_new_doc['document_id'] = json_doc['document_id']
+        json_new_doc['doc_id'] = json_doc['doc_id']
         json_new_doc['title'] = json_doc['title']
         line = '\n'
         for k, v in json_doc.items():

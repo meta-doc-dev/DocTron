@@ -33,12 +33,13 @@ import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
 import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 function DocumentToolBar(props){
-    const { username,collection,document_id,inarel,saving,curannotator,snackmessage,opensnack } = useContext(AppContext);
+    const { username,collection,document_id,inarel,annotationtype,saving,curannotator,snackmessage,opensnack } = useContext(AppContext);
     const [Collection,SetCollection] = collection
     const [DocumentID,SetDocumentID] = document_id
     const [Username,SetUsername] = username
     const [InARel,SetInARel] = inarel
     const [Saving,SetSaving] = saving
+    const [AnnotationType,SetAnnotationType] = annotationtype
     const [CollectionDescription,SetCollectionDescription] = useState(false)
     const [CurAnnotator,SetCurAnnotator] = curannotator
     const [SnackMessage,SetSnackMessage] = snackmessage;
@@ -72,7 +73,7 @@ function DocumentToolBar(props){
                 {InARel ? <div className={"exit"}>Press <h6 style={{display:"inline-block"}}>Esc </h6>{' '}<ExitToAppIcon /> to exit from relationship annotation</div> : <>
 
                     {CurAnnotator === Username ? <><DeleteAnnotation/>
-                        <CreateFact /></> : <><span style={{marginLeft:'20px'}}>
+                        {AnnotationType === 'Facts annotation' && <CreateFact/>}</> : <><span style={{marginLeft:'20px'}}>
                     Annotator: <b>{CurAnnotator}</b>
                 </span>
                         <div style={{display:"inline-block",marginLeft:'20px'}}>

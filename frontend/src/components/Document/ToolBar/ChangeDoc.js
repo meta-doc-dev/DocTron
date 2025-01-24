@@ -62,7 +62,8 @@ function ChangeDoc(props){
     const ToNext = (event) => {
         event.preventDefault();
         event.stopPropagation()
-        // console.log(props.documentList)
+        console.log(props.documentList)
+        console.log(DocumentID)
 
         var cur_ind = props.documentList.map(x=>x.hashed_id)
         cur_ind = cur_ind.indexOf(DocumentID)
@@ -90,13 +91,13 @@ function ChangeDoc(props){
 
     const changeDocumentArrow = useCallback((event) => {
         // console.log('chiave',event.key)
-        if (event.keyCode === 37 && event.ctrlKey) {
+        if (event.keyCode === 39 && event.shiftKey) {
             ToNext(event)
 
-        }else if(event.keyCode === 39 && event.ctrlKey){
+        }else if(event.keyCode === 37 && event.shiftKey){
             ToPrev(event)
         }
-    }, []);
+    }, [DocumentID]);
 
     useEffect(() => {
         if(! (props.documentList.length <2  || InARel)){
@@ -107,7 +108,7 @@ function ChangeDoc(props){
             };
         }
 
-    }, []);
+    }, [DocumentID]);
 
 
     return(

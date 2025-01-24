@@ -40,15 +40,15 @@ import Chip from "@mui/material/Chip";
 
 export const CollectionContext = createContext('')
 export default function CollectionsList(props) {
-    const {username, users, collectionslist, binaryrel, inarel, task} = useContext(AppContext);
+    const {username, annotationtype, collectionslist,annotationtypes, binaryrel, inarel} = useContext(AppContext);
     const [Username, SetUsername] = username
     const [CollectionsList, SetCollectionsList] = collectionslist
     const [CollectionToShow, SetCollectionToShow] = useState(false)
     const [AddCollection, SetAddCollection] = useState(false)
     const [UpdateCollection, SetUpdateCollection] = useState(false)
     const [Counter, SetCounter] = useState(0)
-    const [UsersList, SetUsersList] = users
-    const [Task, SetTask] = task
+    const [AnnotationType, SetAnnotationType] = annotationtype
+    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
 
     const [BinaryRel, SetBinaryRel] = binaryrel
     const [InARel, SetInARel] = inarel
@@ -64,9 +64,10 @@ export default function CollectionsList(props) {
         // if(UpdateCollection){
         axios.get('pending_invitations').then(response => SetCounter(response.data['count']))
         if (UpdateCollection) {
+
             axios.get('collections/list').then(response => {
-                if (Task) {
-                    SetCollectionsList(response.data['collections'].filter(x => x['task'] === Task))
+                if (AnnotationType) {
+                    SetCollectionsList(response.data['collections'].filter(x => x['annotation_type'] === AnnotationType))
 
                 } else {
                     SetCollectionsList(response.data['collections'])
@@ -113,15 +114,15 @@ export default function CollectionsList(props) {
 
     }
 
-    function changeTask(e, task) {
-        if (Task) {
-            axios.get('collections/list', {params: {task: task}})
+    function changeType(e, type) {
+        if (AnnotationType) {
+            axios.get('collections/list', {params: {annotation_type: type}})
                 .then(response => {
                     SetCollectionsList(response.data['collections'])
-                    SetTask(task)
+                    SetAnnotationType(type)
                 })
         } else {
-            console.log(task)
+            console.log(type)
         }
 
     }
@@ -185,13 +186,13 @@ export default function CollectionsList(props) {
                     <div style={{marginTop: '5%'}}>
                         <Row>
                             <Col md={3}>
-                                <h6>Tasks</h6>
+                                <h6>Template</h6>
                                 <div>
-                                    {['Deep learning', 'Ad hoc', 'Passage retrieval', 'Entity retrieval', 'Question answering', 'Conversational'].map(task =>
+                                    {AnnotationTypes && AnnotationTypes.map(type =>
                                         <div>
 
-                                            <Chip label={task} sx={{margin: '2%'}} onClick={(e) => changeTask(e, task)}
-                                                  variant={Task === task ? 'filled' : "outlined"} color={'info'}/>
+                                            <Chip label={type} sx={{margin: '2%'}} onClick={(e) => changeType(e, type)}
+                                                  variant={AnnotationType === type ? 'filled' : "outlined"} color={'info'}/>
 
 
                                         </div>)}
@@ -202,12 +203,12 @@ export default function CollectionsList(props) {
                             <Col md={8}>
                                 <>
                                     <div style={{justifyContent: 'center', marginTop: '5vh'}}>
-                                        <><h2>Found {CollectionToShow.length} collections for {Task} task.</h2><br/>
+                                        <><h2>Found {CollectionToShow.length} collections for {AnnotationType}.</h2><br/>
                                             <div style={{marginTop: '3%'}}>
                                                 <Button onClick={() => SetAddCollection(prev => !prev)}
                                                         variant="contained"
                                                         startIcon={<AddIcon/>}>
-                                                    Add {Task} collection
+                                                    Add  collection with {AnnotationType} template
                                                 </Button>
                                             </div>
                                         </>

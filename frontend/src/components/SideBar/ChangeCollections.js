@@ -39,10 +39,10 @@ import Chip from "@mui/material/Chip";
 import {CircularProgress} from "@mui/material";
 
 export default function CollectionsComponent(props){
-    const { collection,document_id,labels, inarel,labelstosave,collectionslist,username } = useContext(AppContext);
+    const { collection,document_id,topic, inarel,labelstosave,collectionslist,username } = useContext(AppContext);
     const [Collection,SetCollection] = collection
     const [DocumentID,SetDocumentID] = document_id
-    const [Labels,SetLabels] = labels
+    const [Topic,SetTopic] = topic
     const [NotAdded,SetNotAdded] = useState([])
     const [ShowSelect,SetShowSelect] = useState(false)
     const [AnnotatedLabels, SetAnnotatedLabels] = useState(false)
@@ -100,6 +100,7 @@ export default function CollectionsComponent(props){
             .then(rs=> {
                 SetCollection(id);
                 SetDocumentID(rs.data['document_id'])
+                SetTopic(rs.data['topic'])
             })
         // SetCollection(e.target.id)
 

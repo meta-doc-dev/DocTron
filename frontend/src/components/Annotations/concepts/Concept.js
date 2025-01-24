@@ -239,7 +239,7 @@ export default function Concept(props){
                     <span>
 
                      {CurAnnotator === Username ?<CustomChip label={concept['concept'].concept_name}
-                                                             onDelete={()=>SetShowDelete(prev=>!prev)} onClick={(e) => {
+                                                             onDelete={(e)=>handleDelete(e,0)} onClick={(e) => {
                              e.preventDefault()
                              SetConcept(concept['concept'].concept_url)
                              SetShowComment(prev => !prev)
@@ -266,15 +266,17 @@ export default function Concept(props){
                                  onClick={()=>SetShowDescription(prev=>!prev)}  />}
             </div>}*/}
 
-            {((props.concepts && props.concepts.length === 1 && Color && ColorOver && InARel)) &&
+            {((props.concepts && props.concepts.length >= 1 && Color && ColorOver && InARel)) &&
             <div style={{textAlign:'center'}}>
-
-                <ChipRel role={props.role} variant = {(props.role.toLowerCase() === 'source' || props.role.toLowerCase() === 'predicate' || props.role.toLowerCase() === 'target') ? "filled":"outlined"} color={Color} label={props.concepts[0]['concept'].concept_name} />
-            </div>}
-            {props.concepts && props.concepts.length > 1 &&  Color && ColorOver && InARel &&
+                <>{props.concepts.map(concept =>
+                    <span>
+                <ChipRel role={props.role} variant = {(props.role.toLowerCase() === 'source' || props.role.toLowerCase() === 'predicate' || props.role.toLowerCase() === 'target') ? "filled":"outlined"} color={Color} label={concept['concept'].concept_name} />
+                    </span>)}</>
+                    </div>}
+          {/*  {props.concepts && props.concepts.length > 1 &&  Color && ColorOver && InARel &&
             <div className='concepts'>
                 <ChipRel role={props.role} variant = {(props.role.toLowerCase() === 'source' || props.role.toLowerCase() === 'predicate' || props.role.toLowerCase() === 'target') ? "filled":"outlined"} color={Color} label={props.concepts.length}  />
-            </div>}
+            </div>}*/}
 
 
 {/*
@@ -320,7 +322,7 @@ export default function Concept(props){
                 </DialogActions>
             </Dialog>}
 
-            {ShowDelete &&
+  {/*          {ShowDelete &&
             <Dialog
                 open={ShowDelete}
                 onClose={()=>SetShowDelete(false)}
@@ -345,52 +347,10 @@ export default function Concept(props){
                     </Button>
                 </DialogActions>
             </Dialog>
-            }
+            }*/}
 
 
-            {ShowMultiple &&
-            <Dialog
-                open={ShowMultiple}
-                onClose={()=>SetShowMultiple(false)}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-                maxWidth={'sm'}
-                fullWidth={'sm'}
-            >
 
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        {props.concepts.map((c,i)=><div>
-                            <h4 style={{display:"inline"}}><i>{c['concept'].area}</i>: {c['concept'].concept_name}</h4>
-                            <Tooltip title="Delete concept">
-                            <span style={{display:"inline", float:'right'}}>
-                                <IconButton aria-label="delete" color = 'error' onClick={(e)=>handleDelete(e,i)}>
-                              <DeleteIcon />
-                            </IconButton>
-
-                            </span></Tooltip>
-                            <div>
-                                <div style={{marginBottom:'3%'}}>
-                                    <a href={c['concept'].concept_url} > {c['concept'].concept_url}</a>
-                                </div>
-                                <div style={{marginBottom:'3%'}}>
-                                    {c['concept'].concept_description}
-                                </div><hr/>
-                            </div>
-
-                        </div>)}
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={()=> {SetShowMultiple(false);}}>
-                        Close
-                    </Button>
-                    {/*<Button onClick={(e)=>{handleDelete(e)}} autoFocus>*/}
-                    {/*    Agree*/}
-                    {/*</Button>*/}
-                </DialogActions>
-            </Dialog>
-            }
         </div>
 
     )

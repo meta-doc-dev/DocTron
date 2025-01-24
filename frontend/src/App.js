@@ -77,11 +77,13 @@ function App() {
     const [Collection, SetCollection] = useState(false)
 
     const [RelationshipsList, SetRelationshipsList] = useState(false)
+    const [FactsList, SetFactsList] = useState(false)
     const [useCase, SetUseCase] = useState('')
     const [Language, SetLanguage] = useState('')
     const [ShowModal, SetShowModal] = useState(false)
     const [Mention, SetMention] = useState('')
     const [AnnotationTypes, SetAnnotationTypes] = useState([])
+    const [AnnotationType, SetAnnotationType] = useState(false)
     // const [Outcomes,SetOutcomes] = useState([])
     const [UsersListAnnotations, SetUsersListAnnotations] = useState([])
     // const [ReloadMentions,SetReloadMentions] = useState(false)
@@ -154,10 +156,8 @@ function App() {
     const [SelectedLang, SetSelectedLang] = useState('')
     const [TopicsList,SetTopicsList] = useState(false)
     const [Topic,SetTopic] = useState(false)
-    // const [ShowLabelsOpts,SetShowLabelsOpts] = useState([])
-    // const [TokenToColor,SetTokenToColor] = useState(false)
-    // const [Top_K,SetTop_K] = useState(10)
-    // const [TopicInfo,SetTopicInfo] = useState({})
+    const [Points,setPoints] = useState([])
+    const [PointHigh,SetPointHigh] = useState(false)
     const [WindowRef] = useState(window.location.host)
     const [InARelationship, SetInARelationship] = useState(false)
     const [CollList, SetCollList] = useState(false)
@@ -209,6 +209,8 @@ function App() {
     const [OpenSnack, SetOpenSnack] = useState(false)
     const [SnackMessage, SetSnackMessage] = useState(false)
     const [AllRels, SetAllRels] = useState([])
+    const [CollectionType,SetCollectionType] = useState("Textual")
+    const [TopicType,SetTopicType] = useState("Textual")
     // const [PredicateId,SetPredicateId] = useState(false)
     // const [TargetId,SetTargetId] = useState(false)
     const [AutoAnnotate, SetAutoAnnotate] = useState(false)
@@ -274,6 +276,14 @@ function App() {
     useEffect(() => {
         var username = window.username
         var profile = window.profile
+
+        axios.get('annotation_types').then(response => {
+            SetAnnotationTypes(response.data['types'])
+        })
+            .catch(error => {
+                console.log('error', error)
+            })
+
         // var BASEURL = window.baseurl
         console.log('username', username)
         console.log('profile', profile)
@@ -318,11 +328,10 @@ function App() {
             axios.get('collections/modality')
                 .then(response => {
                     SetModality(response.data['modality'])
+                    SetCollectionType(response.data['collection_type'])
+                    SetTopicType(response.data['topic_type']);
+
                 })
-            /*            axios.get('collections/labels')
-                            .then(response=>{
-                                SetLabels(response.data)
-                            })*/
 
 
             axios.get('collections/documents')
@@ -364,9 +373,9 @@ function App() {
                 SetCollection(response.data['collection']);
                 SetAnnotation(response.data['name_space']);
                 SetRole(response.data['role']);
-                SetTask(response.data['task']);
+                // SetTask(response.data['task']);
                 SetTopic(response.data['topic']);
-                SetAnnotationTypes(response.data['types']);
+                SetAnnotationType(response.data['annotation_type']);
                 SetDocumentID(response.data['document']);
 
             })
@@ -378,6 +387,7 @@ function App() {
                 .catch(error => {
                     console.log('error', error)
                 })
+
 
 
         }
@@ -548,7 +558,7 @@ function App() {
                 documentlist: [DocumentList, SetDocumentList],
                 curmention: [CurMention, SetCurMention],
                 curconcept: [CurConcept, SetCurConcept],
-                showmembers: [ShowMembers, SetShowMembers],
+                showmembers: [ShowMembers, SetShowMembers],pointhigh:[PointHigh,SetPointHigh],
                 collectiondocuments: [CollectionDocuments, SetCollectionDocuments],
                 showfilter: [ShowFilter, SetShowFilter],
                 showstats: [ShowStats, SetShowStats],
@@ -573,8 +583,9 @@ function App() {
                 document_id: [DocumentID, SetDocumentID],
                 mentions: [MentionsList, SetMentionsList],
                 startrange: [Start, SetStart],
-                endrange: [End, SetEnd],
-                url: [WindowRef],
+                endrange: [End, SetEnd],factslist:[FactsList, SetFactsList],
+                url: [WindowRef],collType:[CollectionType,SetCollectionType],
+                topicType:[TopicType,SetTopicType],
                 users: [UsersList, SetUsersList],
                 usersListAnnotations: [UsersListAnnotations, SetUsersListAnnotations],
                 collection: [Collection, SetCollection],
@@ -603,7 +614,7 @@ function App() {
                 fieldsToAnn: [FieldsToAnn, SetFieldsToAnn],
                 binaryrel: [BinaryRel, SetBinaryRel],
                 openall: [OpenAll, SetOpenAll],
-                start: [Start, SetStart],
+                start: [Start, SetStart], points:[Points,setPoints],
                 username: [Username, SetUsername],
                 showOptions: [ShowModal, SetShowModal],
                 language: [Language, SetLanguage],
@@ -617,6 +628,7 @@ function App() {
                 checks: [checks, setChecks],
                 highlightMention: [HighlightMention, SetHighlightMention],
                 annotationtypes: [AnnotationTypes, SetAnnotationTypes],
+                annotationtype: [AnnotationType, SetAnnotationType],
                 save: [SavedGT, SetSavedGT],
                 disButton: [Disabled_Buttons, SetDisable_Buttons],
                 selectedconcepts: [selectedConcepts, setSelectedConcepts],

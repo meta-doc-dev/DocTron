@@ -218,14 +218,14 @@ export default function DownloadDocument(props){
 
                     label="annotation"
                     onChange={(e)=>{SetAnnotationValue(e.target.value)}}
-                >
+                 variant={'outlined'}>
 
                     <MenuItem value={'mentions'}>Mentions</MenuItem>
                     <MenuItem value={'concepts'}>Concepts</MenuItem>
                     <MenuItem value={'tags'}>Tags</MenuItem>
                     <MenuItem value={'relationships'}>Relationships</MenuItem>
                     {FormatValue !== 'xml' && <MenuItem value={'assertions'}>Fact</MenuItem>}
-                    {FormatValue !== 'xml' && <MenuItem value={'labels'}>Document labels</MenuItem>}
+                    {FormatValue !== 'xml' && <MenuItem value={'labels'}>Labels</MenuItem>}
                     {FormatValue === 'json' && <MenuItem value={'all'}>All</MenuItem>}
 
                 </Select></FormControl>
@@ -243,7 +243,7 @@ export default function DownloadDocument(props){
                     onChange={(e) => {
                         SetAnnotatorValue(e.target.value)
                     }}
-                >
+                 variant={'outlined'}>
 
                     <MenuItem value={Username}>{Username}</MenuItem>
                     {UsersList.map(u => <MenuItem value={u.username}>{u.username}</MenuItem>)}

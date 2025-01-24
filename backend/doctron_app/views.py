@@ -179,7 +179,7 @@ def login(request):
         if request.method == 'POST':
             md5_pwd = ''
             username = request.POST.get('username', False)
-            task = request.POST.get('task', False)
+            annotation_type = request.POST.get('annotation_type', False)
             mode1 = 'Human'
             password = request.POST.get('password', False)
             orcid = request.POST.get("orcid",False)
@@ -189,7 +189,7 @@ def login(request):
                 password = password.replace("\"", "").replace("'", "")
                 md5_pwd = hashlib.md5(password.encode()).hexdigest()
 
-            if ((username != False and password != False and task != False) or orcid != False):
+            if ((username != False and password != False and annotation_type != False) or orcid != False):
                 if (username != False and password != False):
                     user = User.objects.filter(username = username,password = md5_pwd)
                 else:
@@ -199,23 +199,24 @@ def login(request):
                     request.session['username'] = user.first().username
                     request.session['profile'] = user.first().profile
                     user = user.first()
-                    with connection.cursor() as cursor:
-                        cursor.execute("SELECT DISTINCT c.collection_id,c.annotation_type FROM share_collection as s "
-                                       "INNER JOIN collection_has_task as c ON c.collection_id = s.collection_id "
-                                       "WHERE s.username = %s",
-                                       [request.session['username']])
-                        results = cursor.fetchall()
-
-                    # Accedi ai valori usando i nomi delle colonne
-                    collections = []
-                    types = []
-                    for row in results:
-                        collection_id = Collection.objects.get(collection_id=row[0])
-                        t = AnnotationType.objects.get(id=int(row[1])).name
-                        if collection_id not in collections:
-                            collections.append(collection_id)
-                        types.append(t)
-
+                    # with connection.cursor() as cursor:
+                    #     cursor.execute("SELECT DISTINCT c.collection_id,c.annotation_type FROM share_collection as s "
+                    #                    "INNER JOIN collection_has_task as c ON c.collection_id = s.collection_id "
+                    #                    "WHERE s.username = %s",
+                    #                    [request.session['username']])
+                    #     results = cursor.fetchall()
+                    #
+                    # # Accedi ai valori usando i nomi delle colonne
+                    # collections = []
+                    # types = []
+                    # for row in results:
+                    #     collection_id = Collection.objects.get(collection_id=row[0])
+                    #     t = AnnotationType.objects.get(id=int(row[1])).name
+                    #     if collection_id not in collections:
+                    #         collections.append(collection_id)
+                    #     types.append(t)
+                    annotation_type = AnnotationType.objects.get(name=annotation_type)
+                    collections = Collection.objects.filter(annotation_type = annotation_type)
                     documents = Document.objects.filter(collection_id__in=collections)
                     if user.ncbi_key is not None:
                         os.environ['NCBI_API_KEY'] = user.first().ncbi_key
@@ -230,11 +231,11 @@ def login(request):
                         request.session['collection'] = document.collection_id_id
                         # task = CollectionHasTask.objects.filter(collection_id = document.collection_id).first()
                         # task = task.task_id.name
-                        request.session['task'] = task
+                        # request.session['task'] = task
                         request.session['topic'] = session.topic_id_id
-                        types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-                        types = [c.annotation_type.name for c in types]
-                        request.session['types'] = types
+                        # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
+                        # types = [c.annotation_type.name for c in types]
+                        request.session['annotation_type'] = document.collection_id.annotation_type.name
                         request.session['document'] = document.document_id
                         request.session['batch'] = document.batch
                         request.session['role'] = role
@@ -252,28 +253,28 @@ def login(request):
                         request.session['collection'] = document.collection_id_id
                         # task = CollectionHasTask.objects.filter(collection_id = document.collection_id).first()
                         # task = task.task_id.name
-                        types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-                        types = [c.annotation_type.name for c in types]
-                        request.session['types'] = types
-                        request.session['task'] = task
+                        # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
+                        # types = [c.annotation_type.name for c in types]
+                        request.session['annotation_type'] = document.collection_id.annotation_type.name
+                        # request.session['task'] = task
                         request.session['document'] = document.document_id
                         request.session['batch'] = document.batch
                         request.session['fields'] = request.session['fields_to_ann'] =  get_fields_list(request.session['document'],request.session['language'])
 
                     # se non ho ultima annotazione ma ho collezioni, allora setto la collezione all'ultima aggiunta e al primo doc della prima batch
-                    elif ShareCollection.objects.filter(username = user,collection_id__in=collections).exclude(status = 'Invited').exists(): # non importa il name space in questo caso
-                        collections = ShareCollection.objects.filter(username = user,collection_id__in=collections).exclude(status = 'Invited').values('collection_id').distinct()
+                    elif ShareCollection.objects.filter(username = user,collection_id__in=collections).exclude(status = 'invited').exists(): # non importa il name space in questo caso
+                        collections = ShareCollection.objects.filter(username = user,collection_id__in=collections).exclude(status = 'invited').values('collection_id').distinct()
                         collections_ids = [c['collection_id'] for c in collections]
                         collections = Collection.objects.filter(collection_id__in=collections_ids).order_by('-insertion_time')
                         collection = collections.first()
-
+                        request.session['annotation_type'] = collection.annotation_type.name
                         t = Topic.objects.filter(collection_id=collection)
                         print(type(t))
                         print(type(collections))
                         if t.exists():
                             t = t.first()
                             request.session['topic'] = t.id
-                        request.session['task'] = task
+                        # request.session['task'] = task
                         request.session['collection'] = collection.collection_id
                         docs = Document.objects.filter(collection_id = collection)
                         if Split.objects.filter(username=user, collection_id=collection,
@@ -298,7 +299,9 @@ def login(request):
                         request.session['document'] = None
                         request.session['topic'] = None
                         request.session['language'] = None
-                        request.session['task'] = task
+                        request.session['annotation_type'] = annotation_type.name
+
+                        #request.session['task'] = task
                         request.session['types'] = []
                         request.session['name_space'] = 'Human'
                         request.session['fields'] = []
@@ -1198,26 +1201,28 @@ def collections(request, type=None):
                 collection = Collection.objects.get(collection_id=request.GET.get('collection', None))
             elif request.session.get('collection', None) is not None:
                 collection = Collection.objects.get(collection_id=request.session.get('collection', None))
-
+            collection_type = "Textual"
+            topic_type = "Textual"
             if collection:
                 if collection.modality == 'Competitive':
                     modality = 1
                 if collection.modality == 'Collaborative restricted':
                     modality = 2
+                collection_type = collection.type
+                topic_type = collection.topic_type
             print(modality, collection.collection_id)
-            json_resp = {'modality': modality}
+
+            json_resp = {'modality': modality,"collection_type":collection_type,'topic_type':topic_type}
 
             return JsonResponse(json_resp)
         elif Collection.objects.filter(collection_id=type).exists() or type == 'list':
             collection_param = type
             name_space = NameSpace.objects.get(name_space=request.session['name_space'])
 
-            task = request.GET.get('task', request.session['task'])
-            if task is not None:
-                task = Task.objects.get(name=task)
-                collections = CollectionHasTask.objects.filter(task_id=task)
-                collections = [c.collection_id_id for c in collections]
-                collections = Collection.objects.filter(collection_id__in=collections)
+            annotation_type = request.GET.get('annotation_type', request.session['annotation_type'])
+            if annotation_type is not None:
+                annotation_type = AnnotationType.objects.get(name=annotation_type)
+                collections = Collection.objects.filter(annotation_type=annotation_type)
 
             user = User.objects.get(username=request.session['username'], name_space=name_space)
             collections = ShareCollection.objects.filter(username=user,collection_id__in=collections)
@@ -1241,13 +1246,15 @@ def collections(request, type=None):
 
                 json_boj['name'] = c.name
                 json_boj['id'] = cid
-                json_boj['task'] = CollectionHasTask.objects.filter(collection_id=c).first().task_id.name
-                types = CollectionHasTask.objects.filter(collection_id=c)
-                types = [c.annotation_type.name for c in types]
-                json_boj['types'] = types
+                #json_boj['task'] = CollectionHasTask.objects.filter(collection_id=c).first().task_id.name
+                #types = CollectionHasTask.objects.filter(collection_id=c)
+                creator = ShareCollection.objects.filter(collection_id = c, creator = True)
+                json_boj['creator'] = creator.first().username_id
+                json_boj['name_space'] = creator.first().username.name_space_id
+                #types = [c.annotation_type.name for c in types]
+                json_boj['annotation_type'] = c.annotation_type.name
+                json_boj['collection_type'] = c.type
                 json_boj['description'] = c.description
-                json_boj['creator'] = c.username
-                json_boj['name_space'] = c.name_space
                 json_boj['members'] = []
                 time = str(c.insertion_time)
                 before_p = time.split('+')
@@ -1377,7 +1384,10 @@ def collections(request, type=None):
 
             json_obj = {}
             json_obj['labels'] = []
-            collection = request.session.get('collection', None)
+            if request.GET.get('collection',None) is not None:
+                collection = request.GET.get('collection',None)
+            else:
+                collection = request.session.get('collection', None)
             collection = Collection.objects.get(collection_id=collection)
             labels = CollectionHasLabel.objects.filter(collection_id=collection,labels_annotation=True)
             values = [l.values for l in labels]
@@ -1442,7 +1452,7 @@ def collections(request, type=None):
                             if not ShareCollection.objects.filter(collection_id=collection, username=user,
                                                                   name_space=user.name_space).exists():
                                 ShareCollection.objects.create(collection_id=collection, username=user,
-                                                               name_space=user.name_space, status='Invited')
+                                                               name_space=user.name_space, status='invited')
             except Exception as e:
                 print(e)
                 json_resp = {'error': e}
@@ -1454,29 +1464,57 @@ def collections(request, type=None):
                     json_resp = {'msg': 'ok'}
 
                     request_body_json = json.loads(request.body)
-                    labels = []
-                    if request_body_json['labels']:
-                        print('adding labels')
-                        labels = request_body_json['labels'].replace('\\n', '\n').split('\n')
-                        labels = [l.strip() for l in labels if l != '']
+                    label = request_body_json['label']
+                    min_l = request_body_json['min']
+                    max_l = request_body_json['max']
+                    label = label.replace('\\n', '\n').strip()
+
 
                     collection = request_body_json['collection']
                     collection = Collection.objects.get(collection_id=collection)
-                    for label in labels:
-                        if len(label) > 0:
-                            if not Label.objects.filter(name=label).exists():
-                                label_to_add = Label.objects.create(name=label)
-                            else:
-                                label_to_add = Label.objects.get(name=label)
-                            if not CollectionHasLabel.objects.filter(collection_id=collection, label=label_to_add).exists():
-                                CollectionHasLabel.objects.create(collection_id=collection, label=label_to_add)
+
+                    if not Label.objects.filter(name=label).exists():
+                        label_to_add = Label.objects.create(name=label)
+                    else:
+                        label_to_add = Label.objects.get(name=label)
+                    if not CollectionHasLabel.objects.filter(collection_id=collection, label=label_to_add).exists():
+                        if request.session['annotation_type'] == 'Graded labeling':
+                            CollectionHasLabel.objects.create(collection_id=collection, label=label_to_add,labels_annotation=True,passage_annotation=False, values=str(NumericRange(int(min_l), int(max_l), bounds='[]')))
+                        elif request.session['annotation_type'] == 'Passages annotation':
+                            CollectionHasLabel.objects.create(collection_id=collection, label=label_to_add,labels_annotation=False,passage_annotation=True, values=str(NumericRange(int(min_l), int(max_l), bounds='[]')))
 
 
             except Exception as e:
                 print(e)
                 json_resp = {'error': e}
             finally:
-                return JsonResponse(json_resp)
+                json_obj = {}
+                json_obj['labels'] = []
+                collection = request.session.get('collection', None)
+                collection = Collection.objects.get(collection_id=collection)
+                labels = CollectionHasLabel.objects.filter(collection_id=collection, labels_annotation=True)
+                values = [l.values for l in labels]
+                details = [l.details for l in labels]
+                values = [
+                    [int(val.lower) if val.lower is not None else None,
+                     int(val.upper) if val.upper is not None else None] for val in values]
+                labels_details = [l.label.name for l in labels]
+                json_obj['labels'] = labels_details
+                json_obj['values'] = values
+                json_obj['details'] = details
+                labels = CollectionHasLabel.objects.filter(collection_id=collection, passage_annotation=True)
+                values = [l.values for l in labels]
+                details = [l.details for l in labels]
+                values = [
+                    [int(val.lower) if val.lower is not None else None,
+                     int(val.upper) if val.upper is not None else None] for val in values]
+                labels_details = [l.label.name for l in labels]
+                json_obj['labels_passage'] = labels_details
+                json_obj['values_passage'] = values
+                json_obj['details_passage'] = details
+                return JsonResponse(json_obj)
+
+
         elif type == 'add_tags':
             try:
                 with transaction.atomic():
@@ -1526,16 +1564,16 @@ def collections(request, type=None):
                 return HttpResponse(status=500)
         elif type == 'add_type':
             try:
-                request_body_json = json.loads(request.body)
-                annotations = request_body_json['type']
-                collection = request_body_json['collection_id']
-                collection = Collection.objects.get(collection_id=collection)
-                annotations_types = CollectionHasTask.objects.filter(collection_id=collection)
-                task = annotations_types.first().task_id
-                types = [a.annotation_type.name for a in annotations_types]
-                if annotations not in types:
-                    t = AnnotationType.objects.get(name=annotations)
-                    CollectionHasTask.objects.create(collection_id=collection,task_id=task,annotation_type=t)
+                # request_body_json = json.loads(request.body)
+                # annotations = request_body_json['type']
+                # collection = request_body_json['collection_id']
+                # collection = Collection.objects.get(collection_id=collection)
+                # annotations_types = CollectionHasTask.objects.filter(collection_id=collection)
+                # task = annotations_types.first().task_id
+                # types = [a.annotation_type.name for a in annotations_types]
+                # if annotations not in types:
+                #     t = AnnotationType.objects.get(name=annotations)
+                #     CollectionHasTask.objects.create(collection_id=collection,task_id=task,annotation_type=t)
 
                 return HttpResponse(status=200)
             except Exception as e:
@@ -1555,7 +1593,7 @@ def collections(request, type=None):
             else:
                 json_resp = {'message': 'ok'}
             finally:
-
+                json_resp = {'message': 'ok'}
                 print(json_resp)
                 return JsonResponse(json_resp)
 
@@ -1573,6 +1611,7 @@ def collections(request, type=None):
                 AssociateTag.objects.filter(document_id__in=documents).delete()
                 AnnotateLabel.objects.filter(document_id__in=documents).delete()
                 CreateFact.objects.filter(document_id__in=documents).delete()
+                AnnotatePassage.objects.filter(document_id__in=documents).delete()
 
                 RelationshipObjMention.objects.filter(document_id__in=documents).delete()
                 RelationshipPredMention.objects.filter(document_id__in=documents).delete()
@@ -1583,20 +1622,22 @@ def collections(request, type=None):
                 RelationshipPredConcept.objects.filter(object_document_id__in=documents_ids_list).delete()
                 RelationshipSubjConcept.objects.filter(object_document_id__in=documents_ids_list).delete()
                 Link.objects.filter(predicate_document_id__in=documents_ids_list).delete()
+                AnnotateObject.objects.filter(document_id__in=documents).delete()
 
                 ShareCollection.objects.filter(collection_id=collection).delete()
                 GroundTruthLogFile.objects.filter(document_id__in=documents).delete()
                 Mention.objects.filter(document_id__in=documents).delete()
+                DocumentObject.objects.filter(document_id__in=documents).delete()
 
                 CollectionHasLabel.objects.filter(collection_id=collection).delete()
                 AddConcept.objects.filter(collection_id=collection).delete()
                 SessionDoc.objects.filter(collection_id=collection).delete()
                 Document.objects.filter(collection_id=collection).delete()
-                CollectionHasTask.objects.filter(collection_id=collection).delete()
+                Topic.objects.filter(collection_id=collection).delete()
                 Collection.objects.filter(collection_id=collection).delete()
+                request.session['collection'] = None
 
-                # cursor.execute('DELETE FROM collection WHERE collection_id = %s',[collection])
-                # delete the annotation of that member for that collection first
+
         except Exception as e:
             json_resp = {'error': 'an error occurred'}
             return JsonResponse(json_resp)
@@ -1669,7 +1710,7 @@ def collections(request, type=None):
 
                     # se non ho ultima annotazione ma ho collezioni, allora setto la collezione all'ultima aggiunta e al primo doc della prima batch
                     elif ShareCollection.objects.filter(username=users.first()).exclude(
-                            status='Invited').exists():  # non importa il name space in questo caso
+                            status='invited').exists():  # non importa il name space in questo caso
                         collections = ShareCollection.objects.filter(username=users.first()).values(
                             'collection_id').distinct()
                         collections_ids = [c['collection_id'] for c in collections]
@@ -1988,12 +2029,13 @@ def get_session_params(request):
                 request.session['name_space'] = user.name_space_id
                 request.session['collection'] = document.collection_id_id
                 request.session['topic'] = session.topic_id_id
-                task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-                task = task.task_id.name
-                request.session['task'] = task
-                types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-                types = [c.annotation_type.name for c in types]
-                request.session['types'] = types
+                request.session['topic_type'] = session.topic_id.type
+                #task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
+                #task = task.task_id.name
+                #request.session['task'] = task
+                #types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
+                #types = [c.annotation_type.name for c in types]
+                request.session['annotation_type'] = document.collection_id.annotation_type.name
                 request.session['document'] = document.document_id
                 request.session['batch'] = document.batch
                 request.session['role'] = role
@@ -2010,12 +2052,14 @@ def get_session_params(request):
                 request.session['name_space'] = name_space.name_space
                 request.session['collection'] = document.collection_id_id
                 request.session['topic'] = last_gt.topic_id_id
-                task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-                task = task.task_id.name
-                types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-                types = [c.annotation_type.name for c in types]
-                request.session['types'] = types
-                request.session['task'] = task
+                request.session['topic_type'] = last_gt.topic_id.type
+
+                # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
+                # task = task.task_id.name
+                # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
+                # types = [c.annotation_type.name for c in types]
+                request.session['annotation_type'] = document.collection_id.annotation_type.name
+                # request.session['task'] = task
                 request.session['document'] = document.document_id
                 request.session['batch'] = document.batch
                 request.session['fields'] = request.session['fields_to_ann'] = get_fields_list(
@@ -2023,19 +2067,20 @@ def get_session_params(request):
 
             # se non ho ultima annotazione ma ho collezioni, allora setto la collezione all'ultima aggiunta e al primo doc della prima batch
             elif ShareCollection.objects.filter(username=user).exclude(
-                    status='Invited').exists():  # non importa il name space in questo caso
-                collections = ShareCollection.objects.filter(username=user).exclude(status='Invited').values(
+                    status='invited').exists():  # non importa il name space in questo caso
+                collections = ShareCollection.objects.filter(username=user).exclude(status='invited').values(
                     'collection_id').distinct()
                 collections_ids = [c['collection_id'] for c in collections]
                 collection = Collection.objects.filter(collection_id__in=collections_ids).order_by(
                     '-insertion_time').first()
-                task = CollectionHasTask.objects.filter(collection_id=collection).first()
-                task = task.task_id.name
-                request.session['task'] = task
+                # task = CollectionHasTask.objects.filter(collection_id=collection).first()
+                # task = task.task_id.name
+                # request.session['task'] = task
                 request.session['topic'] = Topic.objects.filter(collection_id=collection).first().id
-                types = CollectionHasTask.objects.filter(collection_id=collection)
-                types = [c.annotation_type.name for c in types]
-                request.session['types'] = types
+
+                # types = CollectionHasTask.objects.filter(collection_id=collection)
+                # types = [c.annotation_type.name for c in types]
+                request.session['types'] = collection.annotation_type.name
                 request.session['collection'] = collection.collection_id
                 documents = Document.objects.filter(collection_id=collection)
                 if Split.objects.filter(username=user, collection_id=collection,
@@ -2079,14 +2124,17 @@ def get_session_params(request):
 
     collection = request.session.get('collection',None)
     topic = request.session.get('topic',None)
+    annotation_type = request.session.get('annotation_type',"Graded labeling")
     document = request.session.get('document',None)
     language = request.session.get('language',None)
     fields_to_ann = request.session.get('fields_to_ann',[])
     fields = request.session.get('fields',[])
     json_resp['username'] = username
     json_resp['topic'] = topic
+    json_resp['annotation_type'] = annotation_type
+
+
     json_resp['task'] = 'Default'
-    json_resp['types'] = []
     json_resp['name_space'] = name_space.name_space
     if annotation is not None:
         if annotation == 'Human':
@@ -2099,9 +2147,9 @@ def get_session_params(request):
     if collection is not None:
         json_resp['collection'] = collection
         coll = Collection.objects.get(collection_id=collection)
-        task = CollectionHasTask.objects.filter(collection_id=coll).first()
-        task = task.task_id.name
-        request.session['task'] = task
+        # task = CollectionHasTask.objects.filter(collection_id=coll).first()
+        # task = task.task_id.name
+        # request.session['task'] = task
         if document is not None:
             json_resp['document'] = document
             json_resp['language'] = language
@@ -2112,17 +2160,18 @@ def get_session_params(request):
                 role = session.role
                 request.session['role'] = json_resp['role'] = role
                 request.session['topic'] = json_resp['topic'] = session.topic_id_id
-                task = CollectionHasTask.objects.filter(collection_id=collection).first()
-                task = task.task_id.name
-                request.session['task'] = json_resp['task'] = task
-                types = CollectionHasTask.objects.filter(collection_id=collection)
-                types = [c.annotation_type.name for c in types]
-                request.session['types'] = json_resp['types'] = types
+
+                # task = CollectionHasTask.objects.filter(collection_id=collection).first()
+                # task = task.task_id.name
+                # request.session['task'] = json_resp['task'] = task
+                # types = CollectionHasTask.objects.filter(collection_id=collection)
+                # types = [c.annotation_type.name for c in types]
+                request.session['annotation_type'] = json_resp['annotation_type'] = coll.annotation_type.name
         else:
             collection = Collection.objects.get(collection_id = collection)
-            task = CollectionHasTask.objects.filter(collection_id=collection).first()
-            task = task.task_id.name
-            request.session['task'] = task
+            # task = CollectionHasTask.objects.filter(collection_id=collection).first()
+            # task = task.task_id.name
+            # request.session['task'] = task
             request.session['topic'] = Topic.objects.filter(collection_id=collection).first().id
             docs_coll = Document.objects.filter(collection_id = collection)
             if SessionDoc.objects.filter(username=user,collection_id=collection).exists():
@@ -2134,12 +2183,12 @@ def get_session_params(request):
                 request.session['language'] = json_resp['language'] = document.language
                 request.session['name_space'] = json_resp['name_space'] = user.name_space_id
                 request.session['collection'] = json_resp['collection'] = document.collection_id_id
-                task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-                task = task.task_id.name
-                request.session['task'] = json_resp['task'] = task
-                types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-                types = [c.annotation_type.name for c in types]
-                request.session['types'] = json_resp['types']= types
+                # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
+                # task = task.task_id.name
+                # request.session['task'] = json_resp['task'] = task
+                # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
+                # types = [c.annotation_type.name for c in types]
+                request.session['annotation_type'] = json_resp['annotation_type']= collection.annotation_type.name
                 request.session['document'] = document.document_id
                 request.session['batch'] = json_resp['batch'] =document.batch
                 request.session['role'] =json_resp['role'] = role
@@ -2153,15 +2202,16 @@ def get_session_params(request):
                 name_space = last_gt.name_space
                 document = last_gt.document_id
                 request.session['topic'] = json_resp['topic'] = last_gt.topic_id_id
+
                 request.session['language']  = json_resp['language'] = document.language
                 request.session['name_space'] = json_resp['name_space'] =name_space.name_space
                 request.session['collection'] = json_resp['collection'] = document.collection_id_id
-                task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-                task = task.task_id.name
-                request.session['task'] = json_resp['task'] = task
-                types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-                types = [c.annotation_type.name for c in types]
-                request.session['types'] =json_resp['types'] = types
+                # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
+                # task = task.task_id.name
+                # request.session['task'] = json_resp['task'] = task
+                # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
+                # types = [c.annotation_type.name for c in types]
+                request.session['annotation_type'] =json_resp['annotation_type'] = document.collection_id.annotation_type.name
                 request.session['document'] = json_resp['document'] = document.document_id
                 request.session['batch'] = json_resp['batch'] = document.batch
                 request.session['fields'] = json_resp['fields'] = json_resp['fields_to_ann'] = request.session['fields_to_ann'] = get_fields_list(
@@ -2179,14 +2229,15 @@ def get_session_params(request):
 
             document = Document.objects.get(document_id=request.session['document'])
             json_resp['document'] = request.session['document']
-            json_resp['topic'] = request.session['topic']
+            json_resp['topic'] = request.session.get('topic',None)
+
             json_resp['task'] = request.session['task']
-            task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-            task = task.task_id.name
-            request.session['task'] = task
-            types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-            types = [c.annotation_type.name for c in types]
-            request.session['types'] = types
+            # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
+            # task = task.task_id.name
+            # request.session['task'] = task
+            # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
+            # types = [c.annotation_type.name for c in types]
+            request.session['annotation_type'] = collection.annotation_type.name
             json_resp['language'] = document.language
             json_resp['role'] = request.session.get('role',"Annotator")
             request.session['language'] = document.language
@@ -2205,15 +2256,15 @@ def get_session_params(request):
             request.session['language'] = json_resp['language'] = document.language
             request.session['name_space'] = json_resp['name_space'] = user.name_space_id
             request.session['collection'] = json_resp['collection'] = document.collection_id_id
-            task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-            task = task.task_id.name
-            request.session['task'] = json_resp['task'] = task
-            task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-            task = task.task_id.name
-            request.session['task'] = json_resp['task'] = task
-            types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-            types = [c.annotation_type.name for c in types]
-            request.session['types'] = json_resp['types'] = types
+            # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
+            # task = task.task_id.name
+            # request.session['task'] = json_resp['task'] = task
+            # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
+            # task = task.task_id.name
+            # request.session['task'] = json_resp['task'] = task
+            # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
+            # types = [c.annotation_type.name for c in types]
+            request.session['annotation_type'] = json_resp['annotation_type'] = document.collection_id.annotation_type.name
             request.session['document'] = json_resp['document'] = document.document_id
             request.session['batch'] = json_resp['batch'] = document.batch
             request.session['role'] = json_resp['tole'] = role
@@ -2229,13 +2280,13 @@ def get_session_params(request):
             request.session['language'] = json_resp['language'] = document.language
             request.session['name_space'] = json_resp['name_space'] = name_space.name_space
             request.session['collection'] = json_resp['collection']= document.collection_id_id
-            task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-            task = task.task_id.name
-            request.session['task'] = json_resp['task'] = task
-
-            types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-            types = [c.annotation_type.name for c in types]
-            request.session['types'] = json_resp['types'] = types
+            # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
+            # task = task.task_id.name
+            # request.session['task'] = json_resp['task'] = task
+            #
+            # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
+            # types = [c.annotation_type.name for c in types]
+            request.session['annotation_type'] = json_resp['annotation_type'] = document.collection_id.annotation_type.name
             request.session['document'] = json_resp['document']= document.document_id
             request.session['batch'] = json_resp['batch'] = document.batch
             request.session['fields'] = json_resp['fields']= request.session['fields_to_ann'] = json_resp['fields_to_ann']= get_fields_list(request.session['document'],
@@ -2243,23 +2294,23 @@ def get_session_params(request):
 
         # se non ho ultima annotazione ma ho collezioni, allora setto la collezione all'ultima aggiunta e al primo doc della prima batch
         elif ShareCollection.objects.filter(username=user).exclude(
-                status='Invited').exists():  # non importa il name space in questo caso
-            collections = ShareCollection.objects.filter(username=user).exclude(status='Invited').values(
+                status='invited').exists():  # non importa il name space in questo caso
+            collections = ShareCollection.objects.filter(username=user).exclude(status='invited').values(
                 'collection_id').distinct()
             collections_ids = [c['collection_id'] for c in collections]
             collection = Collection.objects.filter(collection_id__in=collections_ids).order_by(
                 '-insertion_time').first()
-            task = CollectionHasTask.objects.filter(collection_id=collection).first()
-            task = task.task_id.name
-            request.session['task'] = json_resp['task'] = task
-            request.session['topic'] = json_resp['topic'] = Topic.objects.filter(collection_id=collection).id
-
-            types = CollectionHasTask.objects.filter(collection_id=collection)
-            types = [c.annotation_type.name for c in types]
-            request.session['types'] = json_resp['types']= types
+            # task = CollectionHasTask.objects.filter(collection_id=collection).first()
+            # task = task.task_id.name
+            # request.session['task'] = json_resp['task'] = task
+            # request.session['topic'] = json_resp['topic'] = Topic.objects.filter(collection_id=collection).first().id
+            #
+            # types = CollectionHasTask.objects.filter(collection_id=collection)
+            # types = [c.annotation_type.name for c in types]
+            request.session['annotation_type'] = json_resp['annotation_type']= collection.annotation_type.name
             request.session['collection'] = json_resp['collection'] = collection.collection_id
             documents = Document.objects.filter(collection_id=collection)
-            if ShareCollection.objects.filter(username=user,reviewer=True).exclude(status='Invited').exists():
+            if ShareCollection.objects.filter(username=user,reviewer=True).exclude(status='invited').exists():
                 documents = SplitReviewer.objects.filter(username=user, collection_id=collection,
                                                  document_id__in=documents)
             elif Split.objects.filter(username=user, collection_id=collection,
@@ -2285,7 +2336,7 @@ def get_session_params(request):
             json_resp['document'] = None
             json_resp['topic'] = None
             json_resp['task'] = 'Default'
-            json_resp['types'] = []
+            json_resp['annotation_type'] = annotation_type
             json_resp['role'] = "Annotator"
             json_resp['language'] = None
             json_resp['fields'] = None
@@ -2293,7 +2344,12 @@ def get_session_params(request):
 
     return JsonResponse(json_resp)
 
+def annotation_types(request):
 
+    types = AnnotationType.objects.all()
+    types = [a.name for a in types]
+    json_resp = {'types':types}
+    return JsonResponse(json_resp)
 
 def set_new_fields(request):
     """Set new fields to ann parameter session"""
@@ -2460,7 +2516,7 @@ def concepts(request, type=None):
         json_resp = {'msg': 'ok'}
 
         mentions_list = generate_mentions_list(username, name_space.name_space, document.document_id,
-                                               request.session['language'])
+                                               request.session['language'],request.session['topic'])
 
         # name_space = NameSpace.objects.get(name_space=name_space)
         # document = Document.objects.get(document_id=document, language=language)
@@ -2504,14 +2560,13 @@ def concepts(request, type=None):
         mention = Mention.objects.get(start=start, stop=stop, document_id=document)
         url = body_json['url']
         concept = Concept.objects.get(concept_url=url)
+        topic = Topic.objects.get(id=request.session['topic'])
         name = SemanticArea.objects.get(name=body_json['area'])
         try:
             with transaction.atomic():
-                ass = Associate.objects.filter(concept_url=concept, start=mention, stop=mention.stop, username=user,
-                                               name_space=name_space, name=name,
-                                               document_id=document)
+
                 Associate.objects.filter(concept_url=concept, start=mention, stop=mention.stop, username=user,
-                                         name_space=name_space, name=name,
+                                         name_space=name_space, name=name,topic_id=topic,
                                          document_id=document).delete()
                 update_gt(user, name_space, document, language,topic)
                 json_mentions = generate_relationships_list(request.session['username'], request.session['name_space'],
@@ -2527,7 +2582,6 @@ def concepts(request, type=None):
 
 import psycopg2
 from psycopg2.extras import execute_values
-
 
 def split_users(request):
     """This view splits equally the documents across the users of the collection"""
@@ -2964,6 +3018,7 @@ def change_collection_id(request):
         if SessionDoc.objects.filter(username=user,document_id__in=documents).exists():
             sessions = SessionDoc.objects.filter(username=user,document_id__in=documents).order_by('-last_view')
             session = sessions.first()
+            request.session['topic'] = session.topic_id_id
             document = session.document_id
             role = session.role
             request.session['language'] = document.language
@@ -2980,6 +3035,7 @@ def change_collection_id(request):
             last_gt = gts.first()
             name_space = last_gt.name_space
             document = last_gt.document_id
+            request.session['topic'] = last_gt.topic_id_id
             request.session['language'] = document.language
             request.session['name_space'] = name_space.name_space
             request.session['collection'] = document.collection_id_id
@@ -2996,93 +3052,41 @@ def change_collection_id(request):
 
             document = Document.objects.get(document_id=documents[0])
             request.session['document'] = document.document_id
-            # docs = Split.objects.filter(collection_id=collection, username=user)
-            # docs = [d.document_id for d in docs]
-            # gts = GroundTruthLogFile.objects.filter(document_id__in=docs, username=user,
-            #                                         name_space=name_space).order_by("-insertion_time")
-            # annotated_docs = [x.document_id for x in gts]
-            # annotated_docs_id = [x.document_id for x in annotated_docs]
-            # not_annotated_docs = [x for x in docs if x.document_id not in annotated_docs_id]
-            # honeypot_list = Document.objects.filter(collection_id=collection, honeypot=True)
-            # honeypot_list_ids = [x.document_id for x in honeypot_list]
-            # docs_list = []
-            # split_docs = Split.objects.filter(collection_id=collection, username=user)
-            # split_docs_ids = [s.document_id.document_id for s in split_docs]
-            # seen_ids = []
-            # for document in annotated_docs:
-            #     if document.document_id not in seen_ids:
-            #         seen_ids.append(document.document_id)
-            #         json_doc = {'id': document.document_content['document_id'], 'hashed_id': document.document_id,
-            #                     'annotated': True, 'batch': document.batch}
-            #         if len(split_docs_ids) == 0:  # a chi non sono assegnati docs può vederli tutti
-            #             json_doc['split'] = 'all'
-            #         elif document.document_id in split_docs_ids:
-            #             json_doc['split'] = 'yes'
-            #         else:
-            #             json_doc['split'] = 'no'
-            #         json_doc['honeypot'] = 'no'
-            #         if document.document_id in honeypot_list_ids:
-            #             json_doc['honeypot'] = 'yes'
-            #
-            #         docs_list.append(json_doc)
-            #
-            # for document in not_annotated_docs:
-            #     json_doc = {'id': document.document_content['document_id'], 'hashed_id': document.document_id,
-            #                 'annotated': False, 'batch': document.batch}
-            #     if len(split_docs_ids) == 0:  # a chi non sono assegnati docs può vederli tutti
-            #         json_doc['split'] = 'all'
-            #     elif document.document_id in split_docs_ids:
-            #         json_doc['split'] = 'yes'
-            #     else:
-            #         json_doc['split'] = 'no'
-            #
-            #     json_doc['honeypot'] = 'no'
-            #     if document.document_id in honeypot_list_ids:
-            #         json_doc['honeypot'] = 'yes'
-            #
-            #     docs_list.append(json_doc)
-            #
-            # docs_hp_yes = [d for d in docs_list if d['honeypot'] == 'yes' and d['split'] == 'yes']
-            # docs_split_yes = [d for d in docs_list if d['honeypot'] == 'no' and d['split'] == 'yes']
-            # docs_hp_no = [d for d in docs_list if d['honeypot'] == 'yes' and d['split'] != 'yes']
-            # docs_split_no = [d for d in docs_list if d['honeypot'] == 'no' and d['split'] != 'yes']
-            # docs_no_hp_list = docs_split_no + docs_split_yes
-            # docs_no_hp_list = sorted(docs_no_hp_list, key=lambda x: x['id'])
-            # docs_hp_list = docs_hp_yes + docs_hp_no
-            # docs_hp_list = sorted(docs_hp_list, key=lambda x: x['id'])
-            # docs_list = docs_hp_list + docs_no_hp_list
-            # request.session['document'] = docs_list[0]['hashed_id']
 
-            # documents = Split.objects.filter(document_id__in = documents,username = user)
-            # gts = GroundTruthLogFile.objects.filter(username = user, name_space = name_space, document_id__in = [d.document_id for d in documents]).order_by('-insertion_time')
-            # if gts.exists():
-            #    request.session['document'] = gts.first().document_id_id
-            #    request.session['language'] = gts.first().document_id.language
-            # else:
-            #    request.session['document'] = documents.first().document_id_id
-            #    request.session['language'] = documents.first().document_id.language
-            doc_sel = Document.objects.get(document_id=request.session['document'])
-            request.session['language'] = doc_sel.language
+            # doc_sel = Document.objects.get(document_id=request.session['document'])
+            request.session['language'] = document.language
             request.session['fields'] = request.session['fields_to_ann'] = get_fields_list(request.session['document'],
                                                                                            request.session['language'])
+            if SplitTopic.objects.filter(collection_id = document.collection_id, username=user).exists():
+                topic = SplitTopic.objects.filter(collection_id = document.collection_id,username=user).first()
+                request.session['topic'] = topic.topic_id_id
+            else:
+                topic = Topic.objects.filter(collection_id = collection).first()
+                request.session['topic'] = topic.topic_id_id
+
             # print('session doc',request.session['document'])
-            json_resp = {'document_id': request.session['document']}
+            json_resp = {'document_id': request.session['document'],'topic': request.session['topic']}
             return JsonResponse(json_resp)
 
-        #documents = Document.objects.filter(collection_id=collection)
-        # gts = GroundTruthLogFile.objects.filter(username=user, name_space=name_space,
-        #                                         document_id__in=documents).order_by('-insertion_time')
-        # if gts.exists():
-        #     request.session['document'] = gts.first().document_id_id
-        #     request.session['language'] = gts.first().document_id.language
-        # else:
-        #     request.session['document'] = documents.first().document_id
-        #     request.session['language'] = documents.first().language
+        elif SplitTopic.objects.filter(collection_id=collection, username=user).exists():
+            documents = Split.objects.filter(username=user, document_id__in=documents)
+            documents = sorted([d.document_id_id for d in documents])
+
+            document = Document.objects.get(document_id=documents[0])
+            request.session['language'] = document.language
+            request.session['fields'] = request.session['fields_to_ann'] = get_fields_list(request.session['document'],
+                                                                                           request.session['language'])
+
+            request.session['document'] = document.document_id
+            topic = SplitTopic.objects.filter(collection_id=document.collection_id, username=user).first()
+            request.session['topic'] = topic.topic_id_id
+
+
         request.session['fields'] = request.session['fields_to_ann'] = get_fields_list(request.session['document'],
                                                                                        request.session['language'])
 
         # print('session doc', request.session['document'])
-        json_resp = {'document_id': request.session['document']}
+        json_resp = {'document_id': request.session['document'],'topic': request.session['topic']}
         return JsonResponse(json_resp)
 
 
@@ -3417,8 +3421,8 @@ def accept_invitation(request):
         with transaction.atomic():
             if sharecoll.exists():
                 # sharecoll.delete()
-                sharecoll.update(status='Accepted')
-                # ShareCollection.objects.create(username = username,name_space = name_space, collection_id = collection,invitation= 'Accepted')
+                sharecoll.update(status='accepted')
+                # ShareCollection.objects.create(username = username,name_space = name_space, collection_id = collection,invitation= 'accepted')
         return JsonResponse({'msg': 'ok'})
     except Exception as e:
         return JsonResponse({'error': e})
@@ -3494,7 +3498,152 @@ def get_assertions(request):
 
 import math
 
+def object_detection(request,type=None):
 
+    if request.method == "GET":
+        document = request.session.get('document',None)
+        document = request.GET.get('document',document)
+        topic = request.session.get('topic', None)
+        username = request.session.get('username', None)
+        username = request.GET.get('username',username)
+        name_space = request.session.get('name_space', None)
+
+        if None in [name_space, username, topic, document]:
+            return HttpResponse(status = 500)
+        document = Document.objects.get(document_id = document)
+        name_space = NameSpace.objects.get(name_space = name_space)
+        username = User.objects.get(username = username,name_space = name_space)
+        topic = Topic.objects.get(id=topic)
+        ob = AnnotateObject.objects.filter(username = username, name_space = name_space, document_id = document, topic_id = topic)
+        if ob.exists():
+            points = []
+            for o in ob:
+                points.append(o.points)
+            return JsonResponse({'points':points})
+        return JsonResponse({'points':[]})
+
+
+    if request.method == 'POST' and type == 'insert':
+        body = json.loads(request.body)
+        points = body['points']
+        document = request.session.get('document',None)
+        topic = request.session.get('topic', None)
+        username = request.session.get('username', None)
+        name_space = request.session.get('name_space', None)
+
+        if None in [name_space, username, topic, document]:
+            return HttpResponse(status = 500)
+        document = Document.objects.get(document_id = document)
+        name_space = NameSpace.objects.get(name_space = name_space)
+        username = User.objects.get(username = username,name_space = name_space)
+        topic = Topic.objects.get(id=topic)
+        image = None
+
+        try:
+            with transaction.atomic():
+                DocumentObject.objects.get_or_create(document_id=document, language=document.language, image=image,
+                                                     points=points)
+                obj = AnnotateObject.objects.filter(username=username, name_space=name_space, document_id=document,
+                                                    topic_id=topic,
+                                                    points=points)
+                if not obj.exists():
+                    # cursor.execute("""UPDATE annotate_object SET points = %s, insertion_time = %s WHERE
+                    # username = %s and name_space = %s and document_id = %s and language = %s and topic_id = %s""",
+                    #                [points,datetime.now(),username.username,name_space.name_space,document.document_id,document.language,topic.id])
+                    AnnotateObject.objects.create(username=username, name_space=name_space, document_id=document,
+                                                  topic_id=topic,insertion_time = Now(),language = document.language,
+                                                  points=points)
+
+
+        except Exception as e:
+            print(e)
+            return HttpResponse(status = 500)
+        finally:
+            ob = AnnotateObject.objects.filter(username=username, name_space=name_space, document_id=document,
+                                               topic_id=topic)
+            if ob.exists():
+                points = []
+                for o in ob:
+                    points.append(o.points)
+                return JsonResponse({'points': points})
+            return JsonResponse({'points': []})
+
+    elif request.method == 'POST' and type == 'update':
+        body = json.loads(request.body)
+        points = body['points']
+        points_prev = body['points_prev']
+        print(points)
+        document = request.session.get('document',None)
+        topic = request.session.get('topic', None)
+        username = request.session.get('username', None)
+        name_space = request.session.get('name_space', None)
+
+        if None in [name_space, username, topic, document]:
+            return HttpResponse(status = 500)
+        document = Document.objects.get(document_id = document)
+        name_space = NameSpace.objects.get(name_space = name_space)
+        username = User.objects.get(username = username,name_space = name_space)
+        topic = Topic.objects.get(id=topic)
+        image = None
+
+        try:
+            with transaction.atomic():
+                DocumentObject.objects.get_or_create(document_id=document, language=document.language, image=image,
+                                                     points=points)
+                cursor = connection.cursor()
+
+                cursor.execute("""UPDATE annotate_object SET points = %s, insertion_time = %s WHERE
+                username = %s and name_space = %s and document_id = %s and language = %s and topic_id = %s and points = %s""",
+                               [points,datetime.now(),username.username,name_space.name_space,document.document_id,document.language,topic.id,points_prev])
+
+
+
+        except Exception as e:
+            print(e)
+            return JsonResponse({'points': []})
+
+        finally:
+
+            ob = AnnotateObject.objects.filter(username=username, name_space=name_space, document_id=document,
+                                               topic_id=topic)
+            if ob.exists():
+                points = []
+                for o in ob:
+                    points.append(o.points)
+                return JsonResponse({'points': points})
+            return JsonResponse({'points': []})
+
+    if request.method == 'DELETE':
+        body_json = json.loads(request.body)
+        path = body_json['points']
+        document = request.session.get('document',None)
+        topic = request.session.get('topic', None)
+        username = request.session.get('username', None)
+        name_space = request.session.get('name_space', None)
+
+        if None in [name_space, username, topic, document]:
+            return HttpResponse(status = 500)
+        try:
+            document = Document.objects.get(document_id = document)
+            name_space = NameSpace.objects.get(name_space = name_space)
+            username = User.objects.get(username = username,name_space = name_space)
+            topic = Topic.objects.get(id=topic)
+            obj = AnnotateObject.objects.filter(points=path,username = username, name_space = name_space, document_id = document, topic_id = topic)
+            obj.delete()
+        except Exception as e:
+            print(e)
+            return HttpResponse(status = 500)
+        finally:
+
+            ob = AnnotateObject.objects.filter(username=username, name_space=name_space, document_id=document,
+                                               topic_id=topic)
+            if ob.exists():
+                points = []
+                for o in ob:
+                    points.append(o.points)
+                return JsonResponse({'points': points})
+            return JsonResponse({'points': []})
+    return HttpResponse(status = 200)
 def mentions(request, type=None):
     name_space = request.session['name_space']
     username = request.session['username']
@@ -3946,7 +4095,7 @@ def relationships(request, type=None):
     language = request.session['language']
     topic = request.session['topic']
 
-    if request.method == 'GET':
+    if request.method == 'GET' and type != 'comment':
         if request.GET.get('user', None) is not None:
             print('relationships user', request.GET.get('user', None))
             username = request.GET.get('user', None)
@@ -3962,30 +4111,25 @@ def relationships(request, type=None):
 
             return JsonResponse(json_mentions, safe=False)
 
-    if request.method == 'GET' and type == 'assertions':
-        if request.GET.get('user', None) is not None:
-            username = request.GET.get('user', None)
-        if request.GET.get('name_space', None) is not None:
-            name_space = request.GET.get('name_space', None)
 
-        language = request.session['language']
-        document = request.session['document']
-        json_mentions = {}
 
-        json_ment_areas = {}
-        json_assertions = generate_assertions_list(username, name_space, document, language)
-        return JsonResponse(json_assertions, safe=False)
+    elif type == 'comment':
+        if request.method == "GET":
+            index_rel = int(request.GET.get('relationship', None))
 
-    elif request.method == 'GET' and type == 'assertion_comment':
-        if request.GET.get('user', None) is not None:
-            username = request.GET.get('user', None)
-        else:
-            username = request.session.get('username', None)
+            if request.GET.get('user', None) is not None:
+                username = request.GET.get('user', None)
+            else:
+                username = request.session.get('username', None)
 
-        if request.GET.get('name_space', None) is not None:
-            name_space = request.GET.get('name_space', None)
-        else:
-            name_space = request.session.get('name_space', None)
+            if request.GET.get('name_space', None) is not None:
+                name_space = request.GET.get('name_space', None)
+            else:
+                name_space = request.session.get('name_space', None)
+        elif request.method == 'POST':
+            body_js = json.loads(request.body)
+            index_rel = int(body_js.get('relationship', None))
+            comment = body_js.get('comment', None)
 
         name_space = NameSpace.objects.get(name_space=name_space)
         username = User.objects.get(username=username,name_space=name_space)
@@ -3993,22 +4137,122 @@ def relationships(request, type=None):
         document = Document.objects.get(document_id=document)
         topic = request.session['topic']
         topic = Topic.objects.get(id=topic)
+        relationship = generate_relationships_list(username.username, name_space.name_space, document.document_id, language,topic.id)
+        relationship = relationship[index_rel]
 
-        subj = request.GET.get('relationship[subject_concept_url]',None)
-        obj = request.GET.get('relationship[object_concept_url]',None)
-        pred = request.GET.get('relationship[predicate_concept_url]',None)
-        subj_area = request.GET.get('relationship[subject_concept_area]',None)
-        obj_area = request.GET.get('relationship[object_concept_area]',None)
-        pred_area = request.GET.get('relationship[predicate_concept_area]',None)
-        comment = ''
-        fact = CreateFact.objects.filter(document_id = document,subject_name=subj_area,object_name=obj_area,predicate_name=pred_area,username=username,topic_id=topic,subject_concept_url = subj,object_concept_url = obj,predicate_concept_url = pred)
-        if fact.exists():
-            comment = fact.first().comment
-            if comment is None:
-                comment = ''
-        return JsonResponse({'comment': comment}, safe=False)
+        rel = None
+        if relationship['subject']['mention'] != {}:
+            start,stop = return_start_stop_for_backend(relationship['subject']['mention']['start'],relationship['subject']['mention']['stop'],relationship['subject']['mention']['position'],document.document_content)
+            relationship['subject']['mention']['start'] = start
+            relationship['subject']['mention']['stop'] = stop
 
+        if relationship['object']['mention'] != {}:
+            start,stop = return_start_stop_for_backend(relationship['object']['mention']['start'],relationship['object']['mention']['stop'],relationship['object']['mention']['position'],document.document_content)
+            relationship['object']['mention']['start'] = start
+            relationship['object']['mention']['stop'] = stop
 
+        if relationship['predicate']['mention'] != {}:
+            start,stop = return_start_stop_for_backend(relationship['predicate']['mention']['start'],relationship['predicate']['mention']['stop'],relationship['predicate']['mention']['position'],document.document_content)
+            relationship['predicate']['mention']['start'] = start
+            relationship['predicate']['mention']['stop'] = stop
+        #mmm
+
+        if relationship['subject']['mention'] != {} and relationship['predicate']['mention'] != {} and relationship['object']['mention'] != {}:
+            subject_mention = Mention.objects.get(subject_document_id = document,start = int(relationship['subject']['mention']['start']), stop = int(relationship['subject']['mention']['stop']))
+            object_mention = Mention.objects.get(document_id = document,start = relationship['object']['mention']['start'], stop = relationship['object']['mention']['stop'])
+            predicate_mention = Mention.objects.get(document_id = document,start = relationship['predicate']['mention']['start'], stop = relationship['predicate']['mention']['stop'])
+            rel = Link.objects.filter(subject_document_id = document.document_id,subject_start = subject_mention.start,subject_stop = subject_mention.stop,
+                                      predicate_start = predicate_mention.start, predicate_stop = predicate_mention.stop, object_start = object_mention.start, object_stop = object_mention.stop,
+                                      username = username, name_space = name_space, topic_id = topic)
+        # mcc
+        if relationship['subject']['mention'] != {} and relationship['predicate']['mention'] == {} and relationship['object']['mention'] == {}:
+            subject_mention = Mention.objects.get(document_id = document,start = relationship['subject']['mention']['start'], stop = relationship['subject']['mention']['stop'])
+            predicate_concept = Concept.objects.get(concept_url = relationship['subject']['concept']['concept_url'])
+            predicate_area = SemanticArea.objects.get(name=relationship['object']['concept']['concept_area'])
+            object_concept = Concept.objects.get(concept_url=relationship['object']['concept']['concept_url'])
+            object_area = SemanticArea.objects.get(name=relationship['object']['concept']['concept_area'])
+            rel = RelationshipSubjMention.objects.filter(document_id = document.document_id,start = subject_mention,stop = subject_mention.stop,
+                                      predicate_concept_url = predicate_concept.concept_url, predicate_name = predicate_area.name, object_concept_url = object_concept.concept_url, object_name = object_area.name,
+                                      username = username, name_space = name_space, topic_id = topic)
+        # mcm
+        if relationship['subject']['mention'] != {} and relationship['predicate']['mention'] == {} and relationship['object']['mention'] != {}:
+            subject_mention = Mention.objects.get(document_id=document,
+                                                  start=relationship['subject']['mention']['start'],
+                                                  stop=relationship['subject']['mention']['stop'])
+            object_mention = Mention.objects.get(document_id = document,start = relationship['obbject']['mention']['start'], stop = relationship['obbject']['mention']['stop'])
+            predicate_concept = Concept.objects.get(concept_url = relationship['subject']['concept']['concept_url'])
+            predicate_area = SemanticArea.objects.get(name=relationship['object']['concept']['concept_area'])
+            rel = RelationshipPredConcept.objects.filter(document_id = document.document_id,subject_start = subject_mention.start,subject_stop = subject_mention.stop,
+                                      concept_url = predicate_concept, name = predicate_area, object_start = object_mention.start, object_stop = object_mention.stop,
+                                      username = username, name_space = name_space, topic_id = topic)
+
+            # mmc
+        if relationship['subject']['mention'] != {} and relationship['predicate']['mention'] != {} and relationship['object']['mention'] == {}:
+            mentions = Mention.objects.filter(document_id = document)
+            subject_mention = Mention.objects.get(document_id=document,
+                                                  start=int(relationship['subject']['mention']['start']),
+                                                  stop=int(relationship['subject']['mention']['stop']))
+            predicate_mention = Mention.objects.get(document_id = document,start = relationship['predicate']['mention']['start'], stop = relationship['predicate']['mention']['stop'])
+            object_concept = Concept.objects.get(concept_url=relationship['object']['concept']['concept_url'])
+            object_area = SemanticArea.objects.get(name=relationship['object']['concept']['concept_area'])
+            rel = RelationshipObjConcept.objects.filter(subject_document_id = document.document_id,subject_start = subject_mention.start,subject_stop = subject_mention.stop,
+                                      concept_url = object_concept, name = object_area, predicate_start = predicate_mention.start, predicate_stop = predicate_mention.stop,
+                                      username = username, name_space = name_space, topic_id = topic)
+            # cmm
+        if relationship['subject']['mention'] == {} and relationship['predicate']['mention'] != {} and relationship['object']['mention'] != {}:
+            predicate_mention = Mention.objects.get(predicate_document_id=document,
+                                                    start=relationship['predicate']['mention']['start'],
+                                                    stop=relationship['predicate']['mention']['stop'])
+            object_mention = Mention.objects.get(document_id = document,start = relationship['object']['mention']['start'], stop = relationship['object']['mention']['stop'])
+
+            subject_concept = Concept.objects.get(concept_url=relationship['subject']['concept']['concept_url'])
+            subject_area = SemanticArea.objects.get(name=relationship['subject']['concept']['concept_area'])
+            rel = RelationshipSubjConcept.objects.filter(document_id=document.document_id,
+                                                        object_start=object_mention.start,
+                                                        object_stop=object_mention.stop,
+                                                        concept_url=subject_concept, name=subject_area,
+                                                        predicate_start=predicate_mention.start,
+                                                        predicate_stop=predicate_mention.stop,
+                                                        username=username, name_space=name_space, topic_id=topic)
+            # ccm
+        if relationship['subject']['mention'] == {} and relationship['predicate']['mention'] == {} and relationship['object']['mention'] != {}:
+            object_mention = Mention.objects.get(document_id=document, start=relationship['object']['mention']['start'],
+                                                 stop=relationship['object']['mention']['stop'])
+            predicate_concept = Concept.objects.get(concept_url = relationship['subject']['concept']['concept_url'])
+            predicate_area = SemanticArea.objects.get(name=relationship['object']['concept']['concept_area'])
+            subject_concept = Concept.objects.get(concept_url=relationship['subject']['concept']['concept_url'])
+            subject_area = SemanticArea.objects.get(name=relationship['subject']['concept']['concept_area'])
+            rel = RelationshipObjMention.objects.filter(document_id = document.document_id,start = object_mention,stop = object_mention.stop,
+                                      predicate_concept_url = predicate_concept.concept_url, predicate_name = predicate_area.name, subject_concept_url = subject_concept.concept_url, subject_name = subject_area.name,
+                                      username = username, name_space = name_space, topic_id = topic)
+
+            # cmc
+        if relationship['subject']['mention'] == {} and relationship['predicate']['mention'] != {} and relationship['object']['mention'] == {}:
+            predicate_mention = Mention.objects.get(document_id=document, start=relationship['object']['mention']['start'],
+                                                 stop=relationship['predicate']['mention']['stop'])
+            subject_concept = Concept.objects.get(concept_url=relationship['subject']['concept']['concept_url'])
+            subject_area = SemanticArea.objects.get(name=relationship['subject']['concept']['concept_area'])
+            object_concept = Concept.objects.get(concept_url=relationship['object']['concept']['concept_url'])
+            object_area = SemanticArea.objects.get(name=relationship['object']['concept']['concept_area'])
+            rel = RelationshipPredMention.objects.filter(document_id = document.document_id,start = predicate_mention,stop = predicate_mention.stop,
+                                      object_concept_url = object_concept.concept_url, object_name = object_area.name, subject_concept_url = subject_concept.concept_url, subject_name = subject_area.name,
+                                      username = username, name_space = name_space, topic_id = topic)
+
+        if request.method == 'GET':
+            comment = ''
+            if rel.exists():
+                comment = rel.first().comment
+                if comment is None:
+                    comment = ''
+            return JsonResponse({'comment': comment}, safe=False)
+
+        elif request.method == 'POST':
+            comment = body_js.get('comment', None)
+            if rel.exists():
+                rel = rel.first()
+                rel.comment = comment
+                rel.save()
+                return HttpResponse(status = 200)
 
     elif request.method == 'POST' and type == 'copy':
         json_body = json.loads(request.body)
@@ -4028,7 +4272,7 @@ def relationships(request, type=None):
         return JsonResponse(json_resp)
 
 
-    elif request.method == 'POST' and type == 'assertion_comment':
+    elif request.method == 'POST' and type == 'comment':
         username = request.session.get('username', None)
         name_space = request.session.get('name_space', None)
 
@@ -4144,7 +4388,7 @@ def relationships(request, type=None):
         try:
             with transaction.atomic():
                 delete_old_relationship(source_mention, predicate_mention, target_mention, source, target, predicate,
-                                        collection, document, language, user, name_space.name_space)
+                                        collection, document, language, user, name_space.name_space,topic)
             update_gt(user, name_space, document, language,topic)
 
             new_rel = generate_relationships_list(user.username, name_space.name_space, document.document_id,
@@ -4154,6 +4398,196 @@ def relationships(request, type=None):
         except Exception as e:
             return JsonResponse({'error': e})
 
+
+
+def facts(request, type=None):
+    """This view returns the mentions a user annotated in a document"""
+
+    username = request.session['username']
+    name_space = request.session['name_space']
+    document = request.session['document']
+    collection = request.session['collection']
+    language = request.session['language']
+    topic = request.session['topic']
+
+    if request.method == 'GET':
+        if request.GET.get('user', None) is not None:
+            print('relationships user', request.GET.get('user', None))
+            username = request.GET.get('user', None)
+
+        if request.GET.get('name_space', None) is not None:
+            name_space = request.GET.get('name_space', None)
+
+        language = request.session['language']
+        document = request.session['document']
+        json_mentions = {}
+        if type is None:
+            json_mentions = generate_assertions_list(username, name_space, document, language,topic)
+
+            return JsonResponse(json_mentions, safe=False)
+
+
+    if request.method == 'GET' and type == 'comment':
+        if request.GET.get('user', None) is not None:
+            username = request.GET.get('user', None)
+        else:
+            username = request.session.get('username', None)
+
+        if request.GET.get('name_space', None) is not None:
+            name_space = request.GET.get('name_space', None)
+        else:
+            name_space = request.session.get('name_space', None)
+
+        name_space = NameSpace.objects.get(name_space=name_space)
+        username = User.objects.get(username=username,name_space=name_space)
+        document = request.session['document']
+        document = Document.objects.get(document_id=document)
+        topic = request.session['topic']
+        topic = Topic.objects.get(id=topic)
+
+        subj = request.GET.get('relationship[subject_concept_url]',None)
+        obj = request.GET.get('relationship[object_concept_url]',None)
+        pred = request.GET.get('relationship[predicate_concept_url]',None)
+        subj_area = request.GET.get('relationship[subject_concept_area]',None)
+        obj_area = request.GET.get('relationship[object_concept_area]',None)
+        pred_area = request.GET.get('relationship[predicate_concept_area]',None)
+        comment = ''
+        fact = CreateFact.objects.filter(document_id = document,subject_name=subj_area,object_name=obj_area,predicate_name=pred_area,username=username,topic_id=topic,subject_concept_url = subj,object_concept_url = obj,predicate_concept_url = pred)
+        if fact.exists():
+            comment = fact.first().comment
+            if comment is None:
+                comment = ''
+        return JsonResponse({'comment': comment}, safe=False)
+
+
+    if request.method == 'POST' and type == 'copy':
+        json_body = json.loads(request.body)
+        json_resp = copy_assertion_aux(username, name_space, document, language, json_body)
+        return JsonResponse(json_resp)
+
+
+    elif request.method == 'POST' and type == 'comment':
+        username = request.session.get('username', None)
+        name_space = request.session.get('name_space', None)
+
+        name_space = NameSpace.objects.get(name_space=name_space)
+
+        language = request.session['language']
+        document = request.session['document']
+        document = Document.objects.get(document_id=document)
+        topic = request.session['topic']
+        topic = Topic.objects.get(id=topic)
+        username = User.objects.get(username=username,name_space=name_space)
+        body_json = json.loads(request.body)
+        relationship = body_json['relationship']
+        comment = body_json['comment']
+        try:
+
+
+            fact = CreateFact.objects.filter(document_id = document,subject_name=relationship['subject_area'],object_name=relationship['object_area'],predicate_name=relationship['predicate_area'],username=username,topic_id=topic,subject_concept_url = relationship['subject_url'],object_concept_url = relationship['object_url'],predicate_concept_url = relationship['predicate_url'])
+
+
+            if fact.exists() and comment is not None:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        """UPDATE create_fact SET comment = %s WHERE subject_name=%s and object_name=%s and predicate_name = %s and subject_concept_url = %s and object_concept_url = %s and predicate_concept_url=%s and username = %s AND document_id = %s and topic_id=%s""",
+                        [comment, relationship['subject_area'], relationship['object_area'], relationship['predicate_area'], relationship['subject_url'], relationship['object_url'], relationship['predicate_url'],  username.username, document.document_id, topic.id])
+
+                return HttpResponse(status = 200)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status = 500)
+
+
+    elif request.method == 'POST' and type == 'insert':
+        name_space = NameSpace.objects.get(name_space=name_space)
+        user = User.objects.get(username=username, name_space=name_space)
+        document = Document.objects.get(document_id=document, language=language)
+        topic = Topic.objects.get(id=topic)
+        json_body = json.loads(request.body)
+        source = json_body['source']
+        source_mention = source['mention']
+        predicate = json_body['predicate']
+        predicate_mention = predicate['mention']
+        target = json_body['target']
+        target_mention = target['mention']
+        try:
+
+            with transaction.atomic():
+                insert_new_relationship_if_exists(source_mention, predicate_mention, target_mention, source, target,
+                                                  predicate, collection, document, language, user, name_space,topic)
+
+                update_gt(user, name_space, document, language,topic)
+
+            new_rel = generate_assertions_list(user.username, name_space.name_space, document.document_id,
+                                                  document.language,topic.id)
+            return JsonResponse(new_rel, safe=False)
+
+        except Exception as e:
+            return JsonResponse({'error': e})
+
+    elif request.method == 'POST' and type == 'update':
+        name_space = NameSpace.objects.get(name_space=name_space)
+        user = User.objects.get(username=username, name_space=name_space)
+        document = Document.objects.get(document_id=document, language=language)
+        topic = Topic.objects.get(id=topic)
+        json_body = json.loads(request.body)
+        source_prev = json_body['prev_subject']
+        source_mention_prev = source_prev['mention']
+        predicate_prev = json_body['prev_predicate']
+        predicate_mention_prev = predicate_prev['mention']
+        target_prev = json_body['prev_object']
+        target_mention_prev = target_prev['mention']
+
+        source = json_body['source']
+        source_mention = source['mention']
+        predicate = json_body['predicate']
+        predicate_mention = predicate['mention']
+        target = json_body['target']
+        target_mention = target['mention']
+
+        try:
+            with transaction.atomic():
+                delete_old_relationship(source_mention_prev, predicate_mention_prev, target_mention_prev, source_prev,
+                                        target_prev, predicate_prev, collection, document, language, user, name_space,topic)
+                insert_new_relationship_if_exists(source_mention, predicate_mention, target_mention, source, target,
+                                                  predicate, collection, document, language, user, name_space,topic)
+
+            update_gt(user, name_space, document, language,topic)
+
+            new_rel = generate_relationships_list(user.username, name_space.name_space, document.document_id,
+                                                  document.language,topic.id)
+            return JsonResponse(new_rel, safe=False)
+
+        except Exception as e:
+            print(e)
+            return JsonResponse({'error': e})
+
+
+
+    elif request.method == 'DELETE':
+        name_space = NameSpace.objects.get(name_space=name_space)
+        user = User.objects.get(username=username, name_space=name_space)
+        document = Document.objects.get(document_id=document, language=language)
+        topic = Topic.objects.get(id = request.session['topic'])
+        json_body = json.loads(request.body)
+        source = json_body['source']
+        source_mention = source['mention']
+        predicate = json_body['predicate']
+        predicate_mention = predicate['mention']
+        target = json_body['target']
+        target_mention = target['mention']
+        try:
+            with transaction.atomic():
+                delete_old_relationship(source_mention, predicate_mention, target_mention, source, target, predicate,
+                                        collection, document, language, user, name_space.name_space,topic)
+            update_gt(user, name_space, document, language,topic)
+
+            new_rel = generate_assertions_list(user.username, name_space.name_space, document.document_id,
+                                                  document.language,topic.id)
+            return JsonResponse(new_rel, safe=False)
+        except Exception as e:
+            return JsonResponse({'error': e})
 
 def get_mentions(request):
     """This view returns the mentions a user annotated in a document"""
@@ -4223,7 +4657,7 @@ def pending_invitations(request):
     name_space = NameSpace.objects.get(name_space=name_space)
     user = User.objects.get(username=username, name_space=name_space)
 
-    sharecollpending = ShareCollection.objects.filter(username=user, name_space=name_space, status='Invited')
+    sharecollpending = ShareCollection.objects.filter(username=user, name_space=name_space, status='invited')
     json_r = {}
     json_r['count'] = sharecollpending.count()
     json_r['id'] = [x.collection_id_id for x in sharecollpending]
@@ -5035,7 +5469,7 @@ def get_collection_areas(request):
     json_dict = {'areas': areas}
     return JsonResponse(json_dict)
 
-
+import base64
 def get_document_content(request):
     """This view returns the content of the document in json."""
 
@@ -5049,23 +5483,11 @@ def get_document_content(request):
     if doc_id is not None:
         document = Document.objects.get(document_id=doc_id, language=request.session['language'])
         content = document.document_content
-        # keys = content.keys()
-        # if any(k[1] == '_' and k[0].isdigit() for k in keys):
-        #     sorted_keys = sorted(content.keys(), key=lambda x: x.split('_')[0])
-        #     content = {'_'.join(key.split('_')[1:]): content[key] for key in sorted_keys}
-
         new_content = {}
 
-        # for k,v in content.items():
-        #     new_content[k] = {}
-        #     new_content[k]['no_mention'] = v
-        #     # new_content[k] = v
-        #     if isinstance(v,list):
-        #         # new_content[k] = ', '.join(v)
-        #         new_content[k]['no_mention'] = ', '.join(v)
-
-        new_mentions = {}
-        new_empty = {}
+        collection = document.collection_id
+        if collection.type == 'Image':
+            new_content['image'] = base64.b64encode(document.image).decode('utf-8')
         topic = Topic.objects.get(id=topic)
         new_content['mentions'] = create_new_content(document, user,topic)
         new_content['empty'] = content
@@ -5124,18 +5546,19 @@ def get_collections(request):
         json_boj['name'] = c.name
         json_boj['id'] = cid
         json_boj['description'] = c.description
-        json_boj['creator'] = c.username
-        json_boj['name_space'] = c.name_space
+        creator = ShareCollection.objects.filter(collection_id=c, creator=True)
+        json_boj['creator'] = creator.username_id
+        json_boj['name_space'] = creator.username.name_space_id
         json_boj['members'] = []
         time = str(c.insertion_time)
         before_p = time.split('+')
         first_split = before_p[0].split('.')[0]
         time = first_split + '+' + before_p[1]
         json_boj['insertion_time'] = time
-        json_boj['task'] = CollectionHasTask.objects.get(collection_id=c).task_id.name
-        types = CollectionHasTask.objects.filter(collection_id=c)
-        types = [c.annotation_type.name for c in types]
-        json_boj['types'] = types
+        # json_boj['task'] = CollectionHasTask.objects.get(collection_id=c).task_id.name
+        # types = CollectionHasTask.objects.filter(collection_id=c)
+        # types = [c.annotation_type.name for c in types]
+        json_boj['annotation_type'] = c.annotation_type.name
         json_boj['date'] = time.split()[0]
         json_boj['labels'] = []
         json_boj['documents_count'] = (Document.objects.filter(collection_id=cid).count())
@@ -5937,9 +6360,7 @@ def get_members_list(request):
     # controllo se sono tutti gli utenti appartengono a un profile esatto
     profiles = User.objects.all().values('profile')
     profiles = [p['profile'] for p in profiles]
-    # creator = collection.username
-    # profile_creator = User.objects.filter(username = creator).first()
-    # profile_creator = profile_creator.profile
+
 
     for p in profiles:
         users = User.objects.filter(profile=p)
@@ -6008,7 +6429,12 @@ def download_template_concepts(request):
             with open(path, 'r') as f:
                 json_resp = json.load(f)
                 return JsonResponse(json_resp)
-
+        elif format == 'topic_json':
+            workpath = os.path.dirname(os.path.abspath(__file__))  # Returns the Path your .py file is in
+            path = os.path.join(workpath, './static/templates_to_download/template_topics.json')
+            with open(path, 'r') as f:
+                json_resp = json.load(f)
+                return JsonResponse(json_resp)
         elif format == 'csv':
             workpath = os.path.dirname(os.path.abspath(__file__))  # Returns the Path your .py file is in
             path = os.path.join(workpath, './static/templates_to_download/template_concepts.csv')
@@ -6059,7 +6485,7 @@ from django.core.mail import send_mail
 #             for user in share_with:
 #                 if user != request.session['username']:
 #                     us = User.objects.get(username=user,name_space=name_space)
-#                     ShareCollection.objects.create(collection_id=collection, username=us,name_space=us.name_space,status='Invited')
+#                     ShareCollection.objects.create(collection_id=collection, username=us,name_space=us.name_space,status='invited')
 #
 #
 #             for label in labels:
@@ -6178,7 +6604,7 @@ def add_member(request):
                     if not ShareCollection.objects.filter(collection_id=collection, username=user,
                                                           name_space=user.name_space).exists():
                         ShareCollection.objects.create(collection_id=collection, username=user,
-                                                       name_space=user.name_space, status='Invited')
+                                                       name_space=user.name_space, status='invited')
     except Exception as e:
         print(e)
         json_resp = {'error': e}
@@ -6495,6 +6921,7 @@ def delete_annotation_all(request):
                                                    subject_document_id=document.document_id).delete()
             RelationshipPredMention.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space,
                                                    document_id=document).delete()
+            AnnotateObject.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space, document_id=document).delete()
             GroundTruthLogFile.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space, document_id=document).delete()
 
     except Exception as e:
@@ -8036,7 +8463,7 @@ def copy_all_annotations_for_user_study(request):
             if not user_to.exists():
                 return HttpResponse(status=500)
         else:
-            user_to = ShareCollection.objects.filter(collection_id=collection, status='Accepted')
+            user_to = ShareCollection.objects.filter(collection_id=collection, status='accepted')
             if not user_to.exists():
                 return HttpResponse(status=500)
             user_to = [u.username for u in user_to]

@@ -267,15 +267,17 @@ export default function Tag(props){
                     <CustomChip label={props.tags.length} color="primary" onClick={() => SetShowMultiple(prev => !prev)}
                     />
                 </div>}*/}
-            {((props.tags && props.tags.length === 1 && Color && ColorOver && InARel)) &&
+            {((props.tags && props.tags.length >= 1 && Color && ColorOver && InARel)) &&
                 <div style={{textAlign: 'center'}}>
-
-                    <ChipRel role={props.role} variant = {(props.role.toLowerCase() === 'source' || props.role.toLowerCase() === 'predicate' || props.role.toLowerCase() === 'target') ? "filled":"outlined"} color={Color} label={props.tags[0]['tag'].area === 'disease' ? 'DDF' : props.tags[0]['tag'].area } />
-            </div>}
-            {props.tags && props.tags.length > 1 &&  Color && ColorOver && InARel &&
+                    {props.tags.map(tag =>
+                        <span>
+                    <ChipRel role={props.role} variant = {(props.role.toLowerCase() === 'source' || props.role.toLowerCase() === 'predicate' || props.role.toLowerCase() === 'target') ? "filled":"outlined"} color={Color} label={tag['tag'].area } />
+                        </span>)}
+                </div>}
+      {/*      {props.tags && props.tags.length > 1 &&  Color && ColorOver && InARel &&
             <div className='concepts'>
                 <ChipRel role={props.role} variant = {(props.role.toLowerCase() === 'source' || props.role.toLowerCase() === 'predicate' || props.role.toLowerCase() === 'target') ? "filled":"outlined"} color={Color} label={props.tags.length}  />
-            </div>}
+            </div>}*/}
 
 
             {ShowDelete &&
@@ -355,7 +357,7 @@ export default function Tag(props){
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
                         {props.tags.map((c,i)=><div>
-                            <Tooltip title="Delete concept">
+                            <Tooltip title="Delete tag">
                             <span style={{display:"inline", float:'right'}}>
                                 <IconButton aria-label="delete" color = 'error' onClick={(e)=>handleDelete(e,i)}>
                               <DeleteIcon />
