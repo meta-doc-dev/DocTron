@@ -45,6 +45,8 @@ class AnnotateObject(models.Model):
         db_table = 'annotate_object'
 
 
+
+
 class DocumentObject(models.Model):
     document_id = models.ForeignKey('Document', models.DO_NOTHING, db_column='document_id')
     language = models.TextField()
@@ -499,6 +501,8 @@ class RelationshipSubjMention(models.Model):
         db_table = 'relationship_subj_mention'
         unique_together = (('username', 'name_space', 'document_id', 'language',  'start', 'stop', 'object_concept_url', 'predicate_concept_url'),)
 
+
+
 class RelationshipObjMention(models.Model):
     username = models.OneToOneField('User', models.DO_NOTHING, db_column='username',primary_key=True)
     topic_id = models.ForeignKey('Topic', models.DO_NOTHING, db_column='topic_id')
@@ -634,6 +638,24 @@ class Label(models.Model):
     class Meta:
         managed = False
         db_table = 'label'
+
+class AnnotateObjectLabel(models.Model):
+    document_id = models.ForeignKey('Document', models.DO_NOTHING, db_column='document_id')
+    language = models.TextField()
+    points = models.ForeignKey('DocumentObject', models.DO_NOTHING, db_column='points')
+    comment = models.TextField()
+    admin_comment = models.TextField()
+    reviewer_comment = models.TextField()
+    grade = models.IntegerField()
+    label = models.ForeignKey(Label, models.DO_NOTHING, db_column='label')
+    username = models.ForeignKey('User', models.DO_NOTHING, db_column='username')
+    name_space = models.ForeignKey('NameSpace', models.DO_NOTHING, db_column='name_space') # This field type is a guess.
+    insertion_time = models.DateTimeField(primary_key=True)
+    topic_id = models.ForeignKey('Topic', models.DO_NOTHING, db_column='topic_id')
+
+    class Meta:
+        managed = False
+        db_table = 'annotate_object_label'
 
 class CollectionHasLabel(models.Model):
     label = models.OneToOneField(Label, models.DO_NOTHING, db_column='label', primary_key=True)

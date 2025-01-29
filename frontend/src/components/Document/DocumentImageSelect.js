@@ -73,14 +73,14 @@ export default function DocumentImageSelect() {
             axios.get('object_detection', {params: {document_id: DocumentID, user: CurAnnotator}})
                 .then(response => {
 
-                    if (response.data['points'].length > 0) {
 
-                        setPoints(response.data['points']);
+                        SetPointHigh(false)
+                        setPoints(response.data);
                        /* setCurPoints(response.data['points'][0].split(" ")
                             .map((c) => c.split(",").map(Number))
                             .map(([x, y]) => ({ x, y }))
                         );*/
-                    }
+
                 })
 
             axios.get('get_document_content', {params: {document_id: DocumentID, user: CurAnnotator}})
@@ -106,7 +106,7 @@ export default function DocumentImageSelect() {
                 axios.post("object_detection/insert",{points:path})
                     .then(response=>{console.log(response);
                         SetClicked(false)
-                        setPoints(response.data['points'])
+                        setPoints(response.data)
                         SetPointHigh(path)
                     })
                     .catch(error => console.log(error))
@@ -114,7 +114,7 @@ export default function DocumentImageSelect() {
                 axios.post("object_detection/update",{points:path,points_prev:PointHigh})
                     .then(response=>{console.log(response);
                         SetClicked(false)
-                        setPoints(response.data['points'])
+                        setPoints(response.data)
 
                     })
                     .catch(error => console.log(error))
@@ -162,7 +162,7 @@ export default function DocumentImageSelect() {
                             <span>
                                 <Button variant={'contained'} color={'error'} size={'small'}
                                         onClick={()=>{
-
+                                            setCurPoints([])
                                 /*    axios.delete('object_detection',{data:{points:curPoints}})
                                         .then(response => setPoints([]))
                                         .catch(error => console.log(error))*/

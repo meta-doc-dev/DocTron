@@ -89,9 +89,9 @@ export default function LabelsRadio(props) {
         if (Modality === 2 || View === 4) {
             SetOpenSnack(true)
             SetSnackMessage({'message': 'You cannot annotate this document'})
-        } else if (AnnotationType !== 'Graded labeling') {
+        } else if (AnnotationType !== 'Graded labeling' && AnnotationType !== 'Passages annotation' &&  AnnotationType !== 'Object detection') {
             SetOpenSnack(true)
-            SetSnackMessage({'message': 'Labels annotation is not allowed here'})
+            SetSnackMessage({'message': 'Labeling is not allowed here'})
         } else {
             if (CurAnnotator === Username) {
                 if (score !== null) {
@@ -104,6 +104,14 @@ export default function LabelsRadio(props) {
                     } else if (props.type_lab === 'passage') {
                         console.log('passage')
                         axios.post('labels/insert', {label: label, score: score,mention:props.mention})
+                            .then(response => {
+
+
+                            })
+                    }
+                    else if (props.type_lab === 'obj') {
+                        console.log('object detection')
+                        axios.post('labels/insert', {label: label, score: score,points:props.points})
                             .then(response => {
 
 
@@ -137,16 +145,13 @@ export default function LabelsRadio(props) {
         for (let i = parseInt(min); i <= parseInt(max); i++) {
             array.push(i);
         }
-        /*       if(parseInt(min) === 0 && parseInt(max) === 1 ) {
-                   return ['true','false']
-               }*/
         return array;
     }
 
 
     return (
         <Box sx={{marginTop: '5%'}}>
-            {ShowCommentDialog && <CommentDialog open={ShowCommentDialog} setopen={SetShowCommentDialog} mention={props.mention ? props.mention : null} label={props.label} type={'passage'}/>}
+            {ShowCommentDialog && <CommentDialog open={ShowCommentDialog} setopen={SetShowCommentDialog} mention={props.mention ? props.mention : null} points={props.points ? props.points : null} label={props.label} type={'passage'}/>}
             <DetailsDialog open={OpenDetails} setopen={SetOpenDetails} label={props.label} details={props.details} />
 
 
@@ -169,15 +174,35 @@ export default function LabelsRadio(props) {
                 sx={{textAlign: 'right'}}
                 onClick={() => {
                     setValue(null)
-                    axios.delete('labels', {data: {label: props.label}})
-                        .then(response => {
-                            SetNotAdded([...NotAdded, props.label])
-                            var labels = Object.entries(AnnotatedLabels).map(([key]) => key).filter(x => x === props.label)
-                            // var labels = AnnotatedLabels.filter(o => o !== props.label)
-                            SetAnnotatedLabels(labels)
-                            SetLoading(false)
+                    if(props.type_lab === 'passage') {
+                        axios.delete('labels', {data: {label: props.label,start:props.mention.start,stop:props.mention.stop}})
+                            .then(response => {
+                                SetNotAdded([...NotAdded, props.label])
+                                var labels = Object.entries(AnnotatedLabels).map(([key]) => key).filter(x => x === props.label)
+                                SetAnnotatedLabels(labels)
+                                SetLoading(false)
 
-                        })
+                            })
+                    }else if(props.type_lab === 'obj') {
+                        axios.delete('labels', {data: {label: props.label,points:props.points}})
+                            .then(response => {
+                                SetNotAdded([...NotAdded, props.label])
+                                var labels = Object.entries(AnnotatedLabels).map(([key]) => key).filter(x => x === props.label)
+                                SetAnnotatedLabels(labels)
+                                SetLoading(false)
+
+                            })
+                    }else {
+                        axios.delete('labels', {data: {label: props.label}})
+                            .then(response => {
+                                SetNotAdded([...NotAdded, props.label])
+                                var labels = Object.entries(AnnotatedLabels).map(([key]) => key).filter(x => x === props.label)
+                                SetAnnotatedLabels(labels)
+                                SetLoading(false)
+
+                            })
+                    }
+
 
                 }}>Reset</Button>
             </span></>}</div>

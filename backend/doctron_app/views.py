@@ -3212,10 +3212,15 @@ def labels(request, type=None):
             label = Label.objects.get(name=label)
             comment = ''
             mention = request.GET.get('mention[start]',None)
-            if mention is None:
+            points = request.GET.get('points',None)
+            if mention is None and points is None:
                 comments = AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
                                                 topic_id=topic, name_space=name_space)
-            else:
+            elif mention is None and points is not None:
+                points = DocumentObject.objects.get(document_id=document,points=points)
+                comments = AnnotateObjectLabel.objects.filter(username=user, document_id=document, language=language, label=label,
+                                                topic_id=topic, name_space=name_space,points=points)
+            elif mention is not None:
                 mention = {}
                 mention['start'] = int(request.GET.get('mention[start]',None))
                 mention['stop'] = int(request.GET.get('mention[stop]',None))
@@ -3292,6 +3297,17 @@ def labels(request, type=None):
                      topic.id,start,stop])
 
                 return HttpResponse(status=200)
+        elif type == 'object':
+            points = json_body['points']
+            points = DocumentObject.objects.get(document_id = document, points=points)
+
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """UPDATE annotate_object_label SET comment = %s WHERE label = %s and username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s and points = %s """,
+                    [comment, label.name, user.username, name_space.name_space, document.document_id,
+                     document.language,points.points])
+
+                return HttpResponse(status=200)
         return HttpResponse(status = 500)
 
     elif request.method == 'POST' and type == 'insert':
@@ -3304,10 +3320,12 @@ def labels(request, type=None):
         language = document.language
         label = body_json['label']
         mention = body_json.get('mention', None)
+        points = body_json.get('points', None)
+
         score = body_json['score']
         label = Label.objects.get(name=label)
         try:
-            if mention is None:
+            if mention is None and points is None:
                 with transaction.atomic():
                     if AnnotateLabel.objects.filter(username=user, document_id=document, language=language, label=label,
                                                  topic_id=topic,name_space=name_space).exists():
@@ -3319,6 +3337,18 @@ def labels(request, type=None):
                                                  insertion_time=Now(), grade=score, topic_id=topic,name_space=name_space)
                     update_gt(user, name_space, document, language,topic)
 
+                    return JsonResponse({'msg': 'ok'})
+            elif points is not None:
+                    dobj = DocumentObject.objects.get(document_id=document, points=points)
+                    if AnnotateObjectLabel.objects.filter(username=user, document_id=document,points=dobj, language=language, label=label,
+                                                 topic_id=topic,name_space=name_space).exists():
+                        with connection.cursor() as cursor:
+                            cursor.execute("""UPDATE annotate_object_label SET label = %s, grade = %s WHERE username = %s AND name_space = %s AND document_id = %s AND language = %s and topic_id = %s and points = %s """,[label.name,score,user.username,name_space.name_space,document.document_id,document.language, topic.id,dobj.points])
+
+                    else:
+                        AnnotateObjectLabel.objects.create(username=user, document_id=document, language=language, label=label,points=dobj,
+                                                 insertion_time=Now(), grade=score, topic_id=topic,name_space=name_space)
+                    update_gt(user, name_space, document, language,topic)
                     return JsonResponse({'msg': 'ok'})
             else:
                 with transaction.atomic():
@@ -3352,14 +3382,25 @@ def labels(request, type=None):
         name_space = NameSpace.objects.get(name_space=name_space)
         document = Document.objects.get(document_id=document, language=language)
         user = User.objects.get(username=username, name_space=name_space)
+        topic = Topic.objects.get(id = topic)
         body_json = json.loads(request.body)
         language = document.language
         label = body_json['label']
+        start = body_json.get('start',None)
+        stop = body_json.get('stop',None)
+        points = body_json.get('points',None)
         label = Label.objects.get(name=label)
         try:
             with transaction.atomic():
-                AnnotateLabel.objects.filter(username=user, document_id=document, language=language,
-                                             label=label).delete()
+                if start and stop:
+                    mention = Mention.objects.get(document_id=document, language=language, start=start, stop=stop)
+                    AnnotatePassage.objects.filter(username=user, document_id=document,start=mention,stop=mention.stop, language=language, label=label,topic_id = topic)
+                elif points:
+                    points = DocumentObject.objects.get(document_id = document,language = document.language,points = points)
+                    AnnotateObjectLabel.objects.filter(username=user, document_id=document, language=language, label=label,topic_id = topic,points=points)
+                else:
+                    AnnotateLabel.objects.filter(username=user, document_id=document, language=language,
+                                                 label=label,topic_id = topic).delete()
 
                 update_gt(user, name_space, document, language,topic)
 
@@ -3499,44 +3540,84 @@ def get_assertions(request):
 import math
 
 def object_detection(request,type=None):
+    document = request.session.get('document', None)
+    topic = request.session.get('topic', None)
+    username = request.session.get('username', None)
+    name_space = request.session.get('name_space', None)
+
+    if None in [name_space, username, topic, document]:
+        return HttpResponse(status=500)
+    document = Document.objects.get(document_id=document)
+    name_space = NameSpace.objects.get(name_space=name_space)
+    topic = Topic.objects.get(id=topic)
+    labels = CollectionHasLabel.objects.filter(passage_annotation=True, collection_id=document.collection_id)
 
     if request.method == "GET":
         document = request.session.get('document',None)
         document = request.GET.get('document',document)
-        topic = request.session.get('topic', None)
         username = request.session.get('username', None)
         username = request.GET.get('username',username)
-        name_space = request.session.get('name_space', None)
 
         if None in [name_space, username, topic, document]:
             return HttpResponse(status = 500)
         document = Document.objects.get(document_id = document)
-        name_space = NameSpace.objects.get(name_space = name_space)
         username = User.objects.get(username = username,name_space = name_space)
-        topic = Topic.objects.get(id=topic)
-        ob = AnnotateObject.objects.filter(username = username, name_space = name_space, document_id = document, topic_id = topic)
+        values = []
+
+        if type == 'comment':
+            points = request.GET.get('points',None)
+            if points:
+                points = DocumentObject.objects.get(points=points,document_id=document)
+                comment = AnnotateObject.objects.get(points=points,document_id=document,username=username,topic_id=topic).comment
+                if not comment:
+                    comment = ''
+                return JsonResponse({'comment':comment})
+
+
+
+        ob = AnnotateObject.objects.filter(username = username, name_space = name_space, document_id = document, topic_id = topic).order_by('-insertion_time')
         if ob.exists():
             points = []
             for o in ob:
                 points.append(o.points)
-            return JsonResponse({'points':points})
-        return JsonResponse({'points':[]})
+                val = {}
+                for label in labels:
+                    val[label.label_id] = None
+                    annotations = AnnotateObjectLabel.objects.filter(username=username, name_space=name_space,
+                                                                     points=o.points,
+                                                                     document_id=document, label=label.label,
+                                                                     topic_id=topic)
+                    for a in annotations:
+                        val[a.label_id] = int(a.grade)
+                values.append(val)
 
+            return JsonResponse({'points': points, 'values': values})
+        return JsonResponse({'points': [], 'values': []})
+
+    if request.method == 'POST' and type == 'comment':
+        body = json.loads(request.body)
+        username = User.objects.get(username = username,name_space = name_space)
+
+        points = body['points']
+        comment = body['comment']
+        try:
+            if points:
+                points = DocumentObject.objects.get(points=points,document_id=document)
+
+                cursor = connection.cursor()
+                cursor.execute("UPDATE annotate_object SET comment = %s WHERE points=%s and username = %s and document_id = %s and topic_id = %s",
+                               [comment, points.points,username.username,document.document_id,topic.id])
+                return HttpResponse(status = 200)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status = 500)
 
     if request.method == 'POST' and type == 'insert':
+
         body = json.loads(request.body)
         points = body['points']
-        document = request.session.get('document',None)
-        topic = request.session.get('topic', None)
-        username = request.session.get('username', None)
-        name_space = request.session.get('name_space', None)
-
-        if None in [name_space, username, topic, document]:
-            return HttpResponse(status = 500)
-        document = Document.objects.get(document_id = document)
-        name_space = NameSpace.objects.get(name_space = name_space)
         username = User.objects.get(username = username,name_space = name_space)
-        topic = Topic.objects.get(id=topic)
+
         image = None
 
         try:
@@ -3560,13 +3641,24 @@ def object_detection(request,type=None):
             return HttpResponse(status = 500)
         finally:
             ob = AnnotateObject.objects.filter(username=username, name_space=name_space, document_id=document,
-                                               topic_id=topic)
+                                               topic_id=topic).order_by('-insertion_time')
             if ob.exists():
                 points = []
+                values = []
                 for o in ob:
                     points.append(o.points)
-                return JsonResponse({'points': points})
-            return JsonResponse({'points': []})
+                    val = {}
+                    for label in labels:
+                        val[label.label_id] = None
+                        annotations = AnnotateObjectLabel.objects.filter(username=username, name_space=name_space,points = o.points,
+                                                                         document_id=document,label = label.label,
+                                                                         topic_id=topic)
+                        for a in annotations:
+                            val[a.label_id] = int(a.grade)
+                    values.append(val)
+
+                return JsonResponse({'points': points,'values':values})
+            return JsonResponse({'points': [],'values':[]})
 
     elif request.method == 'POST' and type == 'update':
         body = json.loads(request.body)
@@ -3605,13 +3697,25 @@ def object_detection(request,type=None):
         finally:
 
             ob = AnnotateObject.objects.filter(username=username, name_space=name_space, document_id=document,
-                                               topic_id=topic)
+                                               topic_id=topic).order_by('-insertion_time')
             if ob.exists():
                 points = []
+                values = []
                 for o in ob:
                     points.append(o.points)
-                return JsonResponse({'points': points})
-            return JsonResponse({'points': []})
+                    val = {}
+                    for label in labels:
+                        val[label.label_id] = None
+                        annotations = AnnotateObjectLabel.objects.filter(username=username, name_space=name_space,
+                                                                         points=o.points,
+                                                                         document_id=document, label=label.label,
+                                                                         topic_id=topic)
+                        for a in annotations:
+                            val[a.label_id] = int(a.grade)
+                    values.append(val)
+
+                return JsonResponse({'points': points, 'values': values})
+            return JsonResponse({'points': [], 'values': []})
 
     if request.method == 'DELETE':
         body_json = json.loads(request.body)
@@ -3636,13 +3740,25 @@ def object_detection(request,type=None):
         finally:
 
             ob = AnnotateObject.objects.filter(username=username, name_space=name_space, document_id=document,
-                                               topic_id=topic)
+                                               topic_id=topic).order_by('-insertion_time')
             if ob.exists():
                 points = []
+                values = []
                 for o in ob:
                     points.append(o.points)
-                return JsonResponse({'points': points})
-            return JsonResponse({'points': []})
+                    val = {}
+                    for label in labels:
+                        val[label.label_id] = None
+                        annotations = AnnotateObjectLabel.objects.filter(username=username, name_space=name_space,
+                                                                         points=o.points,
+                                                                         document_id=document, label=label.label,
+                                                                         topic_id=topic)
+                        for a in annotations:
+                            val[a.label_id] = int(a.grade)
+                    values.append(val)
+
+                return JsonResponse({'points': points, 'values': values})
+            return JsonResponse({'points': [], 'values': []})
     return HttpResponse(status = 200)
 def mentions(request, type=None):
     name_space = request.session['name_space']

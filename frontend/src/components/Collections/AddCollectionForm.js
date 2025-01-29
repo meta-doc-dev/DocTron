@@ -647,7 +647,7 @@ export default function AddCollectionForm() {
                     <div><h5>Customize annotation</h5></div>
 
 
-                    {(["Graded labeling","Object detection"].indexOf(AnnotationType) !== -1) &&
+                    {(["Graded labeling"].indexOf(AnnotationType) !== -1) &&
                         <div>
                             <div>
                                 <h6>Labels <i></i></h6>
@@ -698,10 +698,10 @@ export default function AddCollectionForm() {
 
                             </div>
                         </div>}
-                    {(['Passages annotation'].indexOf(AnnotationType) !== -1) &&
+                    {(['Passages annotation','Object detection'].indexOf(AnnotationType) !== -1) &&
                         <div>
                             <div>
-                                <h6>Labels for passage annotation<i></i></h6>
+                                <h6>Labels for <>{AnnotationType === 'Object detection' ? 'object detection' : 'passages annotation'}</></h6>
                                 <div>Provide a set of labels with the ranges of values that can be assigned; if you want
                                     binary labels, place 0 for MIN and 1 for MAX.
                                 </div>

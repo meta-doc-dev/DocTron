@@ -156,7 +156,7 @@ function App() {
     const [SelectedLang, SetSelectedLang] = useState('')
     const [TopicsList,SetTopicsList] = useState(false)
     const [Topic,SetTopic] = useState(false)
-    const [Points,setPoints] = useState([])
+    const [Points,setPoints] = useState({'values':[],'points':[]})
     const [PointHigh,SetPointHigh] = useState(false)
     const [WindowRef] = useState(window.location.host)
     const [InARelationship, SetInARelationship] = useState(false)

@@ -56,18 +56,7 @@ function HomeIcon(props) {
 HomeIcon.propTypes = {fontSize: PropTypes.string};
 export default function CommentDialog(props){
     const { collection,document_id,collectiondocuments,topic,showdocs,task } = useContext(AppContext);
-    const [Collection,SetCollection] = collection
-    const [DocumentID,SetDocumentID] = document_id
-    const [ShowDocs,SetShowDocs] = showdocs
-    const [CollectionDescription,SetCollectionDescription] = useState(false)
-    const [TopicComments,SetTopicComments] = useState([])
-    const [DocumentsComments,SetDocumentsComments] = useState([])
-    const [CollectionDocuments,SetCollectionDocuments] = collectiondocuments
-    const [Doc,SetDoc] = useState(null)
-    const [ShowCommentDoc,SetShowCommentDoc] = useState(null)
-    const [ShowCommentTopic,SetShowCommentTopic] = useState(null)
-    const [Topic,SetTopic] = topic
-    const [Task,SetTask] = task
+
     const [Comment,SetComment] = useState(null)
 
 
@@ -80,7 +69,7 @@ export default function CommentDialog(props){
         if (props.mention && props.mention.mention_text) {
             delete props.mention.mention_text;
         }
-        axios.get('labels/comment',{params:{label:props.label,mention:props.mention}})
+        axios.get('labels/comment',{params:{label:props.label,mention:props.mention,points:props.points}})
             .then(response=>{
 
                 SetComment(response.data['comment'])
@@ -105,6 +94,13 @@ export default function CommentDialog(props){
 
                 props.setopen(false)
             })
+        }
+        else if(props.type === 'obj'){
+            axios.post('labels/comment',{label:props.label,comment:comment,points:props.points,type:'object'})
+                .then(response=>{
+
+                    props.setopen(false)
+                })
         }
 
     }
