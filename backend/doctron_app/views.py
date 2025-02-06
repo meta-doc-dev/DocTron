@@ -1220,6 +1220,7 @@ def collections(request, type=None):
             name_space = NameSpace.objects.get(name_space=request.session['name_space'])
 
             annotation_type = request.GET.get('annotation_type', request.session['annotation_type'])
+            request.session['annotation_type'] = annotation_type
             if annotation_type is not None:
                 annotation_type = AnnotationType.objects.get(name=annotation_type)
                 collections = Collection.objects.filter(annotation_type=annotation_type)
@@ -2159,7 +2160,7 @@ def get_session_params(request):
                 session = sessions.first()
                 role = session.role
                 request.session['role'] = json_resp['role'] = role
-                request.session['topic'] = json_resp['topic'] = session.topic_id_id
+                request.session['topic'] = json_resp['topic'] = session.topic_id.topic_id
 
                 # task = CollectionHasTask.objects.filter(collection_id=collection).first()
                 # task = task.task_id.name
@@ -2179,7 +2180,7 @@ def get_session_params(request):
                 session = sessions.first()
                 document = session.document_id
                 role = session.role
-                request.session['topic'] = json_resp['topic'] = session.topic_id_id
+                request.session['topic'] = json_resp['topic'] = session.topic_id.topic_id
                 request.session['language'] = json_resp['language'] = document.language
                 request.session['name_space'] = json_resp['name_space'] = user.name_space_id
                 request.session['collection'] = json_resp['collection'] = document.collection_id_id
@@ -2201,7 +2202,7 @@ def get_session_params(request):
                 last_gt = gts.first()
                 name_space = last_gt.name_space
                 document = last_gt.document_id
-                request.session['topic'] = json_resp['topic'] = last_gt.topic_id_id
+                request.session['topic'] = json_resp['topic'] = last_gt.topic_id.topic_id
 
                 request.session['language']  = json_resp['language'] = document.language
                 request.session['name_space'] = json_resp['name_space'] =name_space.name_space
@@ -2229,8 +2230,9 @@ def get_session_params(request):
 
             document = Document.objects.get(document_id=request.session['document'])
             json_resp['document'] = request.session['document']
-            json_resp['topic'] = request.session.get('topic',None)
-
+            topic = request.session.get('topic',None)
+            if topic is not None:
+                json_resp['topic'] = Topic.objects.get(id=topic).topic_id
             json_resp['task'] = request.session['task']
             # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
             # task = task.task_id.name
@@ -2252,7 +2254,7 @@ def get_session_params(request):
             session = sessions.first()
             document = session.document_id
             role = session.role
-            request.session['topic'] = json_resp['topic'] = session.topic_id_id
+            request.session['topic'] = json_resp['topic'] = session.topic_id.topic_id
             request.session['language'] = json_resp['language'] = document.language
             request.session['name_space'] = json_resp['name_space'] = user.name_space_id
             request.session['collection'] = json_resp['collection'] = document.collection_id_id
@@ -2276,7 +2278,7 @@ def get_session_params(request):
             last_gt = gts.first()
             name_space = last_gt.name_space
             document = last_gt.document_id
-            request.session['topic'] = json_resp['topic'] = last_gt.topic_id_id
+            request.session['topic'] = json_resp['topic'] = last_gt.topic_id.topic_id
             request.session['language'] = json_resp['language'] = document.language
             request.session['name_space'] = json_resp['name_space'] = name_space.name_space
             request.session['collection'] = json_resp['collection']= document.collection_id_id
@@ -9312,17 +9314,23 @@ def change_role(request):
 def topic(request):
     if request.method == 'GET':
         json_resp = {'topics':[]}
-        json_resp = {'topics':[]}
         collection = request.session.get('collection',None)
         if collection is not None:
             collection = Collection.objects.get(collection_id=collection)
             topics = Topic.objects.filter(collection_id = collection)
             if request.GET.get('topic',None) is not None:
                 topic = request.GET.get('topic',None)
-                t = Topic.objects.filter(id=topic)
+                t = Topic.objects.filter(topic_id=topic,collection_id = collection)
                 if t.exists():
                     t = t.first()
                     json_resp['topics'].append({k:v for k,v in t.details.items() if k != 'query_id' and k != 'topic_id'})
+                    request.session['topic'] = t.id
+                    with connection.cursor() as cursor:
+                        cursor.execute("""INSERT INTO session_doc (document_id, language, username, name_space, role, last_view,collection_id,topic_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
+                        ON CONFLICT (username, name_space, collection_id, role,topic_id)
+                        DO UPDATE SET
+                            last_view = %s,document_id=%s,language=%s;""",[request.session['document'],request.session['language'],request.session['username'],request.session['name_space'],request.session['role'],datetime.now(),request.session['collection'],request.session['topic'],datetime.now(),request.session['document'],request.session['language']])
 
             else:
                 for t in topics:
@@ -9332,7 +9340,9 @@ def topic(request):
     elif request.method == 'POST':
         body_json = json.loads(request.body)
         if body_json.get('topic',None) is not None:
-            request.session['topic'] = body_json['topic']
+            collection = Collection.objects.get(collection_id = request.session['collection'])
+            topic = Topic.objects.get(collection_id = collection,topic_id = body_json['topic'])
+            request.session['topic'] = topic.id
             return HttpResponse(status=200)
 
 

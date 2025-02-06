@@ -24,10 +24,12 @@ def load_ir_url(ir_url, name_space, username, users, ir_preanno, collection):
     try:
         documents, topics, qrels = [],[],[]
         dataset = ir_datasets.load(ir_url)
-
+        i = 0
         for doc in dataset.docs_iter():
+            if i == 10:
+                break
             document = {}
-
+            i += 1
             doc_id = getattr(doc, 'doc_id', None)
             to_enc_id = username + str(datetime.now())
             pid = hashlib.md5(to_enc_id.encode()).hexdigest()

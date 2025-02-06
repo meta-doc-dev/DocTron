@@ -1001,8 +1001,8 @@ def new_collection(request):
     min_labels = [int(n) for n in request.POST.getlist('min_labels[]', None)]
     max_labels = [int(n) for n in request.POST.getlist('max_labels[]', None)]
     labels_p = request.POST.getlist('labels_p[]', None)
-    min_labels_p = [int(n) for n in request.POST.getlist('min_p_labels[]', None)]
-    max_labels_p = [int(n) for n in request.POST.getlist('max_p_labels[]', None)]
+    min_labels_p = [int(n) for n in request.POST.getlist('min_labels_p[]', None)]
+    max_labels_p = [int(n) for n in request.POST.getlist('max_labels_p[]', None)]
     #annotation_types = request.POST.getlist('annotationtypes[]', None)
     description = request.POST.get('description', None)
     to_enc = name + request.session['username']

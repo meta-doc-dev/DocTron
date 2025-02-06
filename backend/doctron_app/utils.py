@@ -2269,7 +2269,7 @@ def generate_ground_truth(user,name_space,document,language,topic):
     json_gt['labels'] = [{l.label.name:int(l.grade)} for l in labels]
 
     # mentions & concepts
-    json_gt['objects'] = generate_object_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
+    #json_gt['objects'] = generate_object_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
     json_gt['passages'] = generate_mentions_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
     json_gt['concepts'] = generate_associations_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
     json_gt['tags'] = generate_tag_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
