@@ -1,0 +1,65 @@
+/* Stat Card Styles */
+.stat__card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 40%;
+    padding: 0.75rem 0.5rem;
+    background-color: #fff;
+    border-radius: 0.5rem;
+    text-align: center;
+    text-transform: capitalize;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+
+    &:hover {
+        transform: translateY(-5px);
+    }
+
+    & * {
+        line-height: 1.2;
+    }
+
+    .card__title {
+        color: #777;
+        font-weight: 400;
+        margin: 0;
+        font-size: 95%;
+    }
+
+    .card__value {
+        flex: 1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        font-weight: 700;
+        font-size: 175%;
+        justify-content: center;
+        align-items: center;
+        color: #333;
+    }
+
+    .has-children {
+        flex: 2;
+        gap: 1rem;
+        background-color: transparent;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    .has-children>.card__title {
+        font-weight: 500;
+    }
+
+    .has-children .card__value {
+        width: 100%;
+        font-size: 120%;
+    }
+
+    @media screen and (min-width: 768px) {
+        min-height: 7.5rem;
+        min-width: unset;
+    }
+}

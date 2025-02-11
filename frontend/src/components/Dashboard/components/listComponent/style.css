@@ -1,0 +1,98 @@
+/* General Container */
+.list__container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: auto;
+  transition: gap 300ms ease-in-out;
+}
+
+/* Header Styling */
+.list__heading {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  text-transform: capitalize;
+  font-size: 95% !important;
+  font-weight: 400;
+  border-radius: 0.5rem;
+  background-color: transparent;
+  color: #777777;
+  transition: color 200ms ease-in-out;
+}
+
+/* List Item Container */
+.container__list {
+  overflow: hidden;
+}
+
+.container__list:first-of-type {
+  border-radius: 0.5rem;
+}
+
+/* Open List */
+.list__container .container__list {
+  flex: 1;
+  padding: 0;
+  margin: 0;
+  background-color: #fbfbfb;
+  overflow-y: auto;
+}
+
+.list__heading~.container__list {
+  padding: 0.5rem;
+}
+
+/* Individual List Items */
+.list__item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem;
+  color: #777777;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
+}
+
+.list__item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 200ms ease-in-out;
+}
+
+/* List Item Hover */
+.list__item:hover {
+  color: #1d1d1d;
+}
+
+.list__item--selected {
+  padding: 0.5rem;
+  background-color: #f0f0f0;
+  color: #1d1d1d;
+  font-weight: 500;
+}
+
+.list__group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+
+  .list__group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: #4d4d4d !important;
+  }
+
+  .container__list {
+    padding: 0.5rem;
+  }
+}

@@ -1,0 +1,243 @@
+/* Set up the font stack for all text */
+html {
+    font-size: 100%;
+    /* Standardize the font size */
+    -webkit-text-size-adjust: 100%;
+    line-height: 1;
+    /* Prevent resizing of text in some browsers */
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+}
+
+body:has(.dashboard) {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 100vh;
+    max-height: 100vh;
+    padding: min(5vw, 0.75rem);
+    box-sizing: border-box;
+    background-color: #F7F7F7;
+
+    &>div {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+
+        &>div {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+
+            &>div {
+                flex: 1;
+                display: flex;
+                overflow: hidden;
+            }
+        }
+    }
+
+    & .App {
+        min-height: unset;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    & .App>div {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Global Reset Styles */
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        font-family: inherit;
+        font-size: inherit;
+        vertical-align: baseline;
+        text-decoration: none;
+    }
+
+
+    /* Remove list-style from unordered and ordered lists */
+    ul,
+    ol {
+        list-style: none;
+    }
+
+    /* Remove default border styles */
+    fieldset,
+    input,
+    button,
+    textarea {
+        border: 0;
+    }
+
+    /* Remove default table border-spacing and padding */
+    table {
+        border-collapse: collapse;
+        border-spacing: 0;
+    }
+
+    /* Reset form elements */
+    input,
+    select,
+    textarea,
+    button {
+        font: inherit;
+        line-height: inherit;
+        background: transparent;
+    }
+
+    /* Reset button styling */
+    button {
+        cursor: pointer;
+    }
+
+    /* Remove default anchor link styles */
+    a {
+        text-decoration: none;
+        color: inherit;
+        /* Inherit color from parent element */
+    }
+
+    /* Remove default focus outline */
+    *:focus {
+        outline: none;
+    }
+
+    /* Remove default image display spacing */
+    img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Reset default table styling */
+    table {
+        border: 0;
+        width: 100%;
+    }
+
+    th,
+    td {
+        padding: 0;
+        text-align: left;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        margin: 0;
+        padding: 0;
+    }
+
+    .header_bar {
+        margin: 0 0 0 1.5rem;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0 0.5rem;
+
+        a {
+            height: min-content;
+            margin: 0;
+            padding: 0.5rem;
+            line-height: normal;
+
+            span {
+                margin: 0;
+                padding: 0;
+            }
+        }
+
+        &>div {
+            margin-left: auto;
+        }
+
+        @media screen and (min-width: 768px) {
+            & {
+                margin: 0;
+            }
+        }
+    }
+
+    section#header {
+        display: none;
+    }
+
+    .layout {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        overflow: hidden;
+
+        .main {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            overflow: hidden;
+        }
+    }
+
+    footer {
+        display: none;
+        /* display: grid; */
+        grid-template-rows: minmax(0, 1fr);
+        background-color: transparent;
+        max-height: 5rem;
+    }
+
+    footer>div {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin: 0 !important;
+    }
+
+    footer a {
+        height: 100%;
+    }
+
+    footer img {
+        height: 100%;
+        width: auto;
+        object-fit: contain;
+    }
+
+    ::-webkit-scrollbar {
+        width: 0.5rem;
+        height: 0.5rem;
+    }
+
+    ::-webkit-scrollbar:vertical {
+        width: 0.5rem;
+    }
+
+    ::-webkit-scrollbar:horizontal {
+        height: 0.5rem;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f0f0f0 !important;
+        box-shadow: none;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #1d1d1d50 !important;
+    }
+}

@@ -1,0 +1,291 @@
+.dashboard {
+    .main__content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        overflow: auto;
+
+        main {
+            flex: 1;
+        }
+    }
+
+    .main__cards {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    h3,
+    h4 {
+        color: #1d1d1d;
+        margin: 0;
+    }
+
+    .annotator-selection {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .select-container {
+        flex: 1;
+        height: min-content;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .select-container label {
+        color: #777777;
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    .select-container select {
+        padding: 0.5rem;
+        background-color: #fbfbfb !important;
+        border: none;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: background-color 200ms ease-in-out;
+    }
+
+    .select-container select:focus {
+        background-color: #f0f0f0;
+    }
+
+    .select-container select:hover {
+        border-color: #777777;
+    }
+
+    .doc__list {
+        flex: 1;
+    }
+
+    .global-stats {
+        .main__cards {
+            flex: unset;
+        }
+
+        .sortable-table-container {
+            flex: 1;
+            height: min-content;
+        }
+    }
+
+    /* 🔹 General Layout */
+    .my-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        background: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+
+        /* 🔹 Loading Indicator */
+        .loading-container {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #ddd;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 🔹 Error Message */
+        .error-message {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #ffecec;
+            color: #d9534f;
+            padding: 1rem;
+            border: 1px solid #d9534f;
+            border-radius: 8px;
+        }
+
+        .error-icon {
+            color: #d9534f;
+        }
+    }
+
+
+    .iaa-stats {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: #fff;
+
+        .table__description {
+            width: 100%;
+            text-align: center;
+            color: #777777;
+        }
+
+        .row__title {
+            font-weight: 500;
+        }
+
+        .excellent {
+            padding: 0.15rem 1rem;
+            background-color: #1dbb1d10;
+            color: #1dbb1d;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        .good {
+            padding: 0.15rem 1rem;
+            background-color: #4d4df310;
+            color: #4d4df3;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        .moderate {
+            padding: 0.15rem 1rem;
+            background-color: #ffa60010;
+            color: #ffa600;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        .fair {
+            padding: 0.15rem 1rem;
+            background-color: #ff000010;
+            color: #ff0000;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        .poor {
+            padding: 0.15rem 1rem;
+            background-color: #ff000010;
+            color: #ff0000;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        .negative {
+            padding: 0.15rem 1rem;
+            background-color: rgb(139, 0, 0);
+            color: #fff;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        /* 🔹 Table Buttons */
+        .sortable-table button {
+            padding: 0.3rem 0.6rem;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 0.3rem;
+            cursor: pointer;
+            transition: background-color 200ms ease-in-out;
+        }
+
+        .sortable-table button:hover {
+            background-color: #0056b3;
+        }
+    }
+
+    .topic-stats {
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        background-color: #fff;
+        overflow: auto;
+
+        .select-container {
+            flex: unset;
+        }
+    }
+
+
+    /* 🔹 Headings */
+    .topic-stats h1 {
+        font-size: 1.75rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        color: #1d1d1d;
+        text-align: center;
+    }
+
+    /* 🔹 Topic Selection */
+    .topic-selection {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .topic-selection label {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #777777;
+    }
+
+    .topic-selection select {
+        padding: 0.5rem;
+        background-color: #fbfbfb !important;
+        border: 1px solid #ccc;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: background-color 200ms ease-in-out, border-color 200ms ease-in-out;
+    }
+
+    .topic-selection select:focus {
+        background-color: #f0f0f0;
+        border-color: #777777;
+    }
+
+    .topic-selection select:hover {
+        border-color: #555555;
+    }
+
+    /* 🔹 Table Styling */
+    .sortable-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 1rem;
+    }
+
+    /* 🔹 Modal Styling */
+    .kappa-modal {
+        background: rgba(0, 0, 0, 0.5);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}

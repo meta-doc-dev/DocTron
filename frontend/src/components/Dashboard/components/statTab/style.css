@@ -1,0 +1,59 @@
+/* Stats Tabs Styles */
+.stats-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    background-color: #fff;
+
+    .stats-tabs {
+        display: flex;
+        gap: 1rem;
+        width: max-content;
+        border-bottom: 0.1rem solid #e5e7eb;
+    }
+
+    .stats-tab {
+        background: none;
+        border: none;
+        padding: 0.5rem 0.75rem;
+        font-weight: 400;
+        font-size: 95%;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        text-wrap: nowrap;
+        cursor: pointer;
+        transition: color 200ms ease-in-out, padding 200ms ease-in-out;
+    }
+
+    .stats-tab-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .stats-tab:hover {
+        color: #00796b;
+    }
+
+    .stats-tab.active {
+        padding: 0.5rem 1.5rem;
+        border-bottom: solid 0.15rem #00796b;
+        color: #00796b;
+        font-weight: 500;
+    }
+
+    @media screen and (max-width: 768px) {
+        .stats-tabs {
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-tab {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+}

@@ -1,0 +1,129 @@
+/* 🔹 Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    /* Dark overlay */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: all 0.3s ease-in-out;
+
+    /* 🔹 Modal Container */
+    .modal-container {
+        background: #fff;
+        width: min(90%, 60rem);
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    /* 🔹 Modal Header */
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #1d1d1d;
+        padding: 1rem;
+
+        h3 {
+            color: white;
+        }
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 500;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        transition: opacity 0.3s ease-in-out;
+    }
+
+    .modal-close:hover {
+        opacity: 0.8;
+    }
+
+    /* 🔹 Modal Content */
+    .modal-content {
+        padding: 1rem;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    /* 🔹 Document List */
+    .document-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+        grid-auto-rows: minmax(7.5rem, auto);
+        gap: 0.5rem;
+    }
+
+    /* 🔹 Document Item */
+    .document-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #f9f9f9;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: background 0.3s ease-in-out;
+
+        p {
+            width: 100%;
+            line-height: normal;
+        }
+    }
+
+    .document-item:hover {
+        background: #f0f0f0;
+    }
+
+    /* 🔹 Document Info */
+    .document-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .document-title {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+        color: #1d1d1d;
+        word-break: break-word;
+    }
+
+    .document-meta {
+        font-size: 0.9rem;
+        color: #555;
+    }
+
+    .document-users {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: #555;
+    }
+
+    .no-documents {
+        text-align: center;
+        color: #777;
+        font-style: italic;
+    }
+}
