@@ -1,5 +1,9 @@
 from django.urls import path
 from . import views
+from .get_collections import get_user_collections
+from .dashboard.indivioual_stats import get_individual_statistics
+from .dashboard.global_stats import get_global_statistics
+from .user_collection_statistics import get_user_collection_statistics
 from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth import views as auth_views
@@ -18,7 +22,13 @@ urlpatterns = [
     path('registration', views.registration, name='registration'),
     path('logout', views.logout, name='logout'),
     path('tutorial', views.tutorial, name='tutorial'),
-    path('my_stats', views.my_stats, name='my_stats'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('individual-statistics', get_individual_statistics, name='individual-statistics'),
+    path('global-statistics', get_global_statistics, name='global-statistics'),
+    path('get_user_collection_statistics', get_user_collection_statistics, name='get_user_collection_statistics'),
+    path('user-collections', get_user_collections, name='get_user_collections'),
+    path('jump-to-document', views.update_document_id_from_dashboard, name='update-document-id-from-dashboard'),
+    path('dashboard/<path:subpath>/', views.dashboard, name='dashboard-catchall'),
     path('documents', views.documents, name='documents'),
     path('statistics/<str:collection_id>', views.statistics, name='statistics'),
     path('statistics/<str:collection_id>/<str:type>', views.statistics, name='statistics'),
