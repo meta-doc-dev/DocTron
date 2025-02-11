@@ -5,7 +5,7 @@ import axios from "axios";
 import 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
-import {Redirect, useHistory} from "react-router-dom";
+import {Routes, useHistory} from "react-router-dom";
 import {Container, Row, Col} from 'react-bootstrap';
 // import 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -13,7 +13,6 @@ import {DeleteRange, ClickOnBaseIndex, waitForElm} from './components/HelperFunc
 // import './components/General/first_row.css';
 import {
     BrowserRouter as Router,
-    Switch,
     Route,
     Link
 } from "react-router-dom";
@@ -50,7 +49,7 @@ import StatisticsPage from "./components/Statistics/StatisticsPage";
 import StatisticsCollection from "./components/Statistics/StatisticsCollection";
 import InstructionsPage from "./components/Instructions/InstructionsPage";
 import CreditsPage from "./components/Instructions/CreditsPage";
-import {Collapse, Dialog, DialogActions, DialogContent, InputLabel, Select, TextField} from "@material-ui/core";
+import {Collapse, Dialog, DialogActions, DialogContent, InputLabel, Select, TextField} from "@mui/material";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContentText from "@mui/material/DialogContentText";
 import FormControl from "@mui/material/FormControl";
@@ -63,6 +62,11 @@ import CollectionsList from "./components/Collections/CollectionsList";
 import DocumentsPage from "./components/Document/DocumentsPage";
 import ResetForm from "./components/BaseComponents/ResetForm";
 import Reset from "./components/BaseComponents/Reset";
+import DashboardPage from './components/Dashboard/DashboardPage';
+import MyStatisticsPage from './components/Dashboard/components/tabs/MyStatisticsPage';
+import GlobalStatisticsPage from './components/Dashboard/components/tabs/GlobalStatisticsPage';
+import IAAPage from './components/Dashboard/components/tabs/IAAPage';
+import TopicBasedStatsPage from './components/Dashboard/components/tabs/TopicBasedStatsPage';
 
 export const AppContext = createContext('')
 
@@ -161,6 +165,7 @@ function App() {
     const [WindowRef] = useState(window.location.host)
     const [InARelationship, SetInARelationship] = useState(false)
     const [CollList, SetCollList] = useState(false)
+    const [DashboardCollection, SetDashboardCollectionList] = useState([])
     const [contextMenu, setContextMenu] = React.useState(null);
     const [MentionToHighlight, SetMentionToHighlight] = useState(false)
     const [ShowAddConceptModal, SetShowAddConceptModal] = useState(false)
@@ -360,7 +365,7 @@ function App() {
         if (window.username !== '' && !Username) {
             SetUsername(window.username)
             SetCurAnnotator(window.username)
-            SetProfile(profile)
+            SetProfile(window.profile)
 
         } else if (window.username !== '' || Username) {
             var orcid = '';
@@ -380,13 +385,19 @@ function App() {
 
             })
 
-
+            
             axios.get('collections/list').then(response => {
                 SetCollList(response.data['collections'])
             })
                 .catch(error => {
                     console.log('error', error)
                 })
+
+            axios.get('user-collections').then(response => {
+                SetDashboardCollectionList(response.data)
+            }).catch(error => {
+                console.log('error', error)
+            })
 
 
 
@@ -505,7 +516,7 @@ function App() {
             SetValid(true);
             SetPasswordConfirmed(true)
         }).catch((r) => SetError(true))
-    }
+    }    
 
     return (
         <div className="App" id='app'>
@@ -580,6 +591,7 @@ function App() {
                 annotatedlabels: [AnnotatedLabels, SetAnnotatedLabels],
                 newfact: [NewFact, SetNewFact],
                 collectionslist: [CollList, SetCollList],
+                dashboardCollections: [DashboardCollection, SetDashboardCollectionList],
                 document_id: [DocumentID, SetDocumentID],
                 mentions: [MentionsList, SetMentionsList],
                 startrange: [Start, SetStart],
@@ -789,149 +801,133 @@ function App() {
                             </DialogActions>
                         </Dialog>}
 
-                        <Switch>
+                        <Routes>
 
-                            <Route path="/loginPage" exact>
+                            <Route path="/loginPage" element={<Login/>} exact />
+                                
+                            <Route path="/password_reset/:token" element={<ResetForm/>} exact />
+                                
+                            <Route path="/password_reset" element={<Reset message={window.errorMessage}/>} />
+                                
+                            <Route path="/demo" element={<Demo/>} exact />
+                                
+                            <Route path="/loginPage" element={<Login/>} exact />
 
-                                <Login/>
-                            </Route>
-                            <Route path="/password_reset/:token" exact>
-                                <ResetForm/>
-                            </Route>
-
-                            <Route path="/password_reset">
-                                <Reset message={window.errorMessage}/>
-                            </Route>
-                            <Route path="/demo" exact>
-
-                                <Demo/>
-                            </Route>
-                            <Route path="/loginPage" exact>
-
-                                <Login/>
-                            </Route>
-
-
-                            <Route path="/signup" exact>
+                            <Route path="/signup" element={<SignUp/>} exact />
                                 {/*<div>ciao</div>*/}
-                                <SignUp/>
-                            </Route>
 
-                            <Route path="/index" exact>
+                            <Route path="/index" element={<div>
+                                <SideBar/>
 
-                                <div>
-                                    <SideBar/>
+                                <HeaderBar counter={Counter}/>
+                                <hr/>
 
+                                <div className='maindiv'>
+
+                                    <BaseIndex/>
+
+                                </div>
+                                {/*</div>*/}
+                            </div>} exact />
+
+
+                            <Route path="/collections" element={<div>
+
+                            <HeaderBar counter={Counter}/>
+                            <hr/>
+
+                            <div className='maindiv'>
+                                <CollectionsList/>
+
+                            </div>
+
+                            </div>} exact />
+
+
+                            <Route path="/statistics" element={<div>
+
+                            <HeaderBar counter={Counter}/>
+                            <hr/>
+
+                            <div className='maindiv'>
+                                <StatisticsPage/>
+
+                            </div>
+
+                            </div>} exact />
+                                
+                            <Route path="/instructions" element={<div>
+
+                            <HeaderBar/>
+                            <hr/>
+
+                            <div className='maindiv'>
+                                <InstructionsPage/>
+
+                            </div>
+
+                            </div>} exact />
+
+                            <Route path="/credits" element={<div>
+
+                            <HeaderBar/>
+                            <hr/>
+
+                            <div className='maindiv'>
+                                <CreditsPage/>
+
+                            </div>
+
+                            </div>} exact />
+
+                            <Route path="/statistics/:collection_id" element={<div>
+
+                            <HeaderBar counter={Counter}/>
+                            <hr/>
+
+                            <div className='maindiv'>
+                                <StatisticsCollection/>
+
+                            </div>
+
+                            </div>} exact />
+
+
+                            <Route path='/collections/:collection_id' element={<div>
+
+                            <HeaderBar counter={Counter}/>
+                            <hr/>
+
+                            <div className='maindiv'>
+                                <DocumentsPage/>
+
+                            </div>
+                            </div>} exact />
+
+                            <Route path="/" element={<Home />} exact />
+
+                            <Route path="" element={<Home/>} exact />
+
+                            <Route path="/dashboard/*" element={
+                                <>
                                     <HeaderBar counter={Counter}/>
-                                    <hr/>
+                                    <DashboardPage />
+                                </>
+                            } />
 
-                                    <div className='maindiv'>
-
-                                        <BaseIndex/>
-
-                                    </div>
-                                    {/*</div>*/}
-                                </div>
-
-
-                            </Route>
-                            <Route path="/collections" exact>
-                                <div>
-
+                            <Route path="dashboard/*" element={
+                                <>
                                     <HeaderBar counter={Counter}/>
-                                    <hr/>
-
-                                    <div className='maindiv'>
-                                        <CollectionsList/>
-
-                                    </div>
-
-                                </div>
-
-
+                                    <DashboardPage />
+                                </>
+                            }>
+                                <Route index element={<MyStatisticsPage />} />
+                                <Route path="my-stats" element={<MyStatisticsPage />} />
+                                <Route path="global-stats" element={<GlobalStatisticsPage />} />
+                                <Route path="iaa" element={<IAAPage />} />
+                                <Route path="topic-stats" element={<TopicBasedStatsPage />} />
                             </Route>
-                            <Route path="/statistics" exact>
-                                <div>
-
-                                    <HeaderBar counter={Counter}/>
-                                    <hr/>
-
-                                    <div className='maindiv'>
-                                        <StatisticsPage/>
-
-                                    </div>
-
-                                </div>
-
-
-                            </Route>
-                            <Route path="/instructions" exact>
-                                <div>
-
-                                    <HeaderBar/>
-                                    <hr/>
-
-                                    <div className='maindiv'>
-                                        <InstructionsPage/>
-
-                                    </div>
-
-                                </div>
-
-
-                            </Route>
-                            <Route path="/credits" exact>
-                                <div>
-
-                                    <HeaderBar/>
-                                    <hr/>
-
-                                    <div className='maindiv'>
-                                        <CreditsPage/>
-
-                                    </div>
-
-                                </div>
-
-
-                            </Route>
-                            <Route path="/statistics/:collection_id" exact>
-                                <div>
-
-                                    <HeaderBar counter={Counter}/>
-                                    <hr/>
-
-                                    <div className='maindiv'>
-                                        <StatisticsCollection/>
-
-                                    </div>
-
-                                </div>
-
-
-                            </Route>
-                            <Route path='/collections/:collection_id' exact>
-                                <div>
-
-                                    <HeaderBar counter={Counter}/>
-                                    <hr/>
-
-                                    <div className='maindiv'>
-                                        <DocumentsPage/>
-
-                                    </div>
-                                </div>
-
-                            </Route>
-
-                            <Route path="/" exact>
-                                <Home/>
-                            </Route>
-                            <Route path="" exact>
-                                <Home/>
-                            </Route>
-
-                        </Switch>
+                        </Routes>
                     </div>
                 </Router>}
 
