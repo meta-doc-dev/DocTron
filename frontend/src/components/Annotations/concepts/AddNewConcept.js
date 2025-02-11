@@ -9,7 +9,7 @@ import Button from "@mui/material/Button";
 import Mention from "../mentions/Mention";
 import RemoveIcon from '@mui/icons-material/Remove';
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup} from "@mui/material";
 import IconButton from '@mui/material/IconButton';
 
 import Badge from 'react-bootstrap/Badge'
@@ -33,7 +33,7 @@ import {
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import DocumentToolBar from "../../Document/ToolBar/DocumentToolBar";
 import AddIcon from '@mui/icons-material/Add';
-import Collapse from "@material-ui/core/Collapse";
+import Collapse from "@mui/material/Collapse";
 import Paper from "@mui/material/Paper";
 import '../annotation.css'
 import {CircularProgress, useColorScheme} from "@mui/material";

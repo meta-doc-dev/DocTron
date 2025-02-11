@@ -3,7 +3,7 @@ import Button from "@mui/material/Button";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import DownloadIcon from "@mui/icons-material/Download";
-import {CollectionsBookmarkOutlined} from "@material-ui/icons";
+import {CollectionsBookmarkOutlined} from "@mui/icons-material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
 import DialogTitle from "@mui/material/DialogTitle";

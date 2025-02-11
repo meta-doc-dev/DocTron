@@ -1,7 +1,7 @@
 import {Col, ProgressBar, Row} from "react-bootstrap";
 
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
@@ -29,7 +29,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import AddIcon from '@mui/icons-material/Add';
-import Collapse from "@material-ui/core/Collapse";
+import Collapse from "@mui/material/Collapse";
 import Paper from "@mui/material/Paper";
 // import '../annotation.css'
 // import '../documents.css'

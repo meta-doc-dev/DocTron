@@ -30,7 +30,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import MuiAlert from '@mui/material/Alert';
 import {ConceptContext} from "../../../BaseIndex";
 import DialogTitle from "@mui/material/DialogTitle";
-import {Dialog, DialogActions, DialogContent} from "@material-ui/core";
+import {Dialog, DialogActions, DialogContent} from "@mui/material";
 import DialogContentText from "@mui/material/DialogContentText";
 
 const Alert = React.forwardRef(function Alert(props, ref) {

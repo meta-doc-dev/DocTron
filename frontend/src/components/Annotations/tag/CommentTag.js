@@ -2,7 +2,7 @@ import Button from "@mui/material/Button";
 import TopicIcon from '@mui/icons-material/Topic';
 import ArticleIcon from '@mui/icons-material/Article';
 import axios from "axios";
-import {ButtonGroup, Dialog, DialogActions, DialogContent} from "@material-ui/core";
+import {ButtonGroup, Dialog, DialogActions, DialogContent} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";

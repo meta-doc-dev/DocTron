@@ -2,7 +2,7 @@ import {Col, Row} from "react-bootstrap";
 import Button from "@mui/material/Button";
 import {useParams} from "react-router-dom";
 import axios from "axios";
-import {ButtonGroup, CircularProgress} from "@material-ui/core";
+import {ButtonGroup, CircularProgress} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import Breadcrumbs from "@mui/material/Breadcrumbs";

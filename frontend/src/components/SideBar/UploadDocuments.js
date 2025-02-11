@@ -3,7 +3,7 @@ import Button from "@mui/material/Button";
 import Collapse from '@mui/material/Collapse';
 import RemoveIcon from '@mui/icons-material/Remove';
 import axios from "axios";
-import {ButtonGroup, Dialog, DialogActions, DialogContent} from "@material-ui/core";
+import {ButtonGroup, Dialog, DialogActions, DialogContent} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";

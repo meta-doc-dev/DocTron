@@ -3,7 +3,7 @@ import Button from "@mui/material/Button";
 import {useParams} from "react-router-dom";
 
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import React, {useState, useContext, createContext, useRef, useEffect} from "react";
@@ -26,7 +26,7 @@ import {styled} from "@mui/material/styles";
 import Chip from "@mui/material/Chip";
 import GeneralStats from "./GeneralStats";
 import MyStats from "./MyStats";
-import SearchIcon from "@material-ui/icons/Search";
+import SearchIcon from "@mui/icons-material/Search";
 import NewRoundDialog from "../Collections/dialogs/NewRoundDialog";
 import RoundDialog from "./utils/RoundDialog";
 import CoehnsDialog from "./utils/CoehnsDialog";

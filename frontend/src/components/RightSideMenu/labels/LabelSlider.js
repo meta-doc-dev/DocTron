@@ -9,7 +9,7 @@ import {useContext, useEffect, useState} from "react";
 import Button from "@mui/material/Button";
 import {AppContext} from "../../../App";
 import axios from "axios";
-import InfoIcon from "@material-ui/icons/Info";
+import InfoIcon from "@mui/icons-material/Info";
 import IconButton from "@mui/material/IconButton";
 import CommentDialog from "./CommentDialog";
 import DetailsDialog from "./DetailsDialog";

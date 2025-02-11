@@ -31,7 +31,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import axios from "axios";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
-import {Redirect, useParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import validator from "email-validator";
 
 
@@ -208,7 +208,13 @@ function ResetForm() {
 
     }
 
+    const navigate = useNavigate();
 
+    useEffect(() => {
+      if (Redir === true) {
+        navigate("/login");
+      }
+    }, [Redir, navigate]);
 
 
 
@@ -216,7 +222,6 @@ function ResetForm() {
     return (
         <div className="App">
 
-            {Redir === true && <Redirect to='/login'/>}
 
 
 

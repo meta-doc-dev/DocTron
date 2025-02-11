@@ -2,7 +2,7 @@ import {Col, Row} from "react-bootstrap";
 import Button from "@mui/material/Button";
 
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import Badge from 'react-bootstrap/Badge'
@@ -30,7 +30,7 @@ import {
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import DocumentToolBar from "../../Document/ToolBar/DocumentToolBar";
 import AddIcon from '@mui/icons-material/Add';
-import Collapse from "@material-ui/core/Collapse";
+import Collapse from "@mui/material/Collapse";
 import Paper from "@mui/material/Paper";
 // import './documents.css'
 import {CircularProgress} from "@mui/material";

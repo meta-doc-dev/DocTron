@@ -13,6 +13,8 @@ import {AppContext} from "../../../App";
 import IconButton from "@mui/material/IconButton";
 import {CircularProgress} from "@mui/material";
 import RightSideRelation from "./RightSideRelation";
+import SearchIcon from "@mui/icons-material/Search";
+import SearchRelationComponent from "./SearchRelationComponent";
 import {ConceptContext} from "../../../BaseIndex";
 import EditIcon from '@mui/icons-material/Edit';
 import {ClickOnBaseIndex, updateRelMentionColor, waitForElm} from "../../HelperFunctions/HelperFunctions";

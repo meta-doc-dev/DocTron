@@ -24,7 +24,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import axios from "axios";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
-import {Redirect} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Chip from "@mui/material/Chip";
 
 
@@ -140,7 +140,13 @@ function Login() {
         }
     },[Login,Orcid])
 
+    const navigate = useNavigate();
 
+    useEffect(() => {
+      if (Redir === true  && (User && User !== '' && User !== undefined)) {
+        navigate("/index");
+      }
+    }, [Redir, navigate]);
 
 
     return (
@@ -151,7 +157,6 @@ function Login() {
 
             <div >
                 <Container fluid>
-                    {(Redir === true  && (User && User !== '' && User !== undefined)) && <Redirect to='/index'/>}
                 <div>
                     <div>
 

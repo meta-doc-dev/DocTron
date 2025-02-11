@@ -15,7 +15,7 @@ import Radio from "@mui/material/Radio";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
 import IconButton from "@mui/material/IconButton";
-import InfoIcon from "@material-ui/icons/Info";
+import InfoIcon from "@mui/icons-material/Info";
 import CommentDialog from "./CommentDialog";
 import DetailsDialog from "./DetailsDialog";
 

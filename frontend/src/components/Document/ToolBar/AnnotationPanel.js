@@ -24,7 +24,7 @@ import FileCopyIcon from '@mui/icons-material/FileCopy';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import {AppContext} from "../../../App";
-import {CheckBox} from "@material-ui/icons";
+import {CheckBox} from "@mui/icons-material";
 import CheckIcon from '@mui/icons-material/Check';
 import {RemovehighlightMention} from "../../HelperFunctions/HelperFunctions";
 

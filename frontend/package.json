@@ -6,54 +6,50 @@
     "@devexpress/dx-react-core": "^3.0.4",
     "@devexpress/dx-react-grid": "^3.0.4",
     "@devexpress/dx-react-grid-material-ui": "^3.0.4",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
+    "@emotion/react": "^11.9.0",
+    "@emotion/styled": "^11.8.1",
     "@fortawesome/fontawesome-svg-core": "^1.2.36",
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
-    "@fortawesome/react-fontawesome": "^0.2.2",
-    "@material-ui/core": "^4.12.4",
-    "@material-ui/data-grid": "^4.0.0-alpha.37",
-    "@material-ui/icons": "^4.11.3",
-    "@mui/icons-material": "^6.3.0",
-    "@mui/material": "^6.3.0",
+    "@fortawesome/react-fontawesome": "^0.1.18",
+    "@mui/icons-material": "^5.16.13",
+    "@mui/material": "^5.16.13",
+    "@mui/x-data-grid": "^7.23.5",
+    "@tabler/icons-react": "^3.28.1",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.2.0",
     "@testing-library/user-event": "^13.5.0",
+    "ajv": "^8.17.1",
+    "ajv-keywords": "^5.1.0",
     "apexcharts": "^4.3.0",
     "autosuggest-highlight": "^3.3.4",
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "email-validator": "^2.0.4",
     "js-file-download": "^0.4.12",
+    "jspdf": "^2.5.2",
+    "lodash": "^4.17.21",
+    "lucide-react": "^0.474.0",
     "react": "^18.1.0",
-    "react-apexcharts": "^1.4.0",
+    "react-apexcharts": "^1.7.0",
     "react-bootstrap": "^1.6.0",
-    "react-circular-progressbar": "^2.0.4",
     "react-color": "^2.17.3",
-    "react-cookies": "^0.1.1",
     "react-dom": "^18.1.0",
     "react-draggable": "^4.4.5",
     "react-lasso-select": "^2.0.1",
-    "react-material-ui-form-validator": "^4.0.1",
-    "react-router-dom": "^5.3.3",
-    "react-scripts": "5.0.1",
+    "react-router-dom": "^7.1.1",
+    "react-scripts": "^3.0.1",
     "react-transition-group": "^4.4.5",
     "react-xarrows": "^2.0.2",
-    "regenerator-runtime": "^0.13.9",
+    "recharts": "^2.15.0",
     "url-loader": "^4.1.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "webpack build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+    "eject": "react-scripts eject",
+    "watch": "webpack --watch --mode=development"
   },
   "browserslist": {
     "production": [
@@ -67,11 +63,15 @@
       "last 1 safari version"
     ]
   },
+  "proxy": "http://127.0.0.1:8000",
   "devDependencies": {
-    "eslint": "^5.16.0",
-    "speed-measure-webpack-plugin": "^1.5.0",
-    "svg-inline-loader": "^0.8.2",
-    "webpack": "^5.72.1",
-    "webpack-cli": "^4.9.2"
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-react": "^7.26.3",
+    "babel-loader": "^9.2.1",
+    "css-loader": "^7.1.2",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1"
   }
 }

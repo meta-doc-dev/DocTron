@@ -2,7 +2,7 @@ import {Col, Row} from "react-bootstrap";
 import Button from "@mui/material/Button";
 
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import Alert from '@mui/material/Alert';
@@ -25,7 +25,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Fade from '@mui/material/Fade';
 
 import IconButton from '@mui/material/IconButton';
-import Collapse from "@material-ui/core/Collapse";
+import Collapse from "@mui/material/Collapse";
 import Checkbox from '@mui/material/Checkbox';
 import Paper from "@mui/material/Paper";
 import {styled} from '@mui/material/styles';

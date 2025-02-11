@@ -21,10 +21,7 @@ import InputLabel from '@mui/material/InputLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
 
-import {
-
-    Redirect
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import './login.css'
 
@@ -143,13 +140,20 @@ function SignUp() {
         }
     };
 
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (Redir === true) {
+        navigate("/index");
+        }
+    }, [Redir, navigate]);
+
 
     return (
         <div className="App">
 
            <div >
                 <Container fluid>
-                    {Redir === true&& <Redirect to='/index'/>}
                     {/*{Redir === false && <Redirect to='/signup'/>}*/}
                     {/*<Row>*/}
                     {/*    <Col md={2}></Col>*/}

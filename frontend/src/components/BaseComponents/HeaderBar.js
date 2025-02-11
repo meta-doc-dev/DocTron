@@ -26,7 +26,7 @@ import MailIcon from '@mui/icons-material/Mail';
 import Chip from "@mui/material/Chip";
 import {useContext, useEffect, useState} from "react";
 import {AppContext} from "../../App";
-import {Dialog, DialogActions, DialogContent, InputLabel, Select} from "@material-ui/core";
+import {Dialog, DialogActions, DialogContent, InputLabel, Select} from "@mui/material";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContentText from "@mui/material/DialogContentText";
 import FormControl from "@mui/material/FormControl";

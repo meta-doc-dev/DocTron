@@ -2,7 +2,7 @@ import {Col, Row} from "react-bootstrap";
 import Button from "@mui/material/Button";
 
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
@@ -21,14 +21,14 @@ import Stack from '@mui/material/Stack';
 import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark';
 import ArticleIcon from '@mui/icons-material/Article';
 
-import Collapse from "@material-ui/core/Collapse";
+import Collapse from "@mui/material/Collapse";
 
 import {AppContext} from "../../App";
 import './stats.css'
 import {useParams} from "react-router-dom";
 import {CircularProgress, IconButton} from "@mui/material";
 import PieChart from "./utils/PieChart";
-import InfoIcon from "@material-ui/icons/Info";
+import InfoIcon from "@mui/icons-material/Info";
 import BarChart from "./utils/BarChart";
 import match from "autosuggest-highlight/match";
 import parse from "autosuggest-highlight/parse";

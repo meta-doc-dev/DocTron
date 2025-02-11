@@ -2,7 +2,7 @@ import {Col, Row} from "react-bootstrap";
 import Button from "@mui/material/Button";
 
 import axios from "axios";
-import {ButtonGroup, Collapse} from "@material-ui/core";
+import {ButtonGroup, Collapse} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import Badge from 'react-bootstrap/Badge'

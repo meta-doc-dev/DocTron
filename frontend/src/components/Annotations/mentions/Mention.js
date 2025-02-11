@@ -51,7 +51,7 @@ import FormGroup from "@mui/material/FormGroup";
 import CheckIcon from "@mui/icons-material/Check";
 import {Popover} from "@mui/material";
 import Button from "@mui/material/Button";
-import {TextField} from "@material-ui/core";
+import {TextField} from "@mui/material";
 import SelectMentionToDelete from "./modals/SelectMentionToDelete";
 import LabelSlider from "../../RightSideMenu/labels/LabelSlider";
 import LabelsRadio from "../../RightSideMenu/labels/LabelsRadio";

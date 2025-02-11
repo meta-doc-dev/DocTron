@@ -1,5 +1,5 @@
 import {Col, Row} from "react-bootstrap";
-import {Redirect} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
 import Badge from 'react-bootstrap/Badge'
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -19,7 +19,7 @@ import {SliderPicker} from 'react-color';
 import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
 
-import Collapse from "@material-ui/core/Collapse";
+import Collapse from "@mui/material/Collapse";
 import {
     faChevronLeft, faPalette,
     faChevronRight, faExclamationTriangle,
@@ -859,9 +859,16 @@ export default function Collection(props) {
 
     }
 
+    const navigate = useNavigate();
+
+    useEffect(() => {
+      if (Redir === true) {
+        navigate("/index");
+      }
+    }, [Redir, navigate]);
+
     return (
         <div style={{marginBottom: '30px'}}>
-            {Redir && <Redirect to={"/index"}/>}
             <TransferAnnotationDialog setoverwrite={SetOverWrite} options={AllOptions} collection={props.collection}
                                       memberfrom={MemberFrom} memberto={MemberTo} setmemberfrom={SetMemberFrom}
                                       setmemebeto={SetMemberTo} transfer={TransferAnnotations} open={ShowTransfer}

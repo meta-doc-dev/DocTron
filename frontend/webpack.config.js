@@ -33,5 +33,11 @@ module.exports = {
             }
         ],
     },
-    devtool : "source-map"
+    devtool : "source-map",
+    resolve: {
+        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        alias: {
+          '@components': path.resolve(__dirname, 'src/components/'),
+        },
+      },
 };

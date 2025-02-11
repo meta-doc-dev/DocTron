@@ -23,7 +23,7 @@ import Chip from "@mui/material/Chip";
 import {CircularProgress} from "@mui/material";
 import RightSideConcept from "../associations/RightSideConcept";
 import RightSideRelation from "./RightSideRelation";
-import SearchIcon from "@material-ui/icons/Search";
+import SearchIcon from "@mui/icons-material/Search";
 import SearchRelationComponent from "./SearchRelationComponent";
 import {ConceptContext} from "../../../BaseIndex";
 import {RelSearchContext} from "../../../BaseIndex";

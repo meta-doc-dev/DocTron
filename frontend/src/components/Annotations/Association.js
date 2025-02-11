@@ -3,7 +3,7 @@ import Button from "@mui/material/Button";
 import Mention from "./mentions/Mention";
 
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
@@ -29,7 +29,7 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import DocumentToolBar from "../Document/ToolBar/DocumentToolBar";
 import ToolBar from "../BaseComponents/ToolBar";
 import AddIcon from '@mui/icons-material/Add';
-import Collapse from "@material-ui/core/Collapse";
+import Collapse from "@mui/material/Collapse";
 import Paper from "@mui/material/Paper";
 import './annotation.css'
 import {CircularProgress} from "@mui/material";

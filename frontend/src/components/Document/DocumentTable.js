@@ -1,6 +1,6 @@
 import {useParams} from "react-router-dom";
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from '@mui/material/Link';
@@ -10,15 +10,15 @@ import SaveIcon from '@mui/icons-material/Save';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
-import Paper from '@material-ui/core/Paper';
+import Paper from '@mui/material/Paper';
 import { SelectionState } from '@devexpress/dx-react-grid';
 
 import './table.css'
-// import Button from '@material-ui/core/Button'
-import MenuItem from '@material-ui/core/MenuItem';
-import InputAdornment from '@material-ui/core/InputAdornment';
-import DeleteIcon from '@material-ui/icons/Delete';
-import GetAppIcon from '@material-ui/icons/GetApp';
+// import Button from '@mui/material/Button'
+import MenuItem from '@mui/material/MenuItem';
+import InputAdornment from '@mui/material/InputAdornment';
+import DeleteIcon from '@mui/icons-material/Delete';
+import GetAppIcon from '@mui/icons-material/GetApp';
 
 import {
     SearchState,
@@ -33,18 +33,18 @@ import {
 
 
 } from '@devexpress/dx-react-grid';
-import Select from '@material-ui/core/Select';
-import TableCell from '@material-ui/core/TableCell';
-import { withStyles } from '@material-ui/core/styles';
-import Collapse from "@material-ui/core/Collapse";
-import SearchIcon from '@material-ui/icons/Search';
-import VisibilityIcon from '@material-ui/icons/Visibility';
+import Select from '@mui/material/Select';
+import TableCell from '@mui/material/TableCell';
+import { withStyles } from '@mui/material/styles';
+import Collapse from "@mui/material/Collapse";
+import SearchIcon from '@mui/icons-material/Search';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { RowDetailState } from '@devexpress/dx-react-grid';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import { Plugin, Template, TemplateConnector } from "@devexpress/dx-react-core";
 import Button from "@mui/material/Button";
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
-import InfoIcon from '@material-ui/icons/Info';
+import InfoIcon from '@mui/icons-material/Info';
 import {
     Grid,
     Table,
@@ -63,16 +63,16 @@ import {
     TableColumnVisibility,
     TableColumnResizing,
 } from '@devexpress/dx-react-grid-material-ui';
-import PeopleIcon from '@material-ui/icons/People';
-// import Button from "@material-ui/core/Button";
+import PeopleIcon from '@mui/icons-material/People';
+// import Button from "@mui/material/Button";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faDownload, faProjectDiagram, faPencilAlt} from "@fortawesome/free-solid-svg-icons";
-import {GridToolbarContainer} from "@material-ui/data-grid";
+import {GridToolbarContainer} from "@mui/x-data-grid";
 import Spinner from "react-bootstrap/Spinner";
 import {AppContext} from "../../App";
 import Modal from "react-bootstrap/Modal";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import IconButton from "@material-ui/core/IconButton";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import IconButton from "@mui/material/IconButton";
 import Tooltip from "react-bootstrap/Tooltip";
 
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";

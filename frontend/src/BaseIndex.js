@@ -7,14 +7,14 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import {styled} from '@mui/material/styles';
-import Collapse from '@material-ui/core/Collapse';
+import Collapse from '@mui/material/Collapse';
 import {Container, Row, Col} from 'react-bootstrap';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import {CSSTransition} from 'react-transition-group';
 
 import Divider from '@mui/material/Divider';
-import {CollectionsBookmarkOutlined} from "@material-ui/icons";
+import {CollectionsBookmarkOutlined} from "@mui/icons-material";
 import ActualPosition from "./components/BaseComponents/ActualPosition";
 // import PassageLabelsList from "./components/Passages/PassageLabelsList";
 import Chip from '@mui/material/Chip';

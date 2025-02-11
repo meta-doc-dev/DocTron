@@ -9,7 +9,7 @@ import Button from "@mui/material/Button";
 import Mention from "../mentions/Mention";
 
 import axios from "axios";
-import {ButtonGroup} from "@material-ui/core";
+import {ButtonGroup} from "@mui/material";
 
 import Badge from 'react-bootstrap/Badge'
 import DeleteIcon from '@mui/icons-material/Delete';
