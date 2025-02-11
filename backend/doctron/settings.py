@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'orcid',
 
+    'rest_framework',
     # 'corsheaders', # da rem
 ]
 

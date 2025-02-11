@@ -1982,6 +1982,18 @@ def my_stats(request):
     else:
         return redirect('doctron_app:login')
 
+    
+def dashboard(request, subpath=None):
+    """Serve React frontend for all `/dashboard/*` routes."""
+    username = request.session.get('username', False)
+    profile = request.session.get('profile', False)
+
+    if username:
+        context = {'username': username, 'profile': profile}
+        return render(request, 'doctron_app/index.html', context)
+    else:
+        return redirect('doctron_app:login') 
+
 
 def documents(request):
     """Reports' stats page for app """
@@ -3447,6 +3459,35 @@ def update_document_id(request):
     else:
         return HttpResponse(status=500)
 
+def update_document_id_from_dashboard(request):
+    """
+    This view updates the document id of the session, basically use for moving to annotated or not annotated documents
+    This views purpose is moving from Dashboard Page to actual indexing page of the cell that user selects inside the tables
+    """
+    body_json = json.loads(request.body)
+    document_id = body_json['document']
+    collection = body_json['collection']
+    topic = body_json['topic']
+    language = request.session['language']
+
+    name_space = request.session.get('name_space', 'Human')
+    role = request.session.get('role')
+    username = request.session.get('username')
+
+    if Document.objects.filter(document_id=document_id, language=language).exists():
+        request.session['document'] = document_id
+        with transaction.atomic():
+            if username and name_space and collection and role and topic:
+                document = Document.objects.get(document_id=document_id)
+                with connection.cursor() as cursor:
+                    cursor.execute("""INSERT INTO session_doc (document_id, language, username, name_space, role, last_view,collection_id,topic_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
+                    ON CONFLICT (username, name_space, collection_id, role,topic_id)
+                    DO UPDATE SET
+                        last_view = %s,document_id=%s,language=%s;""",[document.document_id,document.language,username,name_space,role,datetime.now(),document.collection_id_id,topic,datetime.now(),document.document_id,document.language])
+        return JsonResponse({'msg': 'ok'})
+    else:
+        return HttpResponse(status=500)
 
 def accept_invitation(request):
     """This view allows a user to accept the invitation to share a new collection"""
@@ -8962,7 +9003,7 @@ def create_new_round(request):
                 "VALUES (%s,%s,%s,%s,%s,%s)",
                 [a['concept_url'], a['name'], a['insertion_time'], a['username'], a['name_space'], new_id])
         tags = CollectionHasTag.objects.filter(collection_id=collection).values('name',
-                                                                              'collection_id')
+                                                                                'collection_id')
         for a in tags:
             cursor.execute(
                 "INSERT INTO collection_has_tag ('name','collection_id') "
@@ -9006,11 +9047,11 @@ def create_new_round(request):
 
 
             annotations = AssociateTag.objects.filter(document_id__in=documents).values('start', 'stop',
-                                                                                     'name', 'username',
-                                                                                     'name_space',
-                                                                                     'insertion_time',
-                                                                                     'document_id',
-                                                                                     'language')
+                                                                                        'name', 'username',
+                                                                                        'name_space',
+                                                                                        'insertion_time',
+                                                                                        'document_id',
+                                                                                        'language')
             for a in annotations:
                 cursor.execute(
                     "INSERT INTO associate_tag (start,stop,name,username,name_space,document_id,language,insertion_time) "
@@ -9247,7 +9288,7 @@ def change_role(request):
                     json_doc['split'] = 'yes'
                 else:
                     json_doc['split'] = 'no'
-            #
+                #
                 docs_list.append(json_doc)
             #
             for document in not_annotated_docs:
