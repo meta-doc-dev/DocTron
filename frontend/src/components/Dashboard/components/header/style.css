@@ -1,0 +1,31 @@
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    gap: min(5vw, 2.5rem);
+    padding: 0 0.5rem;
+    color: #485a61;
+
+.header-logo {
+    color: #1c2426;
+}
+
+.header-nav {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+
+a {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 500;
+    font-size: 95%;
+    transition: color 200ms ease-in-out;
+
+&:hover {
+     color: #323e43;
+ }
+}
+}
+}
