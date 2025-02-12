@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-export const useStatistics = (collectionID, annotationType) => {
+export const useStatistics = (collectionID, annotationType, username) => {
     const [indStatistics, setIndStatistics] = useState(null);
     const [globalStatistics, setGlobalStatistics] = useState(null);
     const [labelRange, setLabelRange] = useState({});
@@ -55,6 +55,29 @@ export const useStatistics = (collectionID, annotationType) => {
             fetchGlobalStatistics().then(r => r);
         }
     }, [collectionID, annotationType]);
+
+    useEffect(() => {
+        if (!collectionID || !annotationType) return;
+
+        const fetchStatistics = async () => {
+            try {
+                setError(null);
+                setLoading(true);
+                const response = await axios(
+                    `individual-statistics?collection_id=${collectionID}&annotation_type=${annotationType}&username=${username}`
+                );
+                setIndStatistics(response.data.data);
+                setLabelRange(response.data.label_range);
+            } catch (err) {
+                setError(`Failed to fetch statistics`);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStatistics().then(r => r);
+        console.log("Username is Changed", username);
+    }, [username]);
 
     return { indStatistics, globalStatistics, labelRange, error, loading };
 };

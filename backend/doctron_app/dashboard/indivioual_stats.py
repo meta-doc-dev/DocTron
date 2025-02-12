@@ -41,7 +41,12 @@ def get_individual_statistics(request):
     try:
         # Get request parameters
         collection_id = request.GET.get('collection_id')
-        username = request.session.get('username')
+
+        # TODO:
+        #  CHECK THE USER ACCESS AND IF ALLOWED, PERMIT THE USER TO ACCESS OTHER USERS' DATA,
+        #  OTHERWISE, ONLY ALLOW THE USER TO ACCESS HIS/HER DATA
+        username = request.GET.get('username', request.session.get('username'))
+
         name_space = request.session.get('name_space', 'Human')
         annotation_type = request.GET.get('annotation_type', 'Graded labeling')
 
@@ -74,7 +79,7 @@ def get_individual_statistics(request):
         accessible_topics = handler.get_accessible_topics(all_topics)
 
         # Convert to set for faster lookup
-        all_docs_set = set((doc.document_id, doc.language) for doc in accessible_documents)
+        all_docs_set = set((doc.document_id, doc.language, doc.document_content['document_id']) for doc in accessible_documents)
 
         results = []
         for topic in accessible_topics:
@@ -85,10 +90,10 @@ def get_individual_statistics(request):
             missing_documents = []
 
             # Process all documents
-            for doc_id, language in all_docs_set:
+            for doc_id, language, real_document_id in all_docs_set:
                 doc_info = {
                     'id': str(doc_id),
-                    'title': f"Document {doc_id}",
+                    'title': real_document_id,
                     'language': language
                 }
 

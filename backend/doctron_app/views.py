@@ -3468,6 +3468,7 @@ def update_document_id_from_dashboard(request):
     document_id = body_json['document']
     collection = body_json['collection']
     topic = body_json['topic']
+    topic = int(topic)     # cast the topic to int
     language = request.session['language']
 
     name_space = request.session.get('name_space', 'Human')

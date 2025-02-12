@@ -2,7 +2,8 @@ from collections import defaultdict
 from decimal import Decimal
 
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Count
+from django.db.models import Count, Avg, FloatField
+from django.db.models.functions import Cast
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
@@ -21,6 +22,56 @@ def decimal_default(obj) -> float:
     if isinstance(obj, Decimal):
         return float(obj)
     raise TypeError
+
+def get_document_statistics(topic_id, annotation_type, all_documents, collection_users):
+    """Calculate detailed document statistics for a topic"""
+    if annotation_type == 'Graded labeling':
+        base_query = AnnotateLabel.objects.filter(topic_id=topic_id)
+    else:
+        base_query = AnnotatePassage.objects.filter(topic_id=topic_id)
+
+    # Get unique annotated documents
+    annotated_docs_query = base_query.values(
+        'document_id',
+        'language'
+    ).distinct()
+
+    # Total unique documents annotated (considering document_id and language)
+    total_unique_docs = annotated_docs_query.count()
+
+    # Total missing documents
+    total_docs = all_documents.count()
+    total_missing = total_docs - total_unique_docs
+
+    # Get documents with annotator counts and calculate average annotators per document
+    docs_with_annotators = base_query.values(
+        'document_id',
+        'language'
+    ).annotate(
+        annotator_count=Count('username', distinct=True),
+        annotators=ArrayAgg('username', distinct=True)
+    ).order_by('-annotator_count')
+
+    # Calculate average annotators per document
+    total_annotators = sum(doc['annotator_count'] for doc in docs_with_annotators)
+    avg_annotators_per_doc = round(total_annotators / total_unique_docs if total_unique_docs > 0 else 0, 2)
+
+    # Calculate statistics for documents by annotator count
+    doc_coverage = defaultdict(list)
+    for doc in docs_with_annotators:
+        doc_coverage[doc['annotator_count']].append({
+            'id': str(doc['document_id']),
+            'language': doc['language'],
+            'annotators': doc['annotators']
+        })
+
+    return {
+        'total_annotated': total_unique_docs,
+        'total_missing': total_missing,
+        'total_documents': total_docs,
+        'avg_annotators_per_doc': avg_annotators_per_doc,
+        'document_coverage': dict(doc_coverage)
+    }
 
 class GlobalAnnotationHandler:
     """Handler for global annotation statistics"""
@@ -175,18 +226,22 @@ def get_global_statistics(request):
                 'label_documents': {}
             }
 
-            # Get document statistics
-            if annotation_type == 'Graded labeling':
-                annotated_docs = AnnotateLabel.objects.filter(
-                    topic_id=topic.topic_id
-                ).values('document_id').distinct().count()
-            else:
-                annotated_docs = AnnotatePassage.objects.filter(
-                    topic_id=topic.topic_id
-                ).values('document_id').distinct().count()
+            # Get detailed document statistics with unique document count
+            doc_stats = get_document_statistics(
+                topic.topic_id,
+                annotation_type,
+                all_documents,
+                collection_users
+            )
 
-            topic_data['number_of_annotated_documents'] = annotated_docs
-            topic_data['number_of_missing_documents'] = all_documents.count() - annotated_docs
+            # Update topic data with document statistics
+            topic_data.update({
+                'number_of_annotated_documents': doc_stats['total_annotated'],
+                'number_of_missing_documents': doc_stats['total_missing'],
+                'total_documents': doc_stats['total_documents'],
+                'avg_annotators_per_document': doc_stats['avg_annotators_per_doc'],
+                'document_coverage': doc_stats['document_coverage']
+            })
 
             # Get label statistics
             for coll_label in collection_labels:

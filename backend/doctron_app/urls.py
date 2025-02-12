@@ -1,8 +1,11 @@
 from django.urls import path
 from . import views
+from .dashboard.collection_users import get_collection_users
 from .get_collections import get_user_collections
 from .dashboard.indivioual_stats import get_individual_statistics
 from .dashboard.global_stats import get_global_statistics
+from .dashboard.document_wise import get_individual_document_wise_statistics, get_global_document_wise_statistics
+from .dashboard.user_stat_cards import get_user_statistic_cards
 from .user_collection_statistics import get_user_collection_statistics
 from django.views.decorators.csrf import csrf_exempt
 
@@ -28,6 +31,12 @@ urlpatterns = [
     path('get_user_collection_statistics', get_user_collection_statistics, name='get_user_collection_statistics'),
     path('user-collections', get_user_collections, name='get_user_collections'),
     path('jump-to-document', views.update_document_id_from_dashboard, name='update-document-id-from-dashboard'),
+    path('collection-users', get_collection_users, name='get_collection_users'),
+    path('document-wise-global', get_global_document_wise_statistics, name='document-wise-global'),
+    path('document-wise', get_individual_document_wise_statistics, name='document-wise'),
+
+    path('user-statistic-cards', get_user_statistic_cards, name='user-statistics'),
+
     path('dashboard/<path:subpath>/', views.dashboard, name='dashboard-catchall'),
     path('documents', views.documents, name='documents'),
     path('statistics/<str:collection_id>', views.statistics, name='statistics'),

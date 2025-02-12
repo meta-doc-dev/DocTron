@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from itertools import groupby
+from operator import itemgetter
 
 from bs4.diagnose import profile
+from django.db.models import F
 
 from doctron_app.dashboard.document_access_manager import DocumentAccessManager
 from doctron_app.models import AnnotateLabel, AnnotatePassage
@@ -67,6 +70,50 @@ class GradedLabelHandler(BaseAnnotationHandler):
             document_id__in=documents.values('document_id')
         ).values_list('document_id', 'label', 'grade', 'comment').distinct()
 
+    def get_detailed_annotations(self, topic_id, accessible_document_ids):
+        return self.model.objects.filter(
+            topic_id=topic_id,
+            username=self.username,
+            document_id__in=accessible_document_ids
+        ).values(
+            'document_id',
+            'grade',
+            'comment',
+            label_name=F('label__name'),
+        )
+
+    def get_detailed_annotations_results(self, annotations, accessible_documents):
+        # Transform the annotations into the desired format
+        results = []
+
+        # Group by document_id
+        for document_id, doc_annotations in groupby(annotations, key=itemgetter('document_id')):
+            doc_annotations_list = list(doc_annotations)
+
+            # Group passages by passage_id (start position)
+            graded = []
+            for graded_id, graded_annotations in groupby(doc_annotations_list, key=itemgetter('document_id')):
+                graded_annotations_list = list(graded_annotations)
+
+                # Create labels dictionary
+                labels = {
+                    anno['label_name']: anno['grade']
+                    for anno in graded_annotations_list
+                }
+
+                graded.append({
+                    # 'graded_id': document_id,
+                    'labels': labels
+                })
+
+            results.append({
+                'document_id': document_id,
+                'document_content': accessible_documents.get(document_id=document_id).document_content,
+                'data': graded
+            })
+
+        return results
+
     def get_stats(self, topic_id, collection_labels, documents, all_docs_set):
         labels_data = {}
         label_documents = {}
@@ -90,12 +137,13 @@ class GradedLabelHandler(BaseAnnotationHandler):
             for ann in annotations:
                 grade = int(ann['grade'])  # Convert Decimal to int
                 doc_id = ann['document_id']
-                doc_language = next((lang for did, lang in all_docs_set if did == doc_id), None)
+                # doc_language = next((lang for did, lang, _ in all_docs_set if did == doc_id), None)
+                extra_details = next(((lang, document_id) for did, lang, document_id in all_docs_set if did == doc_id), None)
 
                 doc_info = {
                     'id': str(doc_id),
-                    'title': f"Document {doc_id}",
-                    'language': doc_language,
+                    'title': extra_details[1],
+                    'language': extra_details[0],
                     'grade': grade,  # Now an int
                     'comment': ann['comment']
                 }
@@ -126,6 +174,60 @@ class PassageAnnotationHandler(BaseAnnotationHandler):
             document_id__in=documents.values('document_id')
         ).values_list('document_id', 'label', 'grade', 'comment').distinct()
 
+    def get_detailed_annotations(self, topic_id, accessible_document_ids):
+        return (
+            self.model.objects
+            .filter(
+                topic_id=topic_id,
+                username=self.username,
+                document_id__in=accessible_document_ids
+            )
+            .select_related('start')  # Join with Mention table
+            .values(
+                'document_id',
+                'start',
+                'stop',
+                'grade',
+                passage_id=F('start'),  # Using start as passage_id
+                actual_passage_text=F('start__mention_text'),
+                label_name=F('label__name')
+            )
+            .order_by('document_id', 'start')
+        )
+
+    def get_detailed_annotations_results(self, annotations, accessible_documents):
+        # Transform the annotations into the desired format
+        results = []
+
+        # Group by document_id
+        for document_id, doc_annotations in groupby(annotations, key=itemgetter('document_id')):
+            doc_annotations_list = list(doc_annotations)
+
+            # Group passages by passage_id (start position)
+            passages = []
+            for passage_id, passage_annotations in groupby(doc_annotations_list, key=itemgetter('passage_id')):
+                passage_annotations_list = list(passage_annotations)
+
+                # Create labels dictionary
+                labels = {
+                    anno['label_name']: anno['grade']
+                    for anno in passage_annotations_list
+                }
+
+                passages.append({
+                    'passage_id': passage_id,
+                    'actual_passage_text': passage_annotations_list[0]['actual_passage_text'],
+                    'labels': labels
+                })
+
+            results.append({
+                'document_id': document_id,
+                'document_content': accessible_documents.get(document_id=document_id).document_content,
+                'data': passages
+            })
+
+        return results
+
     def get_stats(self, topic_id, collection_labels, documents, all_docs_set):
         labels_data = {}
         label_documents = {}
@@ -149,12 +251,12 @@ class PassageAnnotationHandler(BaseAnnotationHandler):
             for ann in annotations:
                 grade = int(ann['grade'])  # Convert Decimal to int
                 doc_id = ann['document_id']
-                doc_language = next((lang for did, lang in all_docs_set if did == doc_id), None)
+                extra_details = next(((lang, document_id) for did, lang, document_id in all_docs_set if did == doc_id), None)
 
                 doc_info = {
                     'id': str(doc_id),
-                    'title': f"Document {doc_id}",
-                    'language': doc_language,
+                    'title': extra_details[1],
+                    'language': extra_details[0],
                     'grade': grade,  # Now an int
                     'comment': ann['comment']
                 }

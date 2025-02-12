@@ -8,171 +8,245 @@ import SortableTable from "../sortableTable/SortableTable";
 import { COLUMN_TYPES } from "../sortableTable/types";
 import StatCard from "../statCard/StatCard";
 import StatsTabs from "../statTab/StatTab";
+import AnnotationTableGrid from "../sortableTable/DocTable";
+import DocumentAnnotationGrid from "../sortableTable/DocumentAnnotationGrid";
 import "./styles.css";
+import { IconArrowBack } from "@tabler/icons-react";
 
 const MyStatisticsPage = () => {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  const {
-    dashboardCollections: [collectionsList],
-    collection: [collectionID],
-    document_id: [documentID, setDocumentID],
-    username: [username]
-  } = useContext(AppContext);
+    const {
+        dashboardCollections: [collectionsList],
+        collection: [collectionID],
+        topic: [selectedTopic, setSelectedTopic],
+        document_id: [documentID, setDocumentID],
+        username: [username]
+    } = useContext(AppContext);
 
-  /* 📌 Select the currently active collection */
-  const selectedCollection = useMemo(() => {
-    if (!collectionsList?.length) return null;
-    return collectionsList.find((c) => c.collection_id === collectionID) || collectionsList[0];
-  }, [collectionID, collectionsList]);
+    /* 📌 Select the currently active collection */
+    const selectedCollection = useMemo(() => {
+        if (!collectionsList?.length) return null;
+        return collectionsList.find((c) => c.collection_id === collectionID) || collectionsList[0];
+    }, [collectionID, collectionsList]);
 
-  /* 📌 Fetch user-specific statistics */
-  const { indStatistics, globalStatistics, labelRange, error, loading } = useStatistics(
-    collectionID || "",
-    selectedCollection?.annotation_type_name || "",
-    // username
-  );
+    const [selectedUser, setSelectedUser] = useState(username);
 
-  /** 📌 TODO: CHANGE WITH THE ACTUAL DATA */
-  /** 📌 User-specific statistics */
-  const [userStats, setUserStats] = useState({
-    totalMentions: 0,
-    totalConcepts: 0,
-    totalLabels: 0,
-    totalRelationships: 0,
-    totalAssertions: 0,
-    annotatedDocs: 0
-  });
+    /* 📌 Fetch user-specific statistics */
+    const { indStatistics, globalStatistics, labelRange, error, loading } = useStatistics(
+        collectionID || "",
+        selectedCollection?.annotation_type_name || "",
+        selectedUser
+    );
 
-  const [statsActiveTab, setStatsActiveTab] = useState("individual");
+    const [users, SetUsers] = useState([])
 
-  useEffect(() => {
-    if (!collectionID || !username) return;
+    useEffect(() => {
+        if (!collectionID) return;
+        setSelectedTopic(null);
+        axios
+            .get(`/collection-users`, { params: { collection_id: collectionID } })
+            .then((response) => {
+                SetUsers(response.data)
+            })
+            .catch((error) => console.error("Error fetching user statistics:", error));
+    }, [collectionID])
 
-    axios
-      .get(`/user-statistics`, { params: { collection: collectionID, user: username } })
-      .then((response) => {
-        const data = response.data;
 
-        setUserStats({
-          totalMentions: data.mentions || 0,
-          totalConcepts: data.concepts || 0,
-          totalLabels: data.labels || 0,
-          totalRelationships: data.relationships || 0,
-          totalAssertions: data.assertions || 0,
-          annotatedDocs: data.annotated_documents || 0
+    /** 📌 TODO: CHANGE WITH THE ACTUAL DATA */
+    /** 📌 User-specific statistics */
+    const [userStats, setUserStats] = useState([]);
+
+
+    const [statsActiveTab, setStatsActiveTab] = useState("individual");
+
+    useEffect(() => {
+        if (!collectionID || !username) return;
+
+        axios
+            .get(`/user-statistic-cards`, {params: {collection_id: collectionID, user: username}})
+            .then((response) => {
+                const data = response.data;
+                setUserStats(data);
+            })
+            .catch((error) => console.error("Error fetching user statistics:", error));
+    }, [collectionID, username]);
+
+    const [documentStats, setDocumentStats] = useState(null);
+
+    useEffect(() => {
+        if (!collectionID || !username || !selectedTopic || statsActiveTab === "inter-agreement") return;
+        axios.get(`document-wise${statsActiveTab === 'global' ? '-global' : ''}`, {
+            params: {
+                collection_id: collectionID,
+                topic_id: selectedTopic,
+                username: selectedUser,
+                annotation_type: selectedCollection?.annotation_type_name
+            }
+        }).then((response) => {
+            setDocumentStats(response.data);
+        }).catch((error) => {
+            console.error("Error fetching user statistics:", error);
         });
-      })
-      .catch((error) => console.error("Error fetching user statistics:", error));
-  }, [collectionID, username]);
+    }, [selectedTopic, username, collectionID, statsActiveTab]);
 
 
-  const handleTabChange = (tab) => {
-    setStatsActiveTab(tab);
-  }
-
-  // Define table columns for individual statistics configuration once
-  const individualTableColumns = [
-    { key: "topic_id", label: "Topic ID", type: COLUMN_TYPES.TOPIC_ID },
-    { key: "topic_title", label: "Topic Name", type: COLUMN_TYPES.TOPIC_TITLE },
-    { key: "number_of_annotated_documents", label: "Annotated Documents", type: COLUMN_TYPES.ANNOTATED },
-    { key: "number_of_missing_documents", label: "Missing Documents", type: COLUMN_TYPES.MISSING }
-  ];
-
-  // Define table columns for global statistics configuration once
-  const globalTableColumns = [
-    { key: "topic_id", label: "Topic ID", type: COLUMN_TYPES.TOPIC_ID },
-    { key: "topic_title", label: "Topic Name", type: COLUMN_TYPES.TOPIC_TITLE },
-    { key: "total_annotators", label: "Total Annotators", type: COLUMN_TYPES.ANNOTATORS },
-    { key: "number_of_annotated_documents", label: "Annotated Documents", type: COLUMN_TYPES.ANNOTATED },
-    { key: "number_of_missing_documents", label: "Missing Documents", type: COLUMN_TYPES.MISSING }
-  ];
-
-  const renderStatisticsTable = (data, statType = "individual", withModals = true) => (
-    <SortableTable
-      data={data}
-      columns={statType === "individual" ? individualTableColumns : globalTableColumns}
-      labelRange={labelRange}
-      annotationType={selectedCollection?.annotation_type_name}
-      onNavigate={handleNavigate}
-      withModals={withModals}
-    />
-  );
-
-  /* 📌 Handles document navigation */
-  const handleNavigate = async (docId, topicId) => {
-    try {
-      await axios.post("/jump-to-document", {
-        document: docId,
-        topic: topicId,
-        collection: collectionID
-      });
-      setDocumentID(docId);
-      navigate("/index");
-    } catch (error) {
-      console.error("Navigation failed:", error);
+    const handleTabChange = (tab) => {
+        setSelectedTopic(null);
+        setDocumentStats(null);
+        setStatsActiveTab(tab);
     }
-  };
 
-  return (
-    <section className="main__content my-stats">
-      {/* 📌 USER-SPECIFIC COLLECTION STATISTICS */}
-      {/* TODO: REMOVED FOR NOW */}
-      {/*<h4 className="section-title">User Statistics for Collection</h4>*/}
+    // Define table columns for individual statistics configuration once
+    const individualTableColumns = [
+        { key: "topic_id", label: "Topic ID", type: COLUMN_TYPES.TOPIC_ID },
+        { key: "topic_title", label: "Topic Name", type: COLUMN_TYPES.TOPIC_TITLE },
+        { key: "number_of_annotated_documents", label: "Annotated Documents", type: COLUMN_TYPES.ANNOTATED },
+        { key: "number_of_missing_documents", label: "Missing Documents", type: COLUMN_TYPES.MISSING }
+    ];
 
-      <div className="main__cards">
-        <StatCard title="User Annotations" value={selectedCollection?.user_annotations_count || 0} />
-        <StatCard title="User Annotation %" value={`${selectedCollection?.perc_annotations_user || 0}%`} />
-        <StatCard title="Documents Annotated" value={userStats.annotatedDocs} />
-        <StatCard title="Mentions" value={userStats.totalMentions} />
-      </div>
+    // Define table columns for global statistics configuration once
+    const globalTableColumns = [
+        { key: "topic_id", label: "Topic ID", type: COLUMN_TYPES.TOPIC_ID },
+        { key: "topic_title", label: "Topic Name", type: COLUMN_TYPES.TOPIC_TITLE },
+        { key: "total_annotators", label: "Total Annotators", type: COLUMN_TYPES.ANNOTATORS },
+        { key: "number_of_annotated_documents", label: "Annotated Documents", type: COLUMN_TYPES.ANNOTATED },
+        { key: "number_of_missing_documents", label: "Missing Documents", type: COLUMN_TYPES.MISSING },
+        { key: "avg_annotators_per_document", label: "Avg Annotators", type: COLUMN_TYPES.MISSING },
+    ];
 
-      {/** 📌 SORTABLE TABLE: USER'S INDIVIDUAL TOPIC STATISTICS */}
-      {/*<h4 className="section-title">My Individual Annotations</h4>*/}
+    const renderStatisticsTable = (data, statType = "individual", withModals = true) => {    
+        return(
+        <SortableTable
+            data={data}
+            columns={statType === "individual" ? individualTableColumns : globalTableColumns}
+            labelRange={labelRange}
+            annotationType={selectedCollection?.annotation_type_name}
+            onNavigate={handleNavigate}
+            setSelectedTopic={setSelectedTopic}
+            withModals={withModals}
+        />
+    );}
 
-      <StatsTabs
-        activeTab={statsActiveTab}
-        onTabChange={handleTabChange}
-      />
+    const onBack = () => {
+        setSelectedTopic(null);
+        setDocumentStats(null);
+    }
 
-      {loading && (
-        <div className="loading-container">
-          <div className="loading-spinner" />
-        </div>
-      )}
-
-      {error && (
-        <div className="error-message">
-          <AlertCircle className="error-icon" size={20} />
-          <p>{error}</p>
-        </div>
-      )}
+    const renderDocumentStatisticsTable = (data, statType = "individual") => {
+        if (statType === "global") return (<AnnotationTableGrid data={data} onBack={onBack} />)
+        return (<DocumentAnnotationGrid data={data} onBack={onBack} />)
+    }
 
 
-      {/* Individual Stats Panel */}
-      {statsActiveTab === "individual" &&
-        !loading &&
-        !error &&
-        indStatistics &&
-        renderStatisticsTable(indStatistics)
-      }
+    /* 📌 Handles document navigation */
+    const handleNavigate = async (docId, topicId) => {
+        try {
+            await axios.post("/jump-to-document", {
+                document: docId,
+                topic: topicId,
+                collection: collectionID
+            });
+            setDocumentID(docId);
+            navigate("/index");
+        } catch (error) {
+            console.error("Navigation failed:", error);
+        }
+    };    
 
-      {/* Global Stats Panel */}
-      {statsActiveTab === "global" &&
-        !loading &&
-        !error &&
-        globalStatistics &&
-        renderStatisticsTable(globalStatistics, "global")
-      }
+    return (
+        <section className="main__content my-stats">
+            {/* 📌 USER-SPECIFIC COLLECTION STATISTICS */}
+            {/* TODO: REMOVED FOR NOW */}
+            {/*<h4 className="section-title">User Statistics for Collection</h4>*/}
 
-      {/* Inter-Agreement Panel */}
-      {statsActiveTab === "inter-agreement" && (
-        <div className="text-center text-gray-500 py-8">
-          Inter-agreement statistics coming soon
-        </div>
-      )}
-    </section>
-  );
+            <div className="main__cards">
+                {userStats && userStats.map((stat, index) => (
+                    <StatCard key={index} title={stat.title} value={stat.value}/>
+                ))}
+            </div>
+
+            {/** 📌 SORTABLE TABLE: USER'S INDIVIDUAL TOPIC STATISTICS */}
+            {/*<h4 className="section-title">My Individual Annotations</h4>*/}
+
+            <StatsTabs
+                activeTab={statsActiveTab}
+                onTabChange={handleTabChange}
+            />
+
+            {statsActiveTab === "individual" && users && (
+                <select
+                    value={selectedUser}
+                    onChange={(e) => {
+                        setSelectedTopic(null);
+                        setDocumentStats(null);
+                        setSelectedUser(e.target.value);
+                    }}
+                    disabled={users.length === 1}
+                    className="user-select"
+                >
+                    {users.map((u) => (
+                        <option key={u} value={u}>
+                            {u}
+                        </option>
+                    ))}
+                </select>
+            )}
+
+            {loading && (
+                <div className="loading-container">
+                    <div className="loading-spinner" />
+                </div>
+            )}
+
+            {error && (
+                <div className="error-message">
+                    <AlertCircle className="error-icon" size={20} />
+                    <p>{error}</p>
+                </div>
+            )}
+
+            {selectedTopic && (
+                <header className="topic-details">
+                    <h4>Selected Topic: {selectedTopic}</h4>
+
+                    <button
+                        className="details-btn"
+                        onClick={onBack}
+                    >
+                        <IconArrowBack />
+                        <span>Back</span>
+                    </button>
+                </header>
+            )}            
+
+            {/* Individual Stats Panel */}
+            {statsActiveTab === "individual" && !loading && !error && indStatistics && (
+                selectedTopic && documentStats ? (
+                    renderDocumentStatisticsTable(documentStats)
+                ) : (
+                    renderStatisticsTable(indStatistics)
+                )
+            )}
+
+            {/* Global Stats Panel */}
+            {statsActiveTab === "global" && !loading && !error && indStatistics && (
+                selectedTopic && documentStats ? (
+                    renderDocumentStatisticsTable(documentStats, "global")
+                ) : (
+                    renderStatisticsTable(globalStatistics, "global")
+                )
+            )}
+
+
+            {/* Inter-Agreement Panel */}
+            {statsActiveTab === "inter-agreement" && (
+                <div className="text-center text-gray-500 py-8">
+                    Inter-agreement statistics coming soon
+                </div>
+            )}
+        </section>
+    );
 };
 
 export default MyStatisticsPage;
