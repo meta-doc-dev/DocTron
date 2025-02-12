@@ -141,34 +141,7 @@ body:has(.dashboard) {
     }
 
     .header_bar {
-        margin: 0 0 0 1.5rem;
-        display: flex;
-        justify-content: flex-start;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0 0.5rem;
-
-        a {
-            height: min-content;
-            margin: 0;
-            padding: 0.5rem;
-            line-height: normal;
-
-            span {
-                margin: 0;
-                padding: 0;
-            }
-        }
-
-        &>div {
-            margin-left: auto;
-        }
-
-        @media screen and (min-width: 768px) {
-            & {
-                margin: 0;
-            }
-        }
+        display: none;
     }
 
     section#header {
