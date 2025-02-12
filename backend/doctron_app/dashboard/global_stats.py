@@ -122,7 +122,7 @@ class GlobalAnnotationHandler:
             topic_id=topic_id,
             label=label,
             document_id__in=documents.values('document_id')
-        ).values('document_id', 'grade').annotate(
+        ).values('document_id', 'document_id__document_content', 'grade').annotate(
             # count=Count('username', distinct=True),
             usernames=ArrayAgg('username', distinct=True)
         )
@@ -140,7 +140,7 @@ class GlobalAnnotationHandler:
             grade_stats[grade] += count
             doc_stats[grade].append({
                 'id': str(doc_id),
-                'title': f"Document {doc_id}",
+                'title': ann['document_id__document_content']['document_id'],
                 'annotator_count': count,
                 'annotators': usernames
             })
@@ -154,7 +154,7 @@ class GlobalAnnotationHandler:
             topic_id=topic_id,
             label=label,
             document_id__in=documents.values('document_id')
-        ).values('document_id', 'grade').annotate(
+        ).values('document_id', 'document_id__document_content', 'grade').annotate(
             # count=Count('username', distinct=True),
             usernames=ArrayAgg('username', distinct=True)
         )
@@ -172,7 +172,7 @@ class GlobalAnnotationHandler:
             grade_stats[grade] += count
             doc_stats[grade].append({
                 'id': str(doc_id),
-                'title': f"Document {doc_id}",
+                'title': ann['document_id__document_content']['document_id'],
                 'annotator_count': count,
                 'annotators': usernames
             })
