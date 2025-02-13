@@ -56,6 +56,7 @@ const SortableTable = ({
     data,
     onNavigate,
     setSelectedTopic,
+    setActualSelectedTopic,
     columns = [
         { key: "topic_id", label: "Topic ID", type: COLUMN_TYPES.TOPIC_ID },
         { key: "topic_title", label: "Topic Name", type: COLUMN_TYPES.TOPIC_TITLE },
@@ -88,6 +89,7 @@ const SortableTable = ({
 
         if (columnType === COLUMN_TYPES.TOPIC_ID) {
             setSelectedTopic(rowData.topic_id);
+            setActualSelectedTopic(rowData.id);
             return;
         }
 

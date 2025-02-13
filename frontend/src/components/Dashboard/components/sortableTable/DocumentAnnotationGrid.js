@@ -75,9 +75,9 @@ const LabelRenderer = (props) => {
         </span>
     );
 };
-const DocumentAnnotationGrid = ({ data, labelRanges = [0, 1, 2] }) => {
+const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2] }) => {
     const {
-        topic: [selectedTopicId],
+        // topic: [selectedTopicId],
         document_id: [documentID, setDocumentID],
         collection: [collectionID]
     } = useContext(AppContext)

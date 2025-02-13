@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {redirect, useNavigate} from "react-router-dom";
 import axios from "axios";
 import { AlertCircle } from "lucide-react";
 import { AppContext } from "../../../../App";
@@ -19,7 +19,6 @@ const MyStatisticsPage = () => {
     const {
         dashboardCollections: [collectionsList],
         collection: [collectionID],
-        // topic: [selectedTopic, setSelectedTopic],
         document_id: [documentID, setDocumentID],
         username: [username]
     } = useContext(AppContext);
@@ -53,6 +52,7 @@ const MyStatisticsPage = () => {
     }, [collectionID])
 
     const [selectedTopic, setSelectedTopic] = useState(null)
+    const [actualSelectedTopic, setActualSelectedTopic] = useState(null)
 
     /** 📌 TODO: CHANGE WITH THE ACTUAL DATA */
     /** 📌 User-specific statistics */
@@ -125,6 +125,7 @@ const MyStatisticsPage = () => {
             annotationType={selectedCollection?.annotation_type_name}
             onNavigate={handleNavigate}
             setSelectedTopic={setSelectedTopic}
+            setActualSelectedTopic={setActualSelectedTopic}
             withModals={withModals}
         />
     );}
@@ -135,8 +136,20 @@ const MyStatisticsPage = () => {
     }
 
     const renderDocumentStatisticsTable = (data, statType = "individual") => {
-        if (statType === "global") return (<AnnotationTableGrid data={data} onBack={onBack} />)
-        return (<DocumentAnnotationGrid data={data} onBack={onBack} />)
+        if (statType === "global") return (
+            <AnnotationTableGrid
+                data={data}
+                onBack={onBack}
+                selectedTopicId={actualSelectedTopic}
+            />
+        )
+        return (
+            <DocumentAnnotationGrid
+                data={data}
+                onBack={onBack}
+                selectedTopicId={actualSelectedTopic}
+            />
+        )
     }
 
 
@@ -149,7 +162,8 @@ const MyStatisticsPage = () => {
                 collection: collectionID
             });
             setDocumentID(docId);
-            navigate("/index");
+
+            redirect("/index");
         } catch (error) {
             console.error("Navigation failed:", error);
         }

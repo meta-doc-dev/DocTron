@@ -1,8 +1,11 @@
-import React, { useMemo } from 'react';
+import React, {useCallback, useContext, useMemo} from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ClientSideRowModelModule, themeQuartz } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
+import axios from "axios";
+import {AppContext} from "../../../../App";
+import {useNavigate} from "react-router-dom";
 
 
 const GradeValueRenderer = (props) => {
@@ -16,7 +19,31 @@ const GradeValueRenderer = (props) => {
     );
 };
 
-const AnnotationTableGrid = ({ data}) => {
+const AnnotationTableGrid = ({ data, selectedTopicId }) => {
+    const {
+        // topic: [selectedTopicId],
+        document_id: [documentID, setDocumentID],
+        collection: [collectionID]
+    } = useContext(AppContext)
+
+    const navigate = useNavigate();
+
+    const handleNavigate = useCallback(async (docId) => {
+        console.log(data, collectionID);
+
+        try {
+            await axios.post("/jump-to-document", {
+                document: docId,
+                topic: selectedTopicId,
+                collection: collectionID
+            });
+            setDocumentID(docId);
+            navigate("/index");
+        } catch (error) {
+            console.error("Navigation failed:", error);
+        }
+    }, [collectionID, selectedTopicId, navigate, setDocumentID]);
+
     const { columnDefs, rowData } = useMemo(() => {
         // Get unique users and labels
         const users = new Set();
@@ -135,6 +162,11 @@ const AnnotationTableGrid = ({ data}) => {
                 rowData={rowData}
                 theme={themeQuartz}
                 columnDefs={columnDefs}
+                onRowClicked={(params) => {
+                    if (params.data?.document_id) {
+                        handleNavigate(params.data.document_id);
+                    }
+                }}
                 defaultColDef={defaultColDef}
                 suppressHorizontalScroll={true}
                 enableCellTextSelection={true}
