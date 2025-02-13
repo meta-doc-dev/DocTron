@@ -41,7 +41,7 @@ const AnnotationTableGrid = ({ data}) => {
         // Create column definitions
         const columnDefs = [
             {
-                field: 'document_id',
+                field: 'doc_id',
                 headerName: 'Document ID',
                 pinned: 'left',
                 sortable: true,
@@ -87,7 +87,8 @@ const AnnotationTableGrid = ({ data}) => {
         // Process data for rows
         const rowData = data.results.map(doc => {
             const row = {
-                document_id: doc.document_id
+                document_id: doc.document_id,
+                doc_id: doc.doc_id
             };
 
             // Initialize all user fields with NaN
@@ -129,19 +130,19 @@ const AnnotationTableGrid = ({ data}) => {
     }), []);
 
     return (
-    <div>
-        <AgGridReact
-            rowData={rowData}
-            theme={themeQuartz}
-            columnDefs={columnDefs}
-            defaultColDef={defaultColDef}
-            suppressHorizontalScroll={true}
-            enableCellTextSelection={true}
-            pagination={false}
-            animateRows={true}
-            modules={[ClientSideRowModelModule]}
-        />
-    </div>
+        <div className="ag-theme-alpine sortable-table-container">
+            <AgGridReact
+                rowData={rowData}
+                theme={themeQuartz}
+                columnDefs={columnDefs}
+                defaultColDef={defaultColDef}
+                suppressHorizontalScroll={true}
+                enableCellTextSelection={true}
+                pagination={false}
+                animateRows={true}
+                modules={[ClientSideRowModelModule]}
+            />
+        </div>
     );
 };
 

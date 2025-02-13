@@ -116,7 +116,6 @@ def get_global_document_wise_statistics(request):
 
     # Group annotations by document, username, and include grade distribution
     for annotation in annotations:
-        print(annotation)
         doc_id = annotation['document_id']
         username = annotation['username']
         label_name = annotation['label__name']
@@ -137,9 +136,11 @@ def get_global_document_wise_statistics(request):
 
     # Format the response
     formatted_results = []
-    for doc_id in list(all_documents.values_list('document_id', flat=True)):
+    for doc_id, doc_content in list(all_documents.values_list('document_id', 'document_content')):
+        print(doc_content)
         doc_result = {
             'document_id': doc_id,
+            'doc_id': doc_content['document_id'],
             'data': []
         }
 

@@ -19,7 +19,7 @@ const MyStatisticsPage = () => {
     const {
         dashboardCollections: [collectionsList],
         collection: [collectionID],
-        topic: [selectedTopic, setSelectedTopic],
+        // topic: [selectedTopic, setSelectedTopic],
         document_id: [documentID, setDocumentID],
         username: [username]
     } = useContext(AppContext);
@@ -52,6 +52,7 @@ const MyStatisticsPage = () => {
             .catch((error) => console.error("Error fetching user statistics:", error));
     }, [collectionID])
 
+    const [selectedTopic, setSelectedTopic] = useState(null)
 
     /** 📌 TODO: CHANGE WITH THE ACTUAL DATA */
     /** 📌 User-specific statistics */
