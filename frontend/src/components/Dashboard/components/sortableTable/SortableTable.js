@@ -3,6 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { Modal, DocumentList as ModalContent } from "../modal/Modal";
+import {COLUMN_TYPES} from "./types";
 import {
     CellSpanModule,
     ClientSideRowModelModule,
@@ -10,7 +11,7 @@ import {
     ColumnApiModule,
     CellStyleModule,
     RowStyleModule,
-    ModuleRegistry,
+    ModuleRegistry, TooltipModule,
 } from "ag-grid-community";
 import "./styles.css";
 
@@ -21,36 +22,19 @@ ModuleRegistry.registerModules([
     ColumnApiModule,
     CellStyleModule,
     RowStyleModule,
+    TooltipModule,
 ]);
 
-const COLUMN_TYPES = {
-    TOPIC_ID: 'topic_id',
-    TOPIC_TITLE: 'topic_title',
-    ANNOTATORS: 'annotators',
-    ANNOTATED: 'annotated',
-    MISSING: 'missing',
-    LABEL: 'label',
-    CUSTOM: 'custom'
-};
-
-const DocumentList = ({ documents, onNavigate }) => {
-    if (!documents?.length) return null;
-
+const CustomTooltip = ({ value, type }) => {
     return (
-        <div className="document-list-container">
-            {documents.map((doc) => (
-                <div
-                    key={doc.id}
-                    className="document-item"
-                    onClick={() => onNavigate(doc.id)}
-                >
-                    <p className="document-title">{doc.title}</p>
-                    <p className="document-meta">{doc.language}</p>
-                </div>
-            ))}
+        <div className="custom-tooltip" style={{ backgroundColor: '#999' }}>
+            <div>
+                <b>Custom Tooltip</b>
+            </div>
+            <div>{value}</div>
         </div>
-    );
-};
+    )
+}
 
 const SortableTable = ({
     data,
@@ -59,7 +43,7 @@ const SortableTable = ({
     setActualSelectedTopic,
     columns = [
         { key: "topic_id", label: "Topic ID", type: COLUMN_TYPES.TOPIC_ID },
-        { key: "topic_title", label: "Topic Name", type: COLUMN_TYPES.TOPIC_TITLE },
+        { key: "topic_title", label: "Topic", type: COLUMN_TYPES.TOPIC_TITLE },
         {
             key: "number_of_annotated_documents",
             label: "Annotated Documents",
@@ -79,13 +63,22 @@ const SortableTable = ({
     withModals = false
 }) => {
     const [modalContent, setModalContent] = useState(null);
+
+    // Note: set 0 for data showing modal, 1 for document table modal
+    const [modalType, setModalType] = useState(0);
     
     const handleCellClick = (params, columnType) => {
         if (!withModals) return;
 
         const rowData = params.data;
-        console.log(rowData);
-        
+
+        if (columnType === COLUMN_TYPES.TOPIC_TITLE) {
+            setModalType(0); // useless
+            setModalContent({ title: 'Topic Info', data: rowData.topic_info });
+            return;
+        }
+
+        setModalType(1);
 
         if (columnType === COLUMN_TYPES.TOPIC_ID) {
             setSelectedTopic(rowData.topic_id);
@@ -117,24 +110,37 @@ const SortableTable = ({
         if (content) setModalContent(content);
     };
 
+
+    const getHeaderTooltipText = (label) => {
+        switch (label) {
+            case COLUMN_TYPES.AVG_ANNOTATORS:
+                return `Average number of annotators per document (Total annotations / Number of unique documents)`;
+            case "Missing Documents":
+                return "Documents that are missing";
+            case "Avg":
+                return "Topic title";
+            default:
+                return "";
+        }
+    }
+
     const columnDefs = useMemo(() => {
         const baseColumns = columns.map(col => ({
             field: col.key,
             headerName: col.label,
             sortable: true,
             filter: true,
+            // tooltipComponentParams: { type: col.type },
+            headerTooltip: getHeaderTooltipText(col.type),
             onCellClicked: (params) => handleCellClick(params, col.type),
             cellClass: (params) => {
-                if (col.type === COLUMN_TYPES.ANNOTATED && params.data.annotated_documents?.length) {
-                    return 'clickable-cell';
-                }
-                if (col.type === COLUMN_TYPES.MISSING && params.data.missing_documents?.length) {
-                    return 'clickable-cell';
-                }
-                if (col.type === COLUMN_TYPES.TOPIC_ID) {
-                    return 'clickable-cell';
-                }
-                return '';
+                const clickableCases = {
+                    [COLUMN_TYPES.ANNOTATED]: params.data.annotated_documents?.length > 0,
+                    [COLUMN_TYPES.MISSING]: params.data.missing_documents?.length > 0,
+                    [COLUMN_TYPES.TOPIC_ID]: true,
+                    [COLUMN_TYPES.TOPIC_TITLE]: true
+                };
+                return clickableCases[col.type] ? 'clickable-cell' : '';
             },
             width: col.type === COLUMN_TYPES.LABEL || col.type === COLUMN_TYPES.CUSTOM ? 80 : 200,
             minWidth: col.type === COLUMN_TYPES.LABEL || col.type === COLUMN_TYPES.CUSTOM ? 60 : 150,
@@ -177,7 +183,7 @@ const SortableTable = ({
         filter: true,
         suppressMovable: true,
         flex: 1,
-        // minWidth: 100
+        // tooltipComponent: CustomTooltip,
     }), []);
 
     const gridOptions = {
@@ -194,20 +200,30 @@ const SortableTable = ({
                 gridOptions={gridOptions}
                 enableCellTextSelection={true}
                 suppressContextMenu={true}
+                tooltipShowDelay={500}
             />
-            {withModals && (
+            {withModals && modalContent && (
                 <Modal
                     isOpen={!!modalContent}
                     onClose={() => setModalContent(null)}
                     title={modalContent?.title || ""}
                 >
-                    <ModalContent
+                    {modalType ? (
+                        <ModalContent
                         documents={modalContent?.data || []}
                         onNavigate={(docId) => {
                             onNavigate(docId, modalContent.topic);
                             setModalContent(null);
                         }}
-                    />
+                    />) : (
+                        <div>
+                            {Object.entries(modalContent?.data).map(([key, value]) => (
+                                <div key={key}>
+                                    <strong>{key}</strong>: {value}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </Modal>
             )}
         </div>

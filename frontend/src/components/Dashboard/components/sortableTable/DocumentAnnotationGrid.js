@@ -94,7 +94,7 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
                 collection: collectionID
             });
             setDocumentID(docId);
-            navigate("/index");
+            window.location.assign("/index");
         } catch (error) {
             console.error("Navigation failed:", error);
         }

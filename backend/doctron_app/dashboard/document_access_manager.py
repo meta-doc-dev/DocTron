@@ -27,7 +27,6 @@ class DocumentAccessManager:
 
         # If user has no splits or reviewer assignments, they can access all documents
         if not split_docs.exists() and not reviewer_docs.exists():
-            print("we are here")
             return documents
 
         # Combine split and reviewer document IDs

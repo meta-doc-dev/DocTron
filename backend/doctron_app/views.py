@@ -3469,11 +3469,6 @@ def update_document_id_from_dashboard(request):
     collection = body_json['collection']
     topic = body_json['topic']
     topic = int(topic)     # cast the topic to int
-    print('topic',topic)
-    print('=======')
-    print('=======')
-    print('=======')
-    print('=======')
 
     language = request.session['language']
 
@@ -3483,6 +3478,7 @@ def update_document_id_from_dashboard(request):
 
     if Document.objects.filter(document_id=document_id, language=language).exists():
         request.session['document'] = document_id
+        request.session['collection'] = collection
         with transaction.atomic():
             if username and name_space and collection and role and topic:
                 document = Document.objects.get(document_id=document_id)

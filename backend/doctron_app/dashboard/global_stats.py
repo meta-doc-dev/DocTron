@@ -2,8 +2,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Count, Avg, FloatField
-from django.db.models.functions import Cast
+from django.db.models import Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
@@ -23,7 +22,7 @@ def decimal_default(obj) -> float:
         return float(obj)
     raise TypeError
 
-def get_document_statistics(topic_id, annotation_type, all_documents, collection_users):
+def get_document_statistics(topic_id, annotation_type, all_documents):
     """Calculate detailed document statistics for a topic"""
     if annotation_type == 'Graded labeling':
         base_query = AnnotateLabel.objects.filter(topic_id=topic_id)
@@ -53,8 +52,11 @@ def get_document_statistics(topic_id, annotation_type, all_documents, collection
     ).order_by('-annotator_count')
 
     # Calculate average annotators per document
-    total_annotators = sum(doc['annotator_count'] for doc in docs_with_annotators)
-    avg_annotators_per_doc = round(total_annotators / total_unique_docs if total_unique_docs > 0 else 0, 2)
+    total_annotations = sum(doc['annotator_count'] for doc in docs_with_annotators)
+    avg_annotators_per_doc = round(total_annotations / total_unique_docs if total_unique_docs > 0 else 0, 2)
+
+    # Get total annotators
+    total_annotators = base_query.values('username').distinct().count()
 
     # Calculate statistics for documents by annotator count
     doc_coverage = defaultdict(list)
@@ -68,8 +70,9 @@ def get_document_statistics(topic_id, annotation_type, all_documents, collection
     return {
         'total_annotated': total_unique_docs,
         'total_missing': total_missing,
-        'total_documents': total_docs,
+        'total_annotators': total_annotators,
         'avg_annotators_per_doc': avg_annotators_per_doc,
+        'total_documents': total_annotations,
         'document_coverage': dict(doc_coverage)
     }
 
@@ -211,17 +214,17 @@ def get_global_statistics(request):
             collection_id=collection_id
         ).select_related('label')
 
-        # Get all users with access to collection
-        collection_users = handler.get_collection_users()
-        user_count = len(collection_users)
+        # # Get all users with access to collection # USELESS CODE
+        # collection_users = handler.get_collection_users()
+        # user_count = len(collection_users)
 
         results = []
         for topic in all_topics:
             topic_data = {
                 'id': str(topic.id),
                 'topic_id': str(topic.topic_id),
-                'topic_title': f"{topic.details['text'][:13]}...",
-                'total_annotators': user_count,
+                'topic_title': topic.details['text'],
+                'topic_info': topic.details,
                 'labels': {},
                 'label_documents': {}
             }
@@ -231,12 +234,12 @@ def get_global_statistics(request):
                 topic.topic_id,
                 annotation_type,
                 all_documents,
-                collection_users
             )
 
             # Update topic data with document statistics
             topic_data.update({
-                'number_of_annotated_documents': doc_stats['total_annotated'],
+                'total_annotators': doc_stats['total_annotators'],
+                'total_documents_unique': doc_stats['total_annotated'],
                 'number_of_missing_documents': doc_stats['total_missing'],
                 'total_documents': doc_stats['total_documents'],
                 'avg_annotators_per_document': doc_stats['avg_annotators_per_doc'],
@@ -278,7 +281,7 @@ def get_global_statistics(request):
         response = {
             'status': 'success',
             'data': results,
-            'total_annotators': user_count
+            # 'total_annotators': user_count
         }
 
         # Add label ranges if applicable

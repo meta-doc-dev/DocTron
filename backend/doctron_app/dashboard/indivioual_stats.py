@@ -113,7 +113,8 @@ def get_individual_statistics(request):
             topic_data = {
                 'id': str(topic.id),
                 'topic_id': str(topic.topic_id),
-                'topic_title': f"{topic.details['text'][:13]}...",
+                'topic_title': topic.details['text'],
+                'topic_info': topic.details,
                 'number_of_annotated_documents': len(annotated_documents),
                 'number_of_missing_documents': len(missing_documents),
                 'labels': labels_data,

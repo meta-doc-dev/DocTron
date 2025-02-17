@@ -908,16 +908,17 @@ function App() {
 
                             <Route path="" element={<Home/>} exact />
 
-                            <Route path="/dashboard/*" element={
-                                <>
-                                    <HeaderBar counter={Counter}/>
-                                    <DashboardPage />
-                                </>
-                            } />
+                            {/*<Route path="/dashboard/*" element={*/}
+                            {/*    <>*/}
+                            {/*        <HeaderBar counter={Counter}/>*/}
+                            {/*        <DashboardPage />*/}
+                            {/*    </>*/}
+                            {/*} />*/}
 
                             <Route path="dashboard/*" element={
                                 <>
                                     <HeaderBar counter={Counter}/>
+                                    <hr/>
                                     <DashboardPage />
                                 </>
                             }>

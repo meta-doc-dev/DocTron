@@ -6,7 +6,7 @@ import 'ag-grid-community/styles/ag-theme-alpine.css';
 import axios from "axios";
 import {AppContext} from "../../../../App";
 import {useNavigate} from "react-router-dom";
-
+import "./styles.css"
 
 const GradeValueRenderer = (props) => {
     if (!props.value || props.value === 'NaN') {
@@ -38,7 +38,7 @@ const AnnotationTableGrid = ({ data, selectedTopicId }) => {
                 collection: collectionID
             });
             setDocumentID(docId);
-            navigate("/index");
+            window.location.assign("/index");
         } catch (error) {
             console.error("Navigation failed:", error);
         }

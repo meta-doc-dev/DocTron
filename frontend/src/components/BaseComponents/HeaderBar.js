@@ -110,9 +110,9 @@ function HeaderBar(props){
                 </Button>
                 <Button
                     sx={{display:"inline-block",marginLeft:'5%'}}
-                    href={'/statistics'}
+                    href={'/dashboard'}
                 >
-                    Statistics
+                    Dashboard
                 </Button>
             {window.location.hostname === "metatron.dei.unipd.it" && <Button
                 sx={{display: "inline-block", marginLeft: '5%'}}

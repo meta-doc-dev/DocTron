@@ -1,5 +1,6 @@
 .dashboard-header {
-    display: flex;
+    /*display: flex;*/
+    display: none;
     align-items: center;
     gap: min(5vw, 2.5rem);
     padding: 0 0.5rem;

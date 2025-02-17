@@ -92,9 +92,9 @@ WSGI_APPLICATION = 'doctron.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'doctron_db_2',
+        'NAME': 'doctron_db',
         'USER': 'postgres',
-        'PASSWORD': 'sbadmin912',
+        'PASSWORD': 'ornella',
         'HOST': 'localhost',
         'PORT': '5432',
     }

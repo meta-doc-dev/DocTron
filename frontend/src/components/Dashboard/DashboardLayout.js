@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import ListComponent from "./components/listComponent/ListComponent";
 import "./style.css";
 import { AppContext } from "../../App";
-import axios from "axios";
 import Sidebar from "./components/sidebar/Sidebar";
 import DashboardHeader from "./components/header/Header";
 
@@ -43,7 +42,7 @@ const DashboardLayout = ({ className = "", children }) => {
 
   return (
       <section className={`layout dashboard ${className}`}>
-        <DashboardHeader />
+        {/*<DashboardHeader />*/}
         <main className="main">
           <Sidebar
               // title="Dashboard"
