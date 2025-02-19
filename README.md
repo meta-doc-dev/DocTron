@@ -64,7 +64,12 @@ In the statistics dashborard, reachable by clicking on _Statistics_ button of th
 
 
 ## Customizability and Collections
-DocTron allows the users to create one or more  _collections_: a collection contains one or more documents which can be annotated by one or more users. To create a new collection go to COLLECTIONS button at the top of the main interface which will redirect to the collections page. This page contains the list of collections a user can annotate and a form to create a new collection. 
+DocTron allows the users to create one or more  _collections_. A collection is characterized by three key elements: a _topic_ which identifies the information need; the _document_ which is the annotable unit which can be either a topic or an image; and an _annotation tempalte_ which is identifies how the document should be annotated.
+All the documents can be annotated with respect to all the topics by all the member of a collection. 
+Each member of the collection is an _annotator_ which has the default permission: they can annotate the documents. _Reviewers_ are allowed to review the annotations produced by the annotators; the _admins_ have the highest permissions: they can modify both reviewers' and annotators' annotations, they can check statistics of the collection and IAA metrics. Admins can keep track of the annotation workflow, define and refine guidelines and oversees the entire work of all the collection members.
+Collections can be _collaborative_ and _competititve_: in collaborative modality all the annotators can annotate the entire collection and have access to other members' annotations and majority voting based ground truth. In contrast, in competitive mode, annotators cannot see each other work. This is particularly relevant when it is important to assess the quality of the annotations and, if needed, establish new guidelines.
+
+To create a new collection go to COLLECTIONS button at the top of the main interface which will redirect to the collections page. This page contains the list of collections a user can annotate and a form to create a new collection. 
 
 The collections a user can annotate contain the following information: creator, date of creation, descriptions, documents, number of annotators, annotators' names, labels list. It is possible to interact with the collections, in particular it is possible to:
 1. load more information;
