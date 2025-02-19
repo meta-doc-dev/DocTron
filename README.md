@@ -13,13 +13,13 @@ In order to locally deploy DocTron in your computer or in a remote server you ne
 
 Clone or donwload this repository. Open the **doctron** folder and, replace the url provided in the url.txt file with the url of the server where DocTron will be deployed. Your url must replace the default one: http://0.0.0.0:8000. 
 
-Run a new terminal session and run ```docker compose up```. This procedure will take few minutes depending on your hardware and you internet connection. When the procedure is finished you can open a new browser winodw (chrome is recommended) and you can start uploading new documents.
+Run a new terminal session and place inside ```backend``` folder --where there is the ```docker-compose.yml``` file-- and run ```docker compose up```. This procedure will take few minutes depending on your hardware and you internet connection. When the procedure is finished you can open a new browser winodw (chrome is recommended) and you can start uploading new documents.
 Once that DocTron is up and running, open a new terminal and run ```docker-compose exec db bash -c "psql -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'doctron_db'\" | grep -q 1 || psql -U postgres -c 'CREATE DATABASE doctron_db;' && pg_restore -U postgres -d doctron_db -v backup_db_1.tar"```: this will setup the database restoring the database schema and providing some test collections (those provided in the online demo instance).
 
-## Annotation Interface
+## UI - User interface
 In the annotation interface you can visualize your annotations and annotate collections' documents.
 <p align="center">
-   <img src="./img/ui.jpg" alt="logo" width="900px"/>
+   <img src="./img/ui.jpg" alt="ui" width="900px"/>
 </p>
 
    1. In the main header it is possible to logout, and access to collection and statistics dashboard pages;
@@ -27,4 +27,47 @@ In the annotation interface you can visualize your annotations and annotate coll
    3. The vertical toolbar which allows users to: change role, change document, topic and collection, check other users' annotations, get an overview of the statistics of the collection, customize colors and font, upload new documents, concepts, annotations, download the annotation, automatically annotate the documents (from A to J in the figure).
    4. The annotation panel on the left allows you to visualize you annotations performed and edit or remove them accordingly;
    5. The part of the page where the textual document is subdivided into topic and document infomation;
+
+## Annotation templates 
+DocTron provides 7 annotation templates you can use to annotate documents with respect to a topic. 
+
+   1. 
+
+
+## Statistics dashboard 
+In the statistics dashborard, reachable by clicking on _Statistics_ button of the main header, you can visualize statistics related to the collections.
+<p align="center">
+   <img src="./img/stats.jpg" alt="stats" width="900px"/>
+</p>
+
+   1. In the dashboard on the left it is possible to change collection basing on the annotation template;
+   2. In the header it is possible to select which type of statistics to visualize --individual concern the single annotator, global concenr the entire set of annotators, while IAA contains an overview of the IAA metrics. In the image above there is an overview of the IAA metrics;
+   3. Three cards provide an overview of the annotations;
+   4. The table displays the Fleiss and Krippendorff’s alpha values for each document;
+   5. The Coehn's Kappa is a symmetric matrix where for each pair of users (row and column) it is provided the Coehn's kappa value;
+
+
+## Customizability and Collections
+DocTron allows the users to create one or more  _collections_: a collection contains one or more documents which can be annotated by one or more users. To create a new collection go to COLLECTIONS button at the top of the main interface which will redirect to the collections page. This page contains the list of collections a user can annotate and a form to create a new collection. 
+
+The collections a user can annotate contain the following information: creator, date of creation, descriptions, documents, number of annotators, annotators' names, labels list. It is possible to interact with the collections, in particular it is possible to:
+1. load more information;
+2. have an overview of the documents of the collection and the related annotations;
+3. annotate the collection;
+4. delete the collection (for the creator only)
+
+<p align="center">
+   <img src="./img/8.png" alt="logo" width="900px"/>
+</p>
+
+The documents page contains a table where each document is a row of the table. For each document it is possible to keep track of the annotation of each type. Users can see other annotators' annotations and download the related annotations.
+
+<p align="center">
+   <img src="./img/13.jpg" alt="logo" width="900px"/>
+</p>
+
+To create a new collection, click on ADD COLLECTION to open the form. To create a new collection the following information should be provided: (i) name, (ii) description, (iii) a list of members who can annotate the collection; (iv) a file containing the concepts that can be linked to the mentions or added in relationships and assertions; (v) one or more textual documents: documents can be uploaded in JSON, CSV, PDF, TXT; it is possible to annotate pubmed abstracts by providing a list of PMIDs, abstract from semantics scholar and openaire by providing a list of DOIs. In this case, the integration with external rest apis allows to automatically get the abstracts; (vi) a list of labels that can be used to classify the documents. Labels, members and documents can be updated at any time.
+When a new member is added, it will not be automatically able to annotate the collection: an invitation is sent to them, and then, once that they accept the invitation, they will be able to annotate the documents.
+
+
 
