@@ -71,10 +71,14 @@ Collections can be _collaborative_ and _competititve_: in collaborative modality
 
 To create a new collection go to COLLECTIONS button at the top of the main interface which will redirect to the collections page. This page contains the list of collections a user can annotate for each annotation template. By clicking on the **Add collection** button it is possible to create a new collection.
 To create a new collection the following information should be provided: (i) name, (ii) description, (iii) a list of members who can annotate the collection. Some other files and information strictly depend on the annotation template of the collection. In graded labeling for example, users have to provide a set of labels and their range of values; the same holds of passages annotation and object detection where we annotate the passage (or object) of the document with respect to a topic. In relationships and facts annotation and in entity linking and tagging, the user has to provide the concepts and the tags respectively.
+On the other hand, new documents, topics, concepts, tags can be added at any moemnt also during the annotation task.
 When a new member is added, it will not be automatically able to annotate the collection: an invitation is sent to them, and then, once that they accept the invitation, they will be able to annotate the documents.
+For what concerns the upload of topics and documents, DocTron is also integrated with two APIs to the automatic upload of textual documents.
+- PubMed: it allows to upload automatically PubMed abstract by providing the PMID. The abstracts and other information as title, authors, publication date and venue will be available as annotable documents of the collection;
+- ir-datasets: this integration allows to upload entire collections of documents by providing the URL of the collection as it is provided in ir-dataset websites. This will download the entire collection and make it available for annotation.
 
-
-
+For documents not belonging to PubMed or to any collection in ir-datasets, they can be uploaded in several format as TXT, JSON, CSV, PDF. Documents are not required to have fixed structure, or mandatory fields.
+Topics instead, should uploaded in JSON format. DocTron provides template for topics. 
 
 The collections a user can annotate contain the following information: creator, date of creation, descriptions, documents, topics, number of annotators, annotators', reviewers', admins' names, labels list. It is possible to interact with the collections, in particular it is possible to:
 1. load more information;
