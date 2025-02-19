@@ -13,8 +13,16 @@ In order to locally deploy DocTron in your computer or in a remote server you ne
 
 Clone or donwload this repository. Open the **doctron** folder and, replace the url provided in the url.txt file with the url of the server where DocTron will be deployed. Your url must replace the default one: http://0.0.0.0:8000. 
 
-Run a new terminal session and place inside ```backend``` folder --where there is the ```docker-compose.yml``` file-- and run ```docker compose up```. This procedure will take few minutes depending on your hardware and you internet connection. When the procedure is finished you can open a new browser winodw (chrome is recommended) and you can start uploading new documents.
-Once that DocTron is up and running, open a new terminal and run ```docker-compose exec db bash -c "psql -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'doctron_db'\" | grep -q 1 || psql -U postgres -c 'CREATE DATABASE doctron_db;' && pg_restore -U postgres -d doctron_db -v backup_db_1.tar"```: this will setup the database restoring the database schema and providing some test collections (those provided in the online demo instance).
+Run a new terminal session and place inside ```backend``` folder --where there is the ```docker-compose.yml``` file-- and run 
+
+```docker compose up```
+
+This procedure will take few minutes depending on your hardware and you internet connection. When the procedure is finished you can open a new browser winodw (chrome is recommended) and you can start uploading new documents.
+Once that DocTron is up and running, open a new terminal and run 
+
+```docker-compose exec db bash -c "psql -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'doctron_db'\" | grep -q 1 || psql -U postgres -c 'CREATE DATABASE doctron_db;' && pg_restore -U postgres -d doctron_db -v backup_db_1.tar"```
+
+this will setup the database restoring the database schema and providing some test collections (those provided in the online demo instance).
 
 ## UI - User interface
 In the annotation interface you can visualize your annotations and annotate collections' documents.
@@ -31,7 +39,13 @@ In the annotation interface you can visualize your annotations and annotate coll
 ## Annotation templates 
 DocTron provides 7 annotation templates you can use to annotate documents with respect to a topic. 
 
-   1. 
+   1. **Graded labeling**
+   2. **Passages annotation**
+   3. **Entity tagging**
+   4. **Entity linking**
+   5. **Relationships annotation**
+   6. **Facts annotation**
+   7. **Objects detection**
 
 
 ## Statistics dashboard 
