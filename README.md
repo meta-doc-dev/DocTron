@@ -39,14 +39,16 @@ In the annotation interface you can visualize your annotations and annotate coll
 ## Annotation templates 
 DocTron provides 7 annotation templates you can use to annotate documents with respect to a topic. 
 
-   1. **Graded labeling**
-   2. **Passages annotation**
-   3. **Entity tagging**
-   4. **Entity linking**
-   5. **Relationships annotation**
-   6. **Facts annotation**
-   7. **Objects detection**
-
+   1. **Graded labeling.** 
+   2. **Passages annotation.**
+   3. **Entity tagging.** Entity tagging --or NER (Named Entity Recognition) consists in associating to the mentions --portions of text of some words identifiable in the textual document-- one or more labels, called tags --e.g., Person, Organization, Animal. In DocTron, to associate a tag to a mention, the mention has to be detected by dragging and dropping from the first to the last character of the mention. Then, it is possible to select the desired tag by clicking on the mention;
+   4. **Entity linking.** Entity linking --or NER+L (Named Entity Recognition and Linking) consists in associating to the mentions the concepts belonging to a knowledge base. In DocTron, to associate a concept to a mention, the mention has to be detected by dragging and dropping from the first to the last character of the mention. Then, right clicking on the mention it is possible to open the concept panel where it is psosible to choose the concept or create a new one;
+   5. **Relationships annotation.** A relationship is a triple composed of a subject, a predicate, and an object. At least one of them must be a mention in the textual document --either linked, tagged, or plain. For this reason it is a mention-level annotation template;
+   7. **Facts annotation.** Facts are triples of concepts from a knowledge base, or tags composed of a subjects, a predicate and an object. In the same way as graded labeling, this a document level annotation type and is unlinked from the document being evaluated;
+   8. **Objects detection.** An object is a portion of an image. To detect an object in an image in DocTron, users should identify the perimeter of the object. Objects can be associated with a graded label that identify the value of a label of the object with respect to the topic. An example is reported in the Figure above.
+<p align="center">
+   <img src="./img/objdec.jpg" alt="objdec" width="900px"/>
+</p>
 
 ## Statistics dashboard 
 In the statistics dashborard, reachable by clicking on _Statistics_ button of the main header, you can visualize statistics related to the collections.
