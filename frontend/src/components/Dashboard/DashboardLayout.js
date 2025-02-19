@@ -2,8 +2,8 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import ListComponent from "./components/listComponent/ListComponent";
 import "./style.css";
 import { AppContext } from "../../App";
-import axios from "axios";
 import Sidebar from "./components/sidebar/Sidebar";
+import DashboardHeader from "./components/header/Header";
 
 const DashboardLayout = ({ className = "", children }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -41,38 +41,39 @@ const DashboardLayout = ({ className = "", children }) => {
   }, [groupedCollectionsByAnn, selectedGroup]);
 
   return (
-    <section className={`layout dashboard ${className}`}>
-      <main className="main">
-        <Sidebar
-          // title="Dashboard"
-          // isMenuOpen={isMenuOpen}
-          // toggleMenu={() => setIsMenuOpen((state) => !state)}
-        >
-          <h3>Collections By Annotation Type</h3>
-          
-          <select
-            value={selectedGroup}
-            onChange={(e) => setSelectedGroup(e.target.value)}
-            className="group-filter"
+      <section className={`layout dashboard ${className}`}>
+        {/*<DashboardHeader />*/}
+        <main className="main">
+          <Sidebar
+              // title="Dashboard"
+              // isMenuOpen={isMenuOpen}
+              // toggleMenu={() => setIsMenuOpen((state) => !state)}
           >
-            <option value="All">All Annotation Types</option>
-            {Object.keys(groupedCollectionsByAnn).map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
+            <h3>Collections By Annotation Type</h3>
 
-          <ListComponent
-            items={filteredGroups}
-            onClick={(id) => { setCollectionID(id); }}
-            selectedItem={collectionID}
-            itemKey="collection_id"
-          />
-        </Sidebar>
-        {children}
-      </main>
-    </section>
+            <select
+                value={selectedGroup}
+                onChange={(e) => setSelectedGroup(e.target.value)}
+                className="group-filter"
+            >
+              <option value="All">All Annotation Types</option>
+              {Object.keys(groupedCollectionsByAnn).map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+              ))}
+            </select>
+
+            <ListComponent
+                items={filteredGroups}
+                onClick={(id) => { setCollectionID(id); }}
+                selectedItem={collectionID}
+                itemKey="collection_id"
+            />
+          </Sidebar>
+          {children}
+        </main>
+      </section>
   );
 };
 

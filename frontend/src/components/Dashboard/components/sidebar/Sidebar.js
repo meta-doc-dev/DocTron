@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useContext, useEffect } from "react";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
+import React, { useState, useRef, useEffect, useMemo, useContext } from 'react';
 import "./style.css";
 import { AppContext } from "../../../../App";
-import { IconCheck } from "@tabler/icons-react";
+import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { IconCheck, IconLogout, IconUser } from "@tabler/icons-react";
+import axios from "axios";
 
 const annotationTypes = [
     { title: "Entity tagging", icon: "🏷️" },
@@ -17,12 +18,19 @@ const annotationTypes = [
 const Sidebar = () => {
     const {
         dashboardCollections: [collectionsList],
-        collection: [collectionID, setCollectionID]
+        collection: [collectionID, setCollectionID],
+        username: [username, setUsername],
+        profile: [profile, setProfile],
+        role: [role, setRole],
+        openmodal: [openModal, setOpenModal]
     } = useContext(AppContext);
 
     const [openSection, setOpenSection] = useState(null);
     const [selectedGroup, setSelectedGroup] = useState("All");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+    const userMenuRef = useRef(null);
 
     const groupedCollectionsByAnn = useMemo(() => {
         const grouped = annotationTypes.reduce((acc, { title }) => {
@@ -63,6 +71,44 @@ const Sidebar = () => {
             setOpenSection(foundType[0]);
         }
     }, [collectionID, groupedCollectionsByAnn]);
+
+    const handleCloseModal = (e) => {
+        e.preventDefault();
+        setOpenModal(false);
+    };
+
+    const handleChangeProf = (e) => {
+        e.preventDefault();
+        setProfile(e.target.value);
+    };
+
+    const SubmitProfile = (e) => {
+        e.preventDefault();
+        axios.post("set_profile", { profile: Prof })
+            .then(res => { SetValid(true); setProfile(Prof); })
+            .catch(error => {
+                // setErr(true);
+                console.log('error', error);
+            });
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+                setIsUserMenuOpen(false);
+            }
+        };
+
+        if (isUserMenuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        } else {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isUserMenuOpen]);
 
     return (
         <div className={`sidebar ${isSidebarOpen ? "sidebar-open" : ""}`}>
@@ -123,10 +169,16 @@ const Sidebar = () => {
                 </ul>
             </nav>
             <div className="sidebar-footer">
-                <div>
-                    <p className="sidebar-user-name">Elijah Doyle</p>
-                    <p className="sidebar-user-email">elijahdoyle@semiflat.com</p>
+                <div className="user-menu" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+                    <p className='sidebar-user-name'><IconUser size={20} /> {username}</p>
+                    <p className='sidebar-user-role'>{role}</p>
                 </div>
+                {isUserMenuOpen && (
+                    <div className="user-dropdown" ref={userMenuRef}>
+                        <button className="user-menu-item" onClick={() => console.log("Profile clicked")}>Profile</button>
+                        <button className="user-menu-item" onClick={() => window.location.href = '/logout'}>Logout <IconLogout size={16} /></button>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -131,3 +131,6 @@ packages/react-devtools-timeline/dist
 
 
 */.idea
+
+backend/venv/*
+backend/myenv/*

@@ -65,6 +65,21 @@
         border-color: #777777;
     }
 
+    .topic-details {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0 0.5rem;
+
+        .details-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    }
+
     .doc__list {
         flex: 1;
     }
@@ -134,6 +149,23 @@
         }
     }
 
+    .user-select {
+        padding: 0.5rem;
+        background-color: #fbfbfb !important;
+        border: none;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: background-color 200ms ease-in-out;
+    }
+
+    .user-select:focus {
+        background-color: #f0f0f0;
+    }
+
+    .user-select:hover {
+        border-color: #777777;
+    }
 
     .iaa-stats {
         padding: 1rem;

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import axios from "axios";
 import "./style.css";
 import DashboardLayout from "./DashboardLayout";
