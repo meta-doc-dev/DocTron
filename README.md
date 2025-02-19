@@ -69,23 +69,21 @@ All the documents can be annotated with respect to all the topics by all the mem
 Each member of the collection is an _annotator_ which has the default permission: they can annotate the documents. _Reviewers_ are allowed to review the annotations produced by the annotators; the _admins_ have the highest permissions: they can modify both reviewers' and annotators' annotations, they can check statistics of the collection and IAA metrics. Admins can keep track of the annotation workflow, define and refine guidelines and oversees the entire work of all the collection members.
 Collections can be _collaborative_ and _competititve_: in collaborative modality all the annotators can annotate the entire collection and have access to other members' annotations and majority voting based ground truth. In contrast, in competitive mode, annotators cannot see each other work. This is particularly relevant when it is important to assess the quality of the annotations and, if needed, establish new guidelines.
 
-To create a new collection go to COLLECTIONS button at the top of the main interface which will redirect to the collections page. This page contains the list of collections a user can annotate and a form to create a new collection. 
+To create a new collection go to COLLECTIONS button at the top of the main interface which will redirect to the collections page. This page contains the list of collections a user can annotate for each annotation template. By clicking on the **Add collection** button it is possible to create a new collection.
 
-The collections a user can annotate contain the following information: creator, date of creation, descriptions, documents, number of annotators, annotators' names, labels list. It is possible to interact with the collections, in particular it is possible to:
+The collections a user can annotate contain the following information: creator, date of creation, descriptions, documents, topics, number of annotators, annotators', reviewers', admins' names, labels list. It is possible to interact with the collections, in particular it is possible to:
 1. load more information;
-2. have an overview of the documents of the collection and the related annotations;
-3. annotate the collection;
-4. delete the collection (for the creator only)
+2. split the collection in equal parts distributing the same number of documents, topics or both to each annotator equally;
+3. create an _honeypot_: a set of documents which are shared among all the users and are needed to evaluate the work of annotators on a set of shared docs. In this case the users do not know which are the selected documents. This common basis enables comparison of annotations, helping assess quality and ensure consistency. In  crowdsourcing, the honeypot provides a standardized reference point, improving the reliability of the dataset and helping identify discrepancies in annotations.
+4. annotate the collection;
+5. delete the collection.
+
+Some of these features are accessible only by the admins --i.e., collection split, honeypot definition, invitation of new members or reviewers, delete of the collection.
 
 <p align="center">
    <img src="./img/8.png" alt="logo" width="900px"/>
 </p>
 
-The documents page contains a table where each document is a row of the table. For each document it is possible to keep track of the annotation of each type. Users can see other annotators' annotations and download the related annotations.
-
-<p align="center">
-   <img src="./img/13.jpg" alt="logo" width="900px"/>
-</p>
 
 To create a new collection, click on ADD COLLECTION to open the form. To create a new collection the following information should be provided: (i) name, (ii) description, (iii) a list of members who can annotate the collection; (iv) a file containing the concepts that can be linked to the mentions or added in relationships and assertions; (v) one or more textual documents: documents can be uploaded in JSON, CSV, PDF, TXT; it is possible to annotate pubmed abstracts by providing a list of PMIDs, abstract from semantics scholar and openaire by providing a list of DOIs. In this case, the integration with external rest apis allows to automatically get the abstracts; (vi) a list of labels that can be used to classify the documents. Labels, members and documents can be updated at any time.
 When a new member is added, it will not be automatically able to annotate the collection: an invitation is sent to them, and then, once that they accept the invitation, they will be able to annotate the documents.
