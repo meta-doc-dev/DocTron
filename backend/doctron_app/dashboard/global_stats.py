@@ -231,7 +231,7 @@ def get_global_statistics(request):
 
             # Get detailed document statistics with unique document count
             doc_stats = get_document_statistics(
-                topic.topic_id,
+                topic.id,
                 annotation_type,
                 all_documents,
             )
@@ -252,13 +252,13 @@ def get_global_statistics(request):
 
                 if annotation_type == 'Graded labeling':
                     grade_stats, doc_stats = handler.get_label_stats(
-                        topic.topic_id,
+                        topic.id,
                         coll_label.label,
                         all_documents
                     )
                 else:
                     grade_stats, doc_stats = handler.get_passage_stats(
-                        topic.topic_id,
+                        topic.id,
                         coll_label.label,
                         all_documents
                     )

@@ -83,7 +83,7 @@ def get_individual_statistics(request):
 
         results = []
         for topic in accessible_topics:
-            annotations = handler.get_annotations(topic.topic_id, accessible_documents)
+            annotations = handler.get_annotations(topic.id, accessible_documents)
             annotated_doc_ids = set(doc_id for doc_id, _, _, _ in annotations)
 
             annotated_documents = []
@@ -104,7 +104,7 @@ def get_individual_statistics(request):
 
             # Get label statistics with document details
             labels_data, label_documents = handler.get_stats(
-                topic.topic_id,
+                topic.id,
                 collection_labels,
                 accessible_documents,
                 all_docs_set

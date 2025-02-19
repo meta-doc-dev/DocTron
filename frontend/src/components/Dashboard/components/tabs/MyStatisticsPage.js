@@ -68,7 +68,7 @@ const MyStatisticsPage = () => {
                     collection_id: collectionID,
                     user: username,
                     active_tab: statsActiveTab || "individual",
-                    selected_topic: selectedTopic || null,
+                    selected_topic: actualSelectedTopic || null,
                 }
             })
             .then((response) => {
@@ -76,7 +76,7 @@ const MyStatisticsPage = () => {
                 setUserStats(data);
             })
             .catch((error) => console.error("Error fetching user statistics:", error));
-    }, [collectionID, username, statsActiveTab, selectedTopic]);
+    }, [collectionID, username, statsActiveTab, selectedTopic, actualSelectedTopic]);
 
     const [documentStats, setDocumentStats] = useState(null);
 
@@ -85,7 +85,7 @@ const MyStatisticsPage = () => {
         axios.get(`document-wise${statsActiveTab === 'global' ? '-global' : ''}`, {
             params: {
                 collection_id: collectionID,
-                topic_id: selectedTopic,
+                topic_id: actualSelectedTopic,
                 username: selectedUser,
                 annotation_type: selectedCollection?.annotation_type_name
             }
@@ -94,7 +94,7 @@ const MyStatisticsPage = () => {
         }).catch((error) => {
             console.error("Error fetching user statistics:", error);
         });
-    }, [selectedTopic, username, collectionID, statsActiveTab]);
+    }, [selectedTopic, username, collectionID, statsActiveTab, actualSelectedTopic]);
 
 
     const handleTabChange = (tab) => {
