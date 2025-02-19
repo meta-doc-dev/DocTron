@@ -70,6 +70,11 @@ Each member of the collection is an _annotator_ which has the default permission
 Collections can be _collaborative_ and _competititve_: in collaborative modality all the annotators can annotate the entire collection and have access to other members' annotations and majority voting based ground truth. In contrast, in competitive mode, annotators cannot see each other work. This is particularly relevant when it is important to assess the quality of the annotations and, if needed, establish new guidelines.
 
 To create a new collection go to COLLECTIONS button at the top of the main interface which will redirect to the collections page. This page contains the list of collections a user can annotate for each annotation template. By clicking on the **Add collection** button it is possible to create a new collection.
+To create a new collection the following information should be provided: (i) name, (ii) description, (iii) a list of members who can annotate the collection. Some other files and information strictly depend on the annotation template of the collection. In graded labeling for example, users have to provide a set of labels and their range of values; the same holds of passages annotation and object detection where we annotate the passage (or object) of the document with respect to a topic. In relationships and facts annotation and in entity linking and tagging, the user has to provide the concepts and the tags respectively.
+When a new member is added, it will not be automatically able to annotate the collection: an invitation is sent to them, and then, once that they accept the invitation, they will be able to annotate the documents.
+
+
+
 
 The collections a user can annotate contain the following information: creator, date of creation, descriptions, documents, topics, number of annotators, annotators', reviewers', admins' names, labels list. It is possible to interact with the collections, in particular it is possible to:
 1. load more information;
@@ -84,9 +89,6 @@ Some of these features are accessible only by the admins --i.e., collection spli
    <img src="./img/8.png" alt="logo" width="900px"/>
 </p>
 
-
-To create a new collection, click on ADD COLLECTION to open the form. To create a new collection the following information should be provided: (i) name, (ii) description, (iii) a list of members who can annotate the collection; (iv) a file containing the concepts that can be linked to the mentions or added in relationships and assertions; (v) one or more textual documents: documents can be uploaded in JSON, CSV, PDF, TXT; it is possible to annotate pubmed abstracts by providing a list of PMIDs, abstract from semantics scholar and openaire by providing a list of DOIs. In this case, the integration with external rest apis allows to automatically get the abstracts; (vi) a list of labels that can be used to classify the documents. Labels, members and documents can be updated at any time.
-When a new member is added, it will not be automatically able to annotate the collection: an invitation is sent to them, and then, once that they accept the invitation, they will be able to annotate the documents.
 
 
 
