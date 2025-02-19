@@ -20,15 +20,20 @@ import Input from '@mui/material/Input';
 import InputLabel from '@mui/material/InputLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
-
 import { useNavigate } from "react-router-dom";
+
+import {
+
+    Redirect
+} from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import './login.css'
+import Chip from "@mui/material/Chip";
 
 function SignUp() {
 
 
-    const { username,curannotator} = useContext(AppContext);
+    const { username,curannotator, annotationtype, annotationtypes} = useContext(AppContext);
 
 
     const [CurAnnotator,SetCurAnnotator] = curannotator
@@ -42,30 +47,30 @@ function SignUp() {
     const [Password,SetPassword] = useState('')
     const [Error,SetError] = useState('')
     const [User,SetUser] = username
+    const [AnnotationType,SetAnnotationType] = annotationtype
+    const [AnnotationTypes,SetAnnotationTypes] = annotationtypes
     const [Profile,SetProfile] = useState('')
+    const url = window.baseurl
+    const logourl = window.baseurl+ "static/img/doctron.png"
 
     function handleChangeprofile(e){
         var option = e.target.value
         console.log('option',option)
         SetProfile(option)
     }
+    const navigate = useNavigate();
 
-
+    useEffect(() => {
+        if (Redir === true  && (User && User !== '' && User !== undefined)) {
+            navigate("/index");
+        }
+    }, [Redir, navigate]);
 
     function handleSubmit(event){
         event.preventDefault();
         const data = new FormData(event.currentTarget);
-        console.log({
-            username: data.get('username'),
-            email: data.get('email'),
-            password: data.get('password'),
-            password_check: data.get('password_check'),
-            profile: data.get('profile'),
-            ncbi: data.get('ncbikey'),
-            orcid: data.get('orcid'),
-            // email: data.get('email'),
-        });
-        if(data.get('username','') !== '' && data.get('password','') !== '' && data.get('email','') !== '' && data.get('password_check','') !== '' && data.get('profile','') !== ''){
+        if(data.get('username','') !== '' && data.get('password','') !== '' && data.get('email','') !== '' && data.get('password_check','') !== '' && data.get('profile','') !== ''&& AnnotationType){
+            data.set('annotation_type',AnnotationType)
             axios({
                 method: "post",
                 url: "register",
@@ -79,10 +84,8 @@ function SignUp() {
                     }else{
                         SetUser(data.get('username'))
                         SetCurAnnotator(data.get('username'))
-                        // return <Redirect to='/index'/>
-                        // SetUser(username)
                         SetRedir(true)
-                        // }
+
 
                     }
                 })
@@ -119,34 +122,22 @@ function SignUp() {
     const handlePasswordChange = (event) => {
         const passwordValue = event.target.value;
         SetPasswordVal(passwordValue);
-        console.log( /[0-9]/.test(passwordValue))
-        console.log( /[A-Z]/.test(passwordValue))
-        if (passwordValue.length < 8 || /[0-9]/.test(passwordValue) === false || /[A-Z]/.test(passwordValue) === false) {
+        /*if (passwordValue.length < 8 || /[0-9]/.test(passwordValue) === false || /[A-Z]/.test(passwordValue) === false) {
             setPasswordError("Password must contain 8 chars, one number, one uppercase letter");
         } else {
             setPasswordError("");
-        }
+        }*/
     };
 
     const handlePasswordUpChange = (event) => {
         const passwordValue = event.target.value;
         SetPasswordValUp(passwordValue);
-        console.log( /[0-9]/.test(passwordValue))
-        console.log( /[A-Z]/.test(passwordValue))
-        if (passwordValue.length < 8 || /[0-9]/.test(passwordValue) === false || /[A-Z]/.test(passwordValue) === false) {
+      /*  if (passwordValue.length < 8 || /[0-9]/.test(passwordValue) === false || /[A-Z]/.test(passwordValue) === false) {
             setPasswordErrorUp("Password not compliant");
         } else {
             setPasswordErrorUp("");
-        }
+        }*/
     };
-
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        if (Redir === true) {
-        navigate("/index");
-        }
-    }, [Redir, navigate]);
 
 
     return (
@@ -154,6 +145,7 @@ function SignUp() {
 
            <div >
                 <Container fluid>
+                    {/*{Redir === true&& <Redirect to='/index'/>}*/}
                     {/*{Redir === false && <Redirect to='/signup'/>}*/}
                     {/*<Row>*/}
                     {/*    <Col md={2}></Col>*/}
@@ -170,7 +162,7 @@ function SignUp() {
                                     </div>
 
 
-                                <div><img className={'login'} src={"http://localhost:8000/static/img/doctron.png"} />
+                                <div><img className={'login'} src={logourl} />
                                 </div>
 
                             {Error !== '' && <div style={{width:'30vw',display:"inline-block"}}><Alert severity="error">{Error}</Alert></div>}
@@ -192,7 +184,7 @@ function SignUp() {
                                                    variant="outlined"/>
                                     </div>
                                     <div style={{marginTop: '3vh'}}>
-                                        <div style={{fontSize: '0.8rem', textAlign: 'left'}}>Password must contain: at
+                                        <div style={{fontSize: '0.8rem', textAlign: 'center'}}>Password must contain: at
                                             least 8 chars, one uppercase letter and one number.
                                         </div>
                                         <TextField
@@ -246,6 +238,25 @@ function SignUp() {
                                             </FormControl>
 
                                         </div>
+                                        <div style={{marginTop: '3vh'}}>
+                                            <div style={{ textAlign: 'center'}}>
+                                                <h6>Annotation type</h6>
+                                                <div>
+                                                    {AnnotationTypes && AnnotationTypes.map(el => <span><Chip
+                                                        sx={{margin: '1%'}} label={el}
+                                                        variant={AnnotationType === el ? 'filled' : "outlined"}
+                                                        color={'info'} onClick={(e) => {
+                                                        if (AnnotationType === el) {
+                                                            SetAnnotationType(false)
+                                                        } else {
+                                                            SetAnnotationType(el)
+                                                        }
+                                                    }}/></span>)}
+                                                </div>
+
+
+                                            </div>
+                                        </div>
                                         <Button type="submit" sx={{
                                             '& > :not(style)': {m: 1},
                                             background: "linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(255,185,33,1) 100%);"
@@ -257,7 +268,7 @@ function SignUp() {
                                 {window.location.hostname === "metatron.dei.unipd.it" &&
                                     <div style={{marginTop: '2vh'}}>
                                         <a href={"https://metatron.dei.unipd.it/signup_with_orcid"}>
-                                            <img className={'orcid'}
+                                        <img className={'orcid'}
                                                  src="https://metatron.dei.unipd.it/static/img/ORCID.png"
                                                  alt="ORCID ID logo"/> Sign up with ORCID ID
                                     </a>

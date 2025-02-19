@@ -92,7 +92,7 @@ export default function ShowTypes(props) {
                     {MentionsList && MentionsList.length > 0 && AnnotationTypes && AnnotationType === "Passages annotation" &&
                         <div style={{margin: '10px 0px'}}>
                             <MentionsListClass/></div>}
-                    {Points && Points['points'].length > 0 && AnnotationTypes && AnnotationType === "Object detection" &&
+                    {Points && AnnotationTypes && AnnotationType === "Object detection" &&
                         <div style={{margin: '10px 0px'}}>
                             <PointsListClass /></div>}
                     {ConceptsList && ConceptsList.length > 0 && AnnotationTypes && AnnotationType === "Entity linking" &&

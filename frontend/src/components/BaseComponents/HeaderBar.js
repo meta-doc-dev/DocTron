@@ -101,19 +101,19 @@ function HeaderBar(props){
             <Button sx={{display:"inline-block",marginLeft:'5%'}}                             href="/index"
             >Home</Button>
 
-                <Button
-                    sx={{display:"inline-block",marginLeft:'5%'}}
-                    href={'/collections'}
-                    onClick={handleCloseNavMenu}
-                >
-                    Collections
-                </Button>
-                <Button
-                    sx={{display:"inline-block",marginLeft:'5%'}}
-                    href={'/statistics'}
-                >
-                    Statistics
-                </Button>
+            <Button
+                sx={{display:"inline-block",marginLeft:'5%'}}
+                href={'/collections'}
+                onClick={handleCloseNavMenu}
+            >
+                Collections
+            </Button>
+            <Button
+                sx={{display:"inline-block",marginLeft:'5%'}}
+                href={'/dashboard'}
+            >
+                Dashboard
+            </Button>
             {window.location.hostname === "metatron.dei.unipd.it" && <Button
                 sx={{display: "inline-block", marginLeft: '5%'}}
                 onClick={() => SetOpenModal(prev => !prev)}
@@ -170,7 +170,7 @@ function HeaderBar(props){
 
 
 
-    </div>
+        </div>
 
 
     );

@@ -99,13 +99,15 @@ export default function ActualPosition(props){
     };
 
     useEffect(() => {
+        if(ShowCommentDoc || ShowCommentTopic){
+            axios.get('comment')
+                .then(response=>{
+                    SetTopicComments(response.data['topic'])
+                    SetDocumentsComments(response.data['document'])
+                })
+        }
 
-        axios.get('comment')
-            .then(response=>{
-                SetTopicComments(response.data['topic'])
-                SetDocumentsComments(response.data['document'])
-            })
-    }, []);
+    }, [ShowCommentTopic, ShowCommentDoc]);
 
 
     function uploadComment(){

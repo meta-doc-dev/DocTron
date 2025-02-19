@@ -1,9 +1,6 @@
 import {Col, ProgressBar, Row} from "react-bootstrap";
 
 import axios from "axios";
-import {ButtonGroup} from "@mui/material";
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
 import Badge from 'react-bootstrap/Badge'
 import SaveIcon from '@mui/icons-material/Save';
@@ -28,13 +25,6 @@ import {
     faProjectDiagram, faArrowLeft, faArrowRight, faTrash, faSave, faFileInvoice
 } from "@fortawesome/free-solid-svg-icons";
 
-import AddIcon from '@mui/icons-material/Add';
-import Collapse from "@mui/material/Collapse";
-import Paper from "@mui/material/Paper";
-// import '../annotation.css'
-// import '../documents.css'
-import {CircularProgress} from "@mui/material";
-import KeyboardBackspaceIcon from '@mui/icons-material/KeyboardBackspace';
 import {AppContext} from "../../../App";
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';

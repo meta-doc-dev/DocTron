@@ -30,11 +30,7 @@ import {
     faList, faPlusCircle,
     faProjectDiagram, faArrowLeft, faArrowRight, faTrash, faSave, faFileInvoice
 } from "@fortawesome/free-solid-svg-icons";
-import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
-import DocumentToolBar from "../../Document/ToolBar/DocumentToolBar";
-import AddIcon from '@mui/icons-material/Add';
-import Collapse from "@mui/material/Collapse";
-import Paper from "@mui/material/Paper";
+
 import '../annotation.css'
 // import './documents.css'
 import {CircularProgress} from "@mui/material";

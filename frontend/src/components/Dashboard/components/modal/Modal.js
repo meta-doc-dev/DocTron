@@ -1,7 +1,12 @@
-import React from "react";
-import {Users, X} from "lucide-react";
+import React, { useMemo } from "react";
+import { AgGridReact } from 'ag-grid-react';
+import {X} from "lucide-react";
 import "./styles.css";
-import { IconFile } from "@tabler/icons-react";
+import { IconUsers } from "@tabler/icons-react";
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
+import { FileText } from 'lucide-react';
+import './styles.css';
 
 const Modal = ({ title, isOpen, onClose, children }) => {
     if (!isOpen) return null;
@@ -24,30 +29,78 @@ const Modal = ({ title, isOpen, onClose, children }) => {
     );
 };
 
-const DocumentList = ({ documents, onNavigate }) => (
-    <div className="document-list">
-        {documents?.map((doc) => (
-            <div key={doc.id} className="document-item" onClick={() => onNavigate(doc.id)}>
-                <div className="document-info">
-                    <p className="document-title"><IconFile/>{doc.title}</p>
-                    {doc.language && <p className="document-meta">Language: {doc.language}</p>}
-                    {doc.grade !== undefined && <p className="document-meta">Grade: {doc.grade}</p>}
-                    {doc.comment && <p className="document-meta">Comment: {doc.comment}</p>}
-                    {doc?.annotators && (
-                        <div className="document-users">
-                            <Users className="w-4 h-4 mr-1.5" />
-                            <span className="truncate">
-                                {doc.annotators.join(", ")}
-                            </span>
-                        </div>
-                    )}
-                </div>
-            </div>
-        ))}
-        {documents?.length === 0 && (
-            <p className="no-documents">No documents available</p>
-        )}
-    </div>
-);
+const DocumentList = ({ documents, onNavigate }) => {
+    const hasData = (key) => documents.some(doc => doc[key] !== undefined && doc[key] !== null && doc[key] !== "");
+
+    const columnDefs = useMemo(() => {
+        const columns = [
+            hasData("title") && {
+                field: "title",
+                headerName: "Title",
+                cellRenderer: (params) => (
+                    <span className="clickable-cell cell-title" onClick={() => onNavigate(params.data.id)}>
+                        <FileText className="table-icon" /> {params.value}
+                    </span>
+                ),
+                flex: 2,
+                minWidth: 200
+            },
+            hasData("language") && {
+                field: "language",
+                headerName: "Language",
+                flex: 1,
+                minWidth: 100
+            },
+            hasData("grade") && {
+                field: "grade",
+                headerName: "Grade",
+                flex: 0,
+                width: 80,
+                minWidth: 60,
+                cellStyle: { textAlign: "center" }
+            },
+            hasData("comment") && {
+                field: "comment",
+                headerName: "Comment",
+                flex: 2,
+                minWidth: 200
+            },
+            hasData("annotators") && {
+                field: "annotators",
+                headerName: "Annotators",
+                cellRenderer: (params) => (
+                    <span>
+                        <IconUsers className="table-icon" /> {params.value?.length ? params.value.join(", ") : "N/A"}
+                    </span>
+                ),
+                flex: 2,
+                minWidth: 180
+            }
+        ].filter(Boolean); // Remove `false` values (columns with no data)
+
+        return columns;
+    }, [documents]);
+
+    const defaultColDef = useMemo(() => ({
+        resizable: true,
+        sortable: true,
+        filter: true,
+        flex: 1,
+        minWidth: 100
+    }), []);
+
+    return (
+        <div className="sortable-table-container ag-theme-alpine">
+            <AgGridReact
+                rowData={documents}
+                columnDefs={columnDefs}
+                defaultColDef={defaultColDef}
+                domLayout="autoHeight"
+                suppressCellFocus={true}
+                animateRows={true}
+            />
+        </div>
+    );
+};
 
 export { Modal, DocumentList };

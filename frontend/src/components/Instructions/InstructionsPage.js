@@ -1,10 +1,5 @@
 import {Col, Row} from "react-bootstrap";
-import Button from "@mui/material/Button";
 
-import axios from "axios";
-import {ButtonGroup} from "@mui/material";
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
 import Badge from 'react-bootstrap/Badge'
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -34,13 +29,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import DocumentToolBar from "../Document/ToolBar/DocumentToolBar";
-import AddIcon from '@mui/icons-material/Add';
-import Collapse from "@mui/material/Collapse";
-import Paper from "@mui/material/Paper";
-import { styled } from '@mui/material/styles';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import {AppContext} from "../../App";
+
 
 export default function InstructionsPage(props){
     const [AnnotationInterface,SetAnnotationInterface] = useState(false)

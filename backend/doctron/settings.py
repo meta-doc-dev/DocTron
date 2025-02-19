@@ -32,8 +32,8 @@ ORCID_REDIRECT_URI_REGISTER = 'https://doctron.dei.unipd.it/loginorcidcallback/r
 ORCID_REDIRECT_LINK_URI = 'https://doctron.dei.unipd.it/loginorcidcallback/link'
 
 
-ALLOWED_HOSTS = ['127.0.0.1','localhost']
-CSRF_TRUSTED_ORIGINS = ['http://localhost']
+ALLOWED_HOSTS = ['127.0.0.1','localhost','doctron.dei.unipd.it']
+CSRF_TRUSTED_ORIGINS = ['https://doctron.dei.unipd.it', 'http://doctron.dei.unipd.it']
 SESSION_EXPIRES_AT_BROWSER_CLOSE = True
 
 # Application definition
@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'orcid',
+    'rest_framework'
 
     # 'corsheaders', # da rem
 ]
@@ -93,14 +94,14 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'doctron_db',
         'USER': 'postgres',
-        'PASSWORD': 'ornella',
-        'HOST': 'localhost',
+        'PASSWORD': 'postgres',
+        'HOST': 'db',
         'PORT': '5432',
     }
 }
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
+# CELERY_BROKER_URL = 'redis://localhost:6379/0'
+# CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_TASK_SERIALIZER = 'json'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST_USER = 'doctron@dei.unipd.it'
 # EMAIL_HOST_PASSWORD = 'crane@dei.unipd.it'

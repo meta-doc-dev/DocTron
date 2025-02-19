@@ -1,8 +1,18 @@
 from django.urls import path
 from . import views
+from django.urls import path
+from . import views
+from .dashboard.collection_users import get_collection_users
+from .get_collections import get_user_collections
+from .dashboard.indivioual_stats import get_individual_statistics
+from .dashboard.global_stats import get_global_statistics
+from .dashboard.document_wise import get_individual_document_wise_statistics, get_global_document_wise_statistics, get_agreement_document_wise_statistics
+from .dashboard.user_stat_cards import get_user_statistic_cards
+from .user_collection_statistics import get_user_collection_statistics
 from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth import views as auth_views
+
 
 
 app_name='doctron_app'
@@ -18,11 +28,28 @@ urlpatterns = [
     path('registration', views.registration, name='registration'),
     path('logout', views.logout, name='logout'),
     path('tutorial', views.tutorial, name='tutorial'),
+    path('guidelines', views.guidelines, name='guidelines'),
+    path('uploadAnnotations',views.uploadAnnotations, name='uploadAnnotations'),
+    # stats
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('individual-statistics', get_individual_statistics, name='individual-statistics'),
+    path('global-statistics', get_global_statistics, name='global-statistics'),
+    path('get_user_collection_statistics', get_user_collection_statistics, name='get_user_collection_statistics'),
+    path('user-collections', get_user_collections, name='get_user_collections'),
+    path('jump-to-document', views.update_document_id_from_dashboard, name='update-document-id-from-dashboard'),
+    path('collection-users', get_collection_users, name='get_collection_users'),
+    path('document-wise-global', get_global_document_wise_statistics, name='document-wise-global'),
+    path('document-wise-agreement', get_agreement_document_wise_statistics, name='document-wise-agreement'),
+    path('document-wise', get_individual_document_wise_statistics, name='document-wise'),
+
+    path('user-statistic-cards', get_user_statistic_cards, name='user-statistics'),
+
+    path('dashboard/<path:subpath>/', views.dashboard, name='dashboard-catchall'),
     path('my_stats', views.my_stats, name='my_stats'),
     path('documents', views.documents, name='documents'),
-    path('statistics/<str:collection_id>', views.statistics, name='statistics'),
-    path('statistics/<str:collection_id>/<str:type>', views.statistics, name='statistics'),
-    path('statistics', views.statistics, name='statistics'),
+    # path('statistics/<str:collection_id>', views.statistics, name='statistics'),
+    # path('statistics/<str:collection_id>/<str:type>', views.statistics, name='statistics'),
+    # path('statistics', views.statistics, name='statistics'),
     path('create_coehns', views.create_coehns, name='create_coehns'),
     path('create_fleiss_overview', views.create_fleiss_overview, name='create_fleiss_overview'),
     path('create_new_round',views.create_new_round,name='create_new_round'),
@@ -64,7 +91,7 @@ urlpatterns = [
     path('pending_invitations', views.pending_invitations, name='pending_invitations'),
     path('accept_invitation', views.accept_invitation, name='accept_invitation'),
     path('get_suggestion', views.get_suggestion, name='get_suggestion'),
-    path('autotron_annotation', views.autotron_annotation, name='autotron_annotation'),
+    path('auto_annotation', views.auto_annotation, name='auto_annotation'),
     path('download_template_concepts', views.download_template_concepts, name='download_template_concepts'),
     path('change_collection_id', views.change_collection_id, name='change_collection_id'),
     path('upload', views.upload, name='upload'),
@@ -148,6 +175,10 @@ urlpatterns = [
     path('copy_mention_concept', views.copy_mention_concept, name='copy_mention_concept'),
     path('copy_annotation', views.copy_annotation, name='copy_annotation'),
     path('copy_all_annotations_for_user_study', views.copy_all_annotations_for_user_study, name='copy_all_annotations_for_user_study'),
+
+
+
+
 
 ]
 

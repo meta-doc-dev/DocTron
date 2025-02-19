@@ -2,86 +2,24 @@
     position: relative;
     flex: 1;
     width: 100%;
-    overflow: auto;
+    height: 100%;
+    overflow: hidden;
     border-radius: 0.5rem;
-    overflow: auto;
-}
 
-.sortable-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 1rem;
-    table-layout: fixed;  /* Enables individual column width control */
-}
+   .clickable-cell .ag-cell-value {
+        cursor: pointer;
+    }
 
-.sortable-table thead {
-    position: sticky;
-    top: 0;
-    background-color: #fbfbfb;
-    z-index: 10;
-}
+    .clickable-cell:hover {
+        text-decoration: underline;
+        background: #00796b10;
+        color: #00796b;
+    }
 
-.sortable-table thead tr {
-    text-transform: capitalize;
-}
-
-.sortable-table thead th {
-    /* position: sticky; */
-    top: 0;
-    z-index: 10;
-    color: #777777;
-    background-color: #fbfbfb;
-    padding: 0.6rem;
-    font-weight: 400;
-    text-align: center;
-    text-transform: capitalize;
-    cursor: pointer;
-    transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
-
-    div {
+    .cell-link {
         display: flex;
         align-items: center;
-        justify-content: center;
         gap: 0.5rem;
+        font-size: 90%;
     }
-
-    &:hover {
-        background-color: #f4f4f4;
-        color: #333;
-    }
-}
-
-.sortable-table .col-topic-id { width: 10%; }
-.sortable-table .col-topic-title { width: 20%; }
-.sortable-table .col-annotated { width: 15%; }
-.sortable-table .col-missing { width: 15%; }
-
-.sortable-table .col-label {
-    width: 5%;
-    text-align: center;
-}
-
-.sortable-table tbody tr {
-    border-bottom: 1px solid #e0e0e0;
-    transition: background-color 200ms ease-in-out;
-}
-
-.sortable-table tbody td {
-    padding: 0.6rem;
-    text-align: center;
-    text-transform: capitalize;
-    color: #1d1d1d;
-}
-
-.sortable-table tbody tr:hover {
-    background-color: #fcfcfc;
-}
-
-.sortable-table .clickable-cell {
-    cursor: pointer;
-}
-
-.sortable-table .clickable-cell:hover {
-    text-decoration: underline;
-    background: #dadada;
 }

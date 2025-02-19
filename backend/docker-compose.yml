@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:17
+    volumes:
+      - ./data.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data/db:/var/lib/postgresql/data
+      - ./backup_db_1:/backup_db_1.tar
+
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6378:6379"
+
+  celery:
+    build: .
+    command: >
+      bash -c "while !</dev/tcp/redis/6379; do sleep 1; done;
+      celery -A doctron worker --loglevel=info" 
+    volumes:
+      - .:/code
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+
+  web:
+    build: .
+    volumes:
+      - .:/code
+    ports:
+      - "8090:8000"
+
+    command: >
+      bash -c "while !</dev/tcp/db/5432; do sleep 1; done;
+      python manage.py runserver 0.0.0.0:8000"
+
+    depends_on:
+      - db
+      - redis
+    

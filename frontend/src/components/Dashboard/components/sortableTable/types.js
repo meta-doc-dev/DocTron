@@ -3,8 +3,10 @@ export const COLUMN_TYPES = {
     TOPIC_ID: 'topic_id',
     TOPIC_TITLE: 'topic_title',
     ANNOTATORS: 'annotators',
+    UNIQUE_ANNOTATED: 'unique_annotated',
     ANNOTATED: 'annotated',
     MISSING: 'missing',
     LABEL: 'label',
-    CUSTOM: 'custom'
+    CUSTOM: 'custom',
+    AVG_ANNOTATORS: 'avg_annotators',
 };

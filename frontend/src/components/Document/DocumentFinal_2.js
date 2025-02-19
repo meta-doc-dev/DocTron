@@ -150,7 +150,7 @@ export default function Document(props) {
         startrange,
         endrange,
         topic,
-        fields,
+        fields,annotationtype,
         fieldsToAnn
     } = useContext(AppContext);
     const {sparrow, ptarrow, starrow, starrowfloat, ptarrowfloat, sparrowfloat} = useContext(ConceptContext);
@@ -216,7 +216,7 @@ export default function Document(props) {
     const [PredicateConcepts, SetPredicateConcepts] = predicateconcepts
     const [TargetConcepts, SetTargetConcepts] = targetconcepts
     const [FactsList, SetFactsList] = factslist
-
+    const [AnnotationType,SetAnnotationType] = annotationtype
     const [SourceText, SetSourceText] = sourcetext
     const [PredicateText, SetPredicateText] = predicatetext
     const [TargetText, SetTargetText] = targettext
@@ -464,67 +464,76 @@ export default function Document(props) {
             SetInARel(false)
             SetAllRels([])
 
-            async function fetchMentions() {
-                const response = await axios.get('mentions', {params: {user: CurAnnotator}});
-                // console.log('request',response)
-                SetMentionsList(response.data['mentions'])
-                // SetMentionsListSplitted(response.data['mentions_splitted'])
-                SetLoadMen(true)
-                return response
+            if(AnnotationType === 'Passages annotation') {
+                async function fetchMentions() {
+                    const response = await axios.get('mentions', {params: {user: CurAnnotator}});
+                    // console.log('request',response)
+                    SetMentionsList(response.data['mentions'])
+                    // SetMentionsListSplitted(response.data['mentions_splitted'])
+                    SetLoadMen(true)
+                    return response
+                }
+
+                fetchMentions()
             }
 
-            fetchMentions()
 
-            async function fetchConcepts() {
-                const response = await axios.get('concepts', {params: {user: CurAnnotator}});
-                // console.log('request',response)
-                SetConceptsList(response.data)
-                SetLoadConc(true)
-                return response
+            if(AnnotationType === 'Entity linking') {
+
+                async function fetchConcepts() {
+                    const response = await axios.get('concepts', {params: {user: CurAnnotator}});
+                    // console.log('request',response)
+                    SetConceptsList(response.data)
+                    SetLoadConc(true)
+                    return response
+                }
+
+                fetchConcepts()
             }
+            if(AnnotationType === 'Entity tagging') {
 
-            fetchConcepts()
+                async function fetchTags() {
+                    const response = await axios.get('tag', {params: {user: CurAnnotator}});
+                    // console.log('request',response)
+                    SetTagsSplitted(response.data)
+                    SetLoadTags(true)
+                    return response
+                }
 
-            async function fetchTags() {
-                const response = await axios.get('tag', {params: {user: CurAnnotator}});
-                // console.log('request',response)
-                SetTagsSplitted(response.data)
-                SetLoadTags(true)
-                return response
+                fetchTags()
             }
+            if(AnnotationType === 'Graded labeling') {
+                async function fetchLabels() {
+                    const response = await axios.get('get_annotated_labels', {params: {user: CurAnnotator}});
+                    SetAnnotatedLabels(response.data['labels'])
+                    SetLoadLab(true)
 
-            fetchTags()
+                    return response
+                }
 
-
-            async function fetchLabels() {
-                const response = await axios.get('get_annotated_labels', {params: {user: CurAnnotator}});
-                SetAnnotatedLabels(response.data['labels'])
-                SetLoadLab(true)
-
-                return response
+                fetchLabels()
             }
+            if(AnnotationType === 'Relationships annotation') {
+                async function fetchRelationships() {
+                    const response = await axios.get('relationships', {params: {user: CurAnnotator}});
+                    console.log('request', response)
+                    SetRelationshipsList(response.data)
+                    return response
+                }
 
-            fetchLabels()
+                fetchRelationships()
 
-
-            async function fetchRelationships() {
-                const response = await axios.get('relationships', {params: {user: CurAnnotator}});
-                console.log('request', response)
-                SetRelationshipsList(response.data)
-                return response
             }
+            if(AnnotationType === 'Facts annotation'){
+                async function fetchFacts() {
+                    const response = await axios.get('facts', {params: {user: CurAnnotator}});
+                    console.log('request', response)
+                    SetFactsList(response.data)
+                    return response
+                }
 
-            fetchRelationships()
-
-
-            async function fetchFacts() {
-                const response = await axios.get('facts', {params: {user: CurAnnotator}});
-                console.log('request', response)
-                SetFactsList(response.data)
-                return response
+                fetchFacts()
             }
-
-            fetchFacts()
 
         }
     }, [DocumentID, CurAnnotator, AutoAnnotate, LoadingNewAnn, Topic])
@@ -1333,7 +1342,7 @@ export default function Document(props) {
                 overlappingsp: [OverlappingSP, SetOverlappingSP]
             }}>
 
-                {(!DocumentID || SortedKeysDocumentDesc.length === 0 || LoadingNewAnn || !ConceptsList || !TagsSplitted || !MentionsList || !DocumentDesc || AutoAnnotate || !FieldsToAnn) ?
+                {(!DocumentID || SortedKeysDocumentDesc.length === 0 || LoadingNewAnn || (!ConceptsList && AnnotationType === 'Entity linking')|| (!TagsSplitted && AnnotationType === 'Entity tagging') || (!MentionsList && ['Passages annotation','Relationships annotation','Entity tagging','Entity linking'].indexOf(AnnotationType) !== -1) || !DocumentDesc || AutoAnnotate || !FieldsToAnn) ?
                     <div className='loading'>
                         <CircularProgress/>
                     </div> :

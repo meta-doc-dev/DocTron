@@ -1,12 +1,5 @@
 import {useParams} from "react-router-dom";
 import axios from "axios";
-import {ButtonGroup} from "@mui/material";
-import Autocomplete from "@mui/material/Autocomplete";
-import Breadcrumbs from "@mui/material/Breadcrumbs";
-import Link from '@mui/material/Link';
-import Badge from 'react-bootstrap/Badge'
-import Typography from '@mui/material/Typography';
-import SaveIcon from '@mui/icons-material/Save';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
@@ -14,11 +7,7 @@ import Paper from '@mui/material/Paper';
 import { SelectionState } from '@devexpress/dx-react-grid';
 
 import './table.css'
-// import Button from '@mui/material/Button'
-import MenuItem from '@mui/material/MenuItem';
-import InputAdornment from '@mui/material/InputAdornment';
-import DeleteIcon from '@mui/icons-material/Delete';
-import GetAppIcon from '@mui/icons-material/GetApp';
+
 
 import {
     SearchState,
@@ -63,26 +52,11 @@ import {
     TableColumnVisibility,
     TableColumnResizing,
 } from '@devexpress/dx-react-grid-material-ui';
-import PeopleIcon from '@mui/icons-material/People';
-// import Button from "@mui/material/Button";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faDownload, faProjectDiagram, faPencilAlt} from "@fortawesome/free-solid-svg-icons";
-import {GridToolbarContainer} from "@mui/x-data-grid";
-import Spinner from "react-bootstrap/Spinner";
 import {AppContext} from "../../App";
-import Modal from "react-bootstrap/Modal";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "react-bootstrap/Tooltip";
-
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
 import './Table Modals/modal.css'
-// import {Col} from "react-bootstrap";
-import {CircularProgress} from "@mui/material";
-import InfoModal from "./Table Modals/InfoModal";
-import ContentModal from "./Table Modals/DocumentContentModal";
-import DeleteDocumentModal from "./Table Modals/DeleteDocumentModal";
-import DownloadModal from "./Table Modals/DownloadModal";
 import {TableContext} from "./DocumentsPage";
 import {faTrash} from "@fortawesome/free-solid-svg-icons/faTrash";
 import {faEye} from "@fortawesome/free-solid-svg-icons/faEye";

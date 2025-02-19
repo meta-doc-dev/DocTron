@@ -26,7 +26,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #1d1d1d;
+        background: #053b35;
         padding: 1rem;
 
         h3 {
@@ -38,6 +38,7 @@
         margin: 0;
         font-size: 1.2rem;
         font-weight: 500;
+        text-transform: capitalize;
     }
 
     .modal-close {
@@ -125,5 +126,45 @@
         text-align: center;
         color: #777;
         font-style: italic;
+    }
+
+    /* Table Container */
+    .sortable-table-container {
+        position: relative;
+        width: 100%;
+        overflow-x: auto;
+        border-radius: 0.5rem;
+    }
+
+    .sortable-table-container span {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Clickable row effect */
+    .clickable-cell {
+        cursor: pointer;
+        color: #00796b;
+    }
+
+    .cell-title {
+        font-weight: 500;
+    }    
+
+    .clickable-cell:hover {
+        text-decoration: underline;
+    }
+
+    /* Aligns small columns like grade */
+    .ag-theme-alpine .ag-cell {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Table Icons */
+    .table-icon {
+        margin-right: 5px;
+        vertical-align: middle;
     }
 }

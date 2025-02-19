@@ -33,7 +33,7 @@ function Login() {
 
     const { showbar,username,task,annotationtype,annotationtypes,curannotator,redir } = useContext(AppContext);
 
-   // const [Task,SetTask] = task
+    // const [Task,SetTask] = task
     const [AnnotationTypes,SetAnnotationTypes] = annotationtypes
     const [AnnotationType,SetAnnotationType] = annotationtype
     const [Username,SetUsername] = useState('')
@@ -45,8 +45,9 @@ function Login() {
     const [Login,SetLogin] = useState(false)
     const [Orcid,SetOrcid] = useState(false)
     console.log('login')
-    const signup_url = "http://localhost:8000/signup"
 
+    const signup_url = window.baseurl + "signup"
+    const logourl = window.baseurl + "static/img/doctron.png"
 
     const orcid_error = window.error;
     useEffect(()=>{
@@ -54,6 +55,10 @@ function Login() {
             SetError('The user does not exist, or has not linked the account to the ORCID ID yet')
         }
     },[orcid_error])
+
+    useEffect(() => {
+        SetAnnotationType('Graded labeling')
+    }, []);
 
     const handleSubmit1 = (event) =>{
         console.log('us')
@@ -67,7 +72,7 @@ function Login() {
         data.append('annotation_type', AnnotationType);
         var username = data.get('username')
         // SetUser(username)
-        if (data.get('username','') !== '' && data.get('password','') !== '' && AnnotationType){
+        if (data.get('username','') !== '' && data.get('password','') !== '' ){
             axios({
                 method: "post",
                 url: "login",
@@ -82,7 +87,7 @@ function Login() {
                     SetCurAnnotator(username)
 
                     // return <Redirect to='/index'/>
-                        // SetUser(username)
+                    // SetUser(username)
                     SetRedir(true)
                     // }
 
@@ -109,7 +114,6 @@ function Login() {
         if(Login && Orcid){
             const formData = new FormData();
             formData.append('orcid', Orcid);
-
             axios({
                 method: "post",
                 url: "login",
@@ -143,9 +147,9 @@ function Login() {
     const navigate = useNavigate();
 
     useEffect(() => {
-      if (Redir === true  && (User && User !== '' && User !== undefined)) {
-        navigate("/index");
-      }
+        if (Redir === true  && (User && User !== '' && User !== undefined)) {
+            navigate("/index");
+        }
     }, [Redir, navigate]);
 
 
@@ -157,72 +161,72 @@ function Login() {
 
             <div >
                 <Container fluid>
-                <div>
                     <div>
+                        <div>
 
 
-                    </div>
-                    <div className={'reglog'}>
+                        </div>
+                        <div className={'reglog'}>
 
-                        <div><img className={'login'} src={"http://localhost:8000/static/img/doctron.png"} /></div>
+                            <div><img className={'login'} src={logourl} /></div>
 
-                        {Error !== '' && <div style={{width:'30vw',display:"inline-block"}}><Alert severity="error">{Error}</Alert></div>}
-                        <Box component="form" onSubmit={(e)=>{handleSubmit1(e)}} noValidate sx={{ mt: 1 }}>
-                            <FormControl>
-                                <div style={{marginTop:'3vh'}}>
-                                    <TextField sx={{ width:'350px'}}   size="small"
-                                               name="username" required id="standard-basic" label="Username" variant="outlined" />
-                                </div>
-                                <div style={{marginTop:'3vh'}}>
-                                    <TextField
-                                        // onChange={(e)=>{handleChangePsw(e)}}
-                                        required
-                                        sx={{ width:'350px' }}
-                                        id="standard-password-input"
-                                        label="Password"
-                                        type="password"
-                                        name="password"
-                                        size="small"
-                                        autoComplete="current-password"
-                                        variant="outlined"
-                                    />
-                                    <div style={{fontSize:'0.65rem',margin:0,textAlign:'right'}}><a href={window.location.origin+'/password_reset'}>I forgot my password</a> </div>
-                                </div>
-                                <div style={{width:'350px'}}>
-                                    <h6>Annotation type</h6>
-                                    <div>
-                                        {AnnotationTypes && AnnotationTypes.map(el=><span><Chip sx={{margin:'1%'}} label={el} variant={AnnotationType === el ? 'filled':"outlined"} color={'info'} onClick={(e)=>{
-                                            if(AnnotationType === el){
-                                                SetAnnotationType(false)
-                                            }else{
-                                                SetAnnotationType(el)
-                                            }
-                                        }} /></span>)}
+                            {Error !== '' && <div style={{width:'30vw',display:"inline-block"}}><Alert severity="error">{Error}</Alert></div>}
+                            <Box component="form" onSubmit={(e)=>{handleSubmit1(e)}} noValidate sx={{ mt: 1 }}>
+                                <FormControl>
+                                    <div style={{marginTop:'3vh'}}>
+                                        <TextField sx={{ width:'350px'}}   size="small"
+                                                   name="username" required id="standard-basic" label="Username" variant="outlined" />
                                     </div>
+                                    <div style={{marginTop:'3vh'}}>
+                                        <TextField
+                                            // onChange={(e)=>{handleChangePsw(e)}}
+                                            required
+                                            sx={{ width:'350px' }}
+                                            id="standard-password-input"
+                                            label="Password"
+                                            type="password"
+                                            name="password"
+                                            size="small"
+                                            autoComplete="current-password"
+                                            variant="outlined"
+                                        />
+                                        <div style={{fontSize:'0.65rem',margin:0,textAlign:'right'}}><a href={window.location.origin+'/password_reset'}>I forgot my password</a> </div>
+                                    </div>
+                                    <div style={{width:'350px'}}>
+                                        <h6>Annotation type</h6>
+                                        <div>
+                                            {AnnotationTypes && AnnotationTypes.map(el=><span><Chip sx={{margin:'1%'}} label={el} variant={AnnotationType === el ? 'filled':"outlined"} color={'info'} onClick={(e)=>{
+                                                if(AnnotationType === el){
+                                                    SetAnnotationType(false)
+                                                }else{
+                                                    SetAnnotationType(el)
+                                                }
+                                            }} /></span>)}
+                                        </div>
 
 
-                                </div>
-                                <Button type="submit"  sx={{ '& > :not(style)': { m: 1 },background:"linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(255,185,33,1) 100%);" }} size={'large'}
-                                        variant="contained" style={{marginTop:'5vh',width:'350px'}}>Log In</Button>
-                            </FormControl>
-                        {/*    {window.location.hostname === "doctron.dei.unipd.it" &&<div style={{marginTop: '2vh'}}><a href={'https://doctron.dei.unipd.it/login_with_orcid'}>
+                                    </div>
+                                    <Button type="submit"  sx={{ '& > :not(style)': { m: 1 },background:"linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(255,185,33,1) 100%);" }} size={'large'}
+                                            variant="contained" style={{marginTop:'5vh',width:'350px'}}>Log In</Button>
+                                </FormControl>
+                                {/*    {window.location.hostname === "doctron.dei.unipd.it" &&<div style={{marginTop: '2vh'}}><a href={'https://doctron.dei.unipd.it/login_with_orcid'}>
                                 <img className={'orcid'} height='4vh'
                                      src="https://doctron.dei.unipd.it/static/img/ORCID.png" alt="ORCID ID logo"/> Log
                                 in with ORCID ID
                             </a>
                             </div>}*/}
 
-                        </Box>
+                            </Box>
 
-                        <br/>
-                        <div style={{marginTop:'2vh'}}>
-                            <Link href={signup_url} variant="body2">
-                                {"Don't have an account? Sign Up"}
-                            </Link>
+                            <br/>
+                            <div style={{marginTop:'2vh'}}>
+                                <Link href={signup_url} variant="body2">
+                                    {"Don't have an account? Sign Up"}
+                                </Link>
+                            </div>
+
                         </div>
-
                     </div>
-                </div>
                 </Container>
             </div>
 

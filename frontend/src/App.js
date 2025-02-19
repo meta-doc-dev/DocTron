@@ -20,20 +20,7 @@ import {
 import BaseIndex from "./BaseIndex";
 import Login from "./components/login/Login";
 import Home from "./components/login/Home";
-// import Tutorial from "./components/SideComponents/Tutorial";
-// import Credits from "./components/SideComponents/Credits";
-// import MyStats from "./components/SideComponents/MyStats";
 
-// import ReportsStats from "./components/SideComponents/ReportsStats";
-// import ReportsStats from "./components/ReportStatistics/ReportsStats";
-// import InfoAboutConfiguration from "./components/MedConfiguration/InfoAboutConfiguration";
-// import Configure from "./components/MedConfiguration/Configure";
-// import UpdateConfiguration from "./components/MedConfiguration/UpdateConfiguration";
-// import MembersStats from "./components/SideComponents/MembersStats";
-// import ConfigureResult from "./components/MedConfiguration/ConfigureResult";
-// import UploadFile from "./components/SideComponents/UploadFile";
-// import Prova_BaseIndex from "./Prova_BaseIndex";
-// import Login from "./components/login/Login"
 import Axios from "axios";
 
 axios.defaults.xsrfCookieName = "csrftoken";
@@ -45,18 +32,13 @@ import Typography from '@mui/material/Typography';
 import {styled, alpha} from '@mui/material/styles';
 import SideBar from "./components/SideBar/PermanentSideBar";
 import HeaderBar from "./components/BaseComponents/HeaderBar";
-import StatisticsPage from "./components/Statistics/StatisticsPage";
-import StatisticsCollection from "./components/Statistics/StatisticsCollection";
 import InstructionsPage from "./components/Instructions/InstructionsPage";
 import CreditsPage from "./components/Instructions/CreditsPage";
 import {Collapse, Dialog, DialogActions, DialogContent, InputLabel, Select, TextField} from "@mui/material";
 import DialogTitle from "@mui/material/DialogTitle";
-import DialogContentText from "@mui/material/DialogContentText";
 import FormControl from "@mui/material/FormControl";
 import Button from "@mui/material/Button";
 import Demo from "./components/Instructions/Demo";
-import Alert from "@mui/material/Alert";
-import Box from "@mui/material/Box";
 import SignUp from "./components/login/Signup";
 import CollectionsList from "./components/Collections/CollectionsList";
 import DocumentsPage from "./components/Document/DocumentsPage";
@@ -281,13 +263,14 @@ function App() {
     useEffect(() => {
         var username = window.username
         var profile = window.profile
-
-        axios.get('annotation_types').then(response => {
-            SetAnnotationTypes(response.data['types'])
-        })
-            .catch(error => {
-                console.log('error', error)
+        if (AnnotationTypes === false || AnnotationTypes === undefined || AnnotationTypes.length === 0) {
+            axios.get('annotation_types').then(response => {
+                SetAnnotationTypes(response.data['types'])
             })
+                .catch(error => {
+                    console.log('error', error)
+                })
+        }
 
         // var BASEURL = window.baseurl
         console.log('username', username)
@@ -803,8 +786,7 @@ function App() {
 
                         <Routes>
 
-                            <Route path="/loginPage" element={<Login/>} exact />
-                                
+
                             <Route path="/password_reset/:token" element={<ResetForm/>} exact />
                                 
                             <Route path="/password_reset" element={<Reset message={window.errorMessage}/>} />
@@ -844,17 +826,7 @@ function App() {
                             </div>} exact />
 
 
-                            <Route path="/statistics" element={<div>
 
-                            <HeaderBar counter={Counter}/>
-                            <hr/>
-
-                            <div className='maindiv'>
-                                <StatisticsPage/>
-
-                            </div>
-
-                            </div>} exact />
                                 
                             <Route path="/instructions" element={<div>
 
@@ -880,7 +852,7 @@ function App() {
 
                             </div>} exact />
 
-                            <Route path="/statistics/:collection_id" element={<div>
+                    {/*        <Route path="/statistics/:collection_id" element={<div>
 
                             <HeaderBar counter={Counter}/>
                             <hr/>
@@ -890,7 +862,7 @@ function App() {
 
                             </div>
 
-                            </div>} exact />
+                            </div>} exact />*/}
 
 
                             <Route path='/collections/:collection_id' element={<div>
@@ -904,16 +876,7 @@ function App() {
                             </div>
                             </div>} exact />
 
-                            <Route path="/" element={<Home />} exact />
 
-                            <Route path="" element={<Home/>} exact />
-
-                            <Route path="/dashboard/*" element={
-                                <>
-                                    <HeaderBar counter={Counter}/>
-                                    <DashboardPage />
-                                </>
-                            } />
 
                             <Route path="dashboard/*" element={
                                 <>
@@ -921,13 +884,24 @@ function App() {
                                     <DashboardPage />
                                 </>
                             }>
+
+                      {/*      <Route path="/dashboard/*" element={
+                                <>
+                                    <HeaderBar counter={Counter}/>
+                                    <DashboardPage />
+                                </>
+                            }>*/}
                                 <Route index element={<MyStatisticsPage />} />
                                 <Route path="my-stats" element={<MyStatisticsPage />} />
                                 <Route path="global-stats" element={<GlobalStatisticsPage />} />
                                 <Route path="iaa" element={<IAAPage />} />
                                 <Route path="topic-stats" element={<TopicBasedStatsPage />} />
                             </Route>
+
+                            <Route path="/" element={<Home />} exact />
+                            <Route path="" element={<Home/>} exact />
                         </Routes>
+
                     </div>
                 </Router>}
 

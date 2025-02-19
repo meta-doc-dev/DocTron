@@ -3,9 +3,7 @@ import {ButtonGroup, Collapse} from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
-import Badge from 'react-bootstrap/Badge'
-import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon from '@mui/icons-material/Save';
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -95,7 +93,7 @@ export default function LabelsClass(props) {
             <Collapse in={ShowList && !InARel}>
                 <div>Click on the slider to set the grade for each label</div>
                 <div style={{fontSize:'1rem'}}>
-                    {AnnotatedLabels ? <ThemeProvider theme={labelstheme}>
+                    <ThemeProvider theme={labelstheme}>
                         {Labels['labels'].map((o, i) =>
                                 <div>
                                     {parseInt(Labels['values'][i][1]) - parseInt(Labels['values'][i][0]) + 1 > 5 ? <LabelSlider label={o} details = {Labels['details'][i]} value={AnnotatedLabels[o] !== undefined ? AnnotatedLabels[o] : null} min={Labels['values'][i][0]} max={Labels['values'][i][1]} type_lab={'label'}/> :
@@ -105,9 +103,7 @@ export default function LabelsClass(props) {
 
                         )}
 
-                    </ThemeProvider> : <div className='loading'>
-                        <CircularProgress/>
-                    </div>}
+                    </ThemeProvider>
 
 
                 </div>

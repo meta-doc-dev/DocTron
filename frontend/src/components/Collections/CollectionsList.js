@@ -206,9 +206,11 @@ export default function CollectionsList(props) {
                                         <><h2>Found {CollectionToShow.length} collections for {AnnotationType}.</h2><br/>
                                             <div style={{marginTop: '3%'}}>
                                                 <Button onClick={() => SetAddCollection(prev => !prev)}
+                                                        disabled={window.baseurl === 'https://doctron.dei.unipd.it/'}
                                                         variant="contained"
                                                         startIcon={<AddIcon/>}>
-                                                    Add  collection with {AnnotationType} template
+
+                                                    Add collection with {AnnotationType} template
                                                 </Button>
                                             </div>
                                         </>

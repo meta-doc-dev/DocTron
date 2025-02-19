@@ -9,11 +9,11 @@ from doctron_app.utils_download import *
 from doctron_app.upload.ir_datases import *
 from datetime import timedelta
 import time
-from doctron_app.utils_stats import *
+#from doctron_app.utils_stats import *
 from django.contrib.sessions.backends.db import SessionStore
 import secrets
 from django.conf import settings
-from doctron_app.tasks import test_task, add_collection
+from doctron_app.tasks import try_task, add_collection, upload_preannotations, try_task
 
 
 # test
@@ -177,9 +177,10 @@ def login(request):
     # print('login')
     try:
         if request.method == 'POST':
+            
             md5_pwd = ''
             username = request.POST.get('username', False)
-            annotation_type = request.POST.get('annotation_type', False)
+            annotation_type = request.POST.get('annotation_type', "Graded labeling")
             mode1 = 'Human'
             password = request.POST.get('password', False)
             orcid = request.POST.get("orcid",False)
@@ -199,22 +200,7 @@ def login(request):
                     request.session['username'] = user.first().username
                     request.session['profile'] = user.first().profile
                     user = user.first()
-                    # with connection.cursor() as cursor:
-                    #     cursor.execute("SELECT DISTINCT c.collection_id,c.annotation_type FROM share_collection as s "
-                    #                    "INNER JOIN collection_has_task as c ON c.collection_id = s.collection_id "
-                    #                    "WHERE s.username = %s",
-                    #                    [request.session['username']])
-                    #     results = cursor.fetchall()
-                    #
-                    # # Accedi ai valori usando i nomi delle colonne
-                    # collections = []
-                    # types = []
-                    # for row in results:
-                    #     collection_id = Collection.objects.get(collection_id=row[0])
-                    #     t = AnnotationType.objects.get(id=int(row[1])).name
-                    #     if collection_id not in collections:
-                    #         collections.append(collection_id)
-                    #     types.append(t)
+
                     annotation_type = AnnotationType.objects.get(name=annotation_type)
                     collections = Collection.objects.filter(annotation_type = annotation_type)
                     documents = Document.objects.filter(collection_id__in=collections)
@@ -313,6 +299,24 @@ def login(request):
                         resp = {'username': user.first().username, 'profile': user.first().profile}
                         response = JsonResponse(resp, status=200)
                         return response
+
+                    if username == 'demo':
+                        user = User.objects.filter(username=username, password=md5_pwd).first()
+                        AnnotatePassage.objects.filter(username=user).delete()
+                        Annotate.objects.filter(username=user).delete()
+                        Associate.objects.filter(username=user).delete()
+                        AssociateTag.objects.filter(username=user).delete()
+                        CreateFact.objects.filter(username=user).delete()
+                        AnnotateObject.objects.filter(username=user).delete()
+                        AnnotateObjectLabel.objects.filter(username=user).delete()
+                        Link.objects.filter(username=user).delete()
+                        RelationshipPredConcept.objects.filter(username=user).delete()
+                        RelationshipSubjConcept.objects.filter(username=user).delete()
+                        RelationshipObjConcept.objects.filter(username=user).delete()
+                        RelationshipObjMention.objects.filter(username=user).delete()
+                        RelationshipSubjMention.objects.filter(username=user).delete()
+                        RelationshipPredMention.objects.filter(username=user).delete()
+
                     return redirect('doctron_app:index')
 
             # return render(request, 'doctron_app/index.html',status=500)
@@ -327,8 +331,13 @@ def login(request):
             username = request.session.get('username', False)
             profile = request.session.get('profile', False)
             name_space = request.session.get('name_space', False)
+
+
+
             if username and profile and name_space:
                 return redirect('doctron_app:index')
+
+
 
             # context = {'username': username, 'profile': user.profile}
             # return render(request, 'doctron_app/index.html')
@@ -395,16 +404,17 @@ def register(request):
         profile = request.POST.get('profile', 'Beginner')
         orcid = request.POST.get('orcid', None)
         email = request.POST.get('email', None)
+        annotation_type = request.POST.get('annotation_type', None)
         orcid_token = request.POST.get('orcid_token', None)
         ncbikey = request.POST.get('ncbikey', None)
         try:
             with transaction.atomic():
                 ns_human = NameSpace.objects.get(name_space='Human')
 
-                if not User.objects.filter(name_space=ns_human, username='IAA-Inter Annotator Agreement').exists():
-                    User.objects.create(username='IAA-Inter Annotator Agreement', profile='Tech',
-                                        password=hashlib.md5("iaa".encode()).hexdigest(), name_space=ns_human,
-                                        orcid=None, ncbi_key=None)
+                # if not User.objects.filter(name_space=ns_human, username='IAA-Inter Annotator Agreement').exists():
+                #     User.objects.create(username='IAA-Inter Annotator Agreement', profile='Tech',
+                #                         password=hashlib.md5("iaa".encode()).hexdigest(), name_space=ns_human,
+                #                         orcid=None, ncbi_key=None)
                 if not username or (not password1 and not orcid) or not profile or not email:
                     return JsonResponse({'error': 'missing credentials'}, status=500)
 
@@ -445,6 +455,7 @@ def register(request):
             request.session['username'] = username
             request.session['name_space'] = 'Human'
             request.session['profile'] = profile
+            request.session['annotation_type'] = annotation_type
             if orcid:
                 print(request.session.get('username', None))
                 resp = {'username': username, 'profile': profile}
@@ -554,6 +565,17 @@ def credits(request):
         return redirect('doctron_app:login')
 
 
+def dashboard(request, subpath=None):
+    """Serve React frontend for all `/dashboard/*` routes."""
+    username = request.session.get('username', False)
+    profile = request.session.get('profile', False)
+
+    if username:
+        context = {'username': username, 'profile': profile}
+        return render(request, 'doctron_app/index.html', context)
+    else:
+        return redirect('doctron_app:login')
+
 def demo(request):
     """Demo page for app"""
 
@@ -577,548 +599,6 @@ def instructions(request):
         return redirect('doctron_app:login')
 
 
-def statistics(request, collection_id=None, type=None):
-    """Credits page for app"""
-
-    username = request.session.get('username', False)
-    profile = request.session.get('profile', False)
-    baseurl = get_baseurl()
-    # name_space = NameSpace.objects.get(name_space='Human')
-
-    name_space = request.session['name_space']
-    name_space = NameSpace.objects.get(name_space=name_space)
-    user_iaa = User.objects.get(username="IAA-Inter Annotator Agreement", name_space=name_space)
-    if request.method == 'GET':
-        if (type is None and Collection.objects.filter(collection_id=collection_id).exists()) or (
-                type is None and collection_id is None):
-            # in questi due casi faccio un render
-            if (username and baseurl != ''):
-                context = {'username': username, 'profile': profile, 'baseurl': baseurl}
-                return render(request, 'doctron_app/index.html', context)
-            else:
-                return redirect('doctron_app:login')
-
-        elif type == 'general' and collection_id == 'personal':
-            document = request.GET.get('document')
-            collection = request.GET.get('collection')
-            json_doc = {}
-            name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-            username_req = request.GET.get('user', None)
-            name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-
-            if username_req is None:
-                user = User.objects.get(username=username, name_space=name_space)
-            else:
-                user = User.objects.get(username=username_req, name_space=name_space)
-
-            collection = Collection.objects.get(collection_id=collection)
-
-            if document == '':
-                documents = Document.objects.filter(collection_id=collection)
-                if Split.objects.filter(collection_id=collection,username=user,name_space=name_space).exists():
-                    documents = Split.objects.filter(collection_id=collection,username=user,name_space=name_space)
-                    documents = [d.document_id for d in documents]
-                json_doc['annotated_documents'] = GroundTruthLogFile.objects.filter(document_id__in=documents,
-                                                                                    name_space=name_space,
-                                                                                    username=user).count()
-            else:
-                documents = Document.objects.filter(collection_id=collection, document_id=document)
-
-            json_doc['mentions'] = Annotate.objects.filter(document_id__in=documents, name_space=name_space,
-                                                           username=user).count()
-            json_doc['concepts'] = Associate.objects.filter(document_id__in=documents, name_space=name_space,
-                                                            username=user).count()
-            json_doc['labels'] = AnnotateLabel.objects.filter(document_id__in=documents, name_space=name_space,
-                                                              username=user).count()
-            json_doc['assertions'] = CreateFact.objects.filter(document_id__in=documents, name_space=name_space,
-                                                               username=user).count()
-            documents_list_ids = [x.document_id for x in documents]
-            json_doc['relationships'] = Link.objects.filter(subject_document_id__in=documents_list_ids,
-                                                            name_space=name_space,
-                                                            username=user).count() + \
-                                        RelationshipPredConcept.objects.filter(
-                                            subject_document_id__in=documents_list_ids, name_space=name_space,
-                                            username=user).count() + \
-                                        RelationshipObjConcept.objects.filter(
-                                            subject_document_id__in=documents_list_ids, name_space=name_space,
-                                            username=user).count() + \
-                                        RelationshipSubjConcept.objects.filter(
-                                            object_document_id__in=documents_list_ids, name_space=name_space,
-                                            username=user).count() + \
-                                        RelationshipSubjMention.objects.filter(document_id__in=documents,
-                                                                               name_space=name_space,
-                                                                               username=user).count() + \
-                                        RelationshipObjMention.objects.filter(document_id__in=documents,
-                                                                              name_space=name_space,
-                                                                              username=user).count() + \
-                                        RelationshipPredMention.objects.filter(document_id__in=documents,
-                                                                               name_space=name_space,
-                                                                               username=user).count()
-            return JsonResponse(json_doc)
-
-        elif type == 'general' and collection_id == 'global':
-            document = request.GET.get('document')
-            collection = request.GET.get('collection')
-            json_doc = {}
-            # name_space = NameSpace.objects.get(name_space = request.session.get('name_space'))
-            # user = User.objects.get(username=username,name_space = name_space)
-            username_req = request.GET.get('user', None)
-            name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-
-            if username_req is None:
-                user = User.objects.get(username=username, name_space=name_space)
-            else:
-                user = User.objects.get(username=username_req, name_space=name_space)
-            collection = Collection.objects.get(collection_id=collection)
-            if document == '':
-                documents = Document.objects.filter(collection_id=collection)
-                json_doc['annotated_documents'] = GroundTruthLogFile.objects.filter(document_id__in=documents,
-                                                                                    name_space=name_space).count()
-            else:
-                documents = Document.objects.filter(collection_id=collection, document_id=document)
-
-            json_doc['annotators_count'] = GroundTruthLogFile.objects.filter(document_id__in=documents,
-                                                                             name_space=name_space).distinct(
-                'username').count()
-            json_doc['mentions'] = Annotate.objects.filter(document_id__in=documents, name_space=name_space).count()
-            json_doc['concepts'] = Associate.objects.filter(document_id__in=documents, name_space=name_space).count()
-            json_doc['labels'] = AnnotateLabel.objects.filter(document_id__in=documents, name_space=name_space).count()
-            json_doc['assertions'] = CreateFact.objects.filter(document_id__in=documents, name_space=name_space).count()
-            documents_list_ids = [x.document_id for x in documents]
-            json_doc['relationships'] = Link.objects.filter(subject_document_id__in=documents_list_ids,
-                                                            name_space=name_space).count() + \
-                                        RelationshipPredConcept.objects.filter(
-                                            subject_document_id__in=documents_list_ids, name_space=name_space).count() + \
-                                        RelationshipObjConcept.objects.filter(
-                                            subject_document_id__in=documents_list_ids, name_space=name_space).count() + \
-                                        RelationshipSubjConcept.objects.filter(
-                                            object_document_id__in=documents_list_ids, name_space=name_space).count() + \
-                                        RelationshipSubjMention.objects.filter(document_id__in=documents,
-                                                                               name_space=name_space).count() + \
-                                        RelationshipObjMention.objects.filter(document_id__in=documents,
-                                                                              name_space=name_space).count() + \
-                                        RelationshipPredMention.objects.filter(document_id__in=documents,
-                                                                               name_space=name_space).count()
-            json_doc['iaa'] = {}
-            st = time.time()
-            mention_agreement = global_mentions_agreement(collection.collection_id, documents)
-            print('mentions', str(time.time() - st))
-            st = time.time()
-            concepts_agreement = global_concepts_agreement(collection.collection_id, documents)
-            print(time.time() - st)
-
-            st = time.time()
-            rels_agreement = global_relationships_agreement(collection.collection_id, documents)
-            print(time.time() - st)
-
-            st = time.time()
-            ass_agreement = global_createfact_agreement(collection.collection_id, documents)
-            print(time.time() - st)
-
-            st = time.time()
-            labels_agreement = global_labels_agreement(collection.collection_id, documents)
-            print(time.time() - st)
-
-            json_doc['iaa']['mentions'] = round(mention_agreement, 3) if mention_agreement != '' else ''
-            json_doc['iaa']['concepts'] = round(concepts_agreement, 3) if concepts_agreement != '' else ''
-            json_doc['iaa']['labels'] = round(labels_agreement, 3) if labels_agreement != '' else ''
-            json_doc['iaa']['assertions'] = round(ass_agreement, 3) if ass_agreement != '' else ''
-            json_doc['iaa']['relationships'] = round(rels_agreement, 3) if rels_agreement != '' else ''
-            return JsonResponse(json_doc)
-
-        elif type == 'relationship_area' and collection_id == 'personal':
-            document = request.GET.get('document')
-            collection = request.GET.get('collection')
-            username_req = request.GET.get('user', None)
-            name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-
-            if username_req is None:
-                user = User.objects.get(username=username, name_space=name_space)
-            else:
-                user = User.objects.get(username=username_req, name_space=name_space)
-            # name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-            # user = User.objects.get(username=username, name_space=name_space)
-            collection = Collection.objects.get(collection_id=collection)
-            distinct_areas = AddConcept.objects.filter(collection_id=collection).distinct('name')
-            distinct_areas = [x.name_id for x in distinct_areas]
-            if document == '':
-                documents = Document.objects.filter(collection_id=collection)
-                if Split.objects.filter(collection_id=collection,username=user,name_space=name_space).exists():
-                    documents = Split.objects.filter(collection_id=collection,username=user,name_space=name_space)
-                    documents = [d.document_id for d in documents]
-            else:
-                documents = Document.objects.filter(collection_id=collection, document_id=document)
-            docs = [x.document_id for x in documents]
-            # json_doc = {}
-            # json_doc['subject'] = {}
-            # json_doc['predicate'] = {}
-            # json_doc['object'] = {}
-            users_all = ShareCollection.objects.filter(collection_id=collection)
-            users_all = [a.username for a in users_all]
-            json_doc = compute_relationship_area_global(distinct_areas, documents, docs, name_space,
-                                                        users=[user.username])
-            return JsonResponse(json_doc)
-
-        elif type == 'relationship_area' and collection_id == 'global':
-            document = request.GET.get('document')
-            collection = request.GET.get('collection')
-            username_req = request.GET.get('user', None)
-            name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-
-            if username_req is None:
-                user = User.objects.get(username=username, name_space=name_space)
-            else:
-                user = User.objects.get(username=username_req, name_space=name_space)
-            # name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-            # user = User.objects.get(username=username, name_space=name_space)
-            collection = Collection.objects.get(collection_id=collection)
-            distinct_areas = AddConcept.objects.filter(collection_id=collection).distinct('name')
-            distinct_areas = [x.name_id for x in distinct_areas]
-            if document == '':
-                documents = Document.objects.filter(collection_id=collection)
-                documents = Document.objects.filter(collection_id=collection)
-                if Split.objects.filter(collection_id=collection,username=user,name_space=name_space).exists():
-                    documents = Split.objects.filter(collection_id=collection,username=user,name_space=name_space)
-                    documents = [d.document_id for d in documents]
-            else:
-                documents = Document.objects.filter(collection_id=collection, document_id=document)
-            docs = [x.document_id for x in documents]
-            # json_doc = {}
-            # json_doc['subject'] = {}
-            # json_doc['predicate'] = {}
-            # json_doc['object'] = {}
-            users_all = ShareCollection.objects.filter(collection_id=collection)
-            users_all = [a.username for a in users_all]
-            json_doc = compute_relationship_area_global(distinct_areas, documents, docs, name_space, users=users_all)
-            return JsonResponse(json_doc)
-
-
-        elif type == 'concept_area' and collection_id == 'personal':
-            document = request.GET.get('document')
-            collection = request.GET.get('collection')
-            username_req = request.GET.get('user', None)
-            name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-
-            if username_req is None:
-                user = User.objects.get(username=username, name_space=name_space)
-            else:
-                user = User.objects.get(username=username_req, name_space=name_space)
-            # name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-            # user = User.objects.get(username=username, name_space=name_space)
-            collection = Collection.objects.get(collection_id=collection)
-            distinct_areas = AddConcept.objects.filter(collection_id=collection).distinct('name')
-            distinct_areas = [x.name_id for x in distinct_areas]
-            if document == '':
-                documents = Document.objects.filter(collection_id=collection)
-                documents = Document.objects.filter(collection_id=collection)
-                if Split.objects.filter(collection_id=collection,username=user,name_space=name_space).exists():
-                    documents = Split.objects.filter(collection_id=collection,username=user,name_space=name_space)
-                    documents = [d.document_id for d in documents]
-            else:
-                documents = Document.objects.filter(collection_id=collection, document_id=document)
-            json_doc = {}
-            json_doc['concepts_per_area'] = {}
-            json_doc['count_per_area'] = {}
-            for area in distinct_areas:
-                area_obj = SemanticArea.objects.get(name=area)
-                json_doc['concepts_per_area'][area] = {}
-                json_doc['count_per_area'][area] = Associate.objects.filter(document_id__in=documents,
-                                                                            name_space=name_space, username=user,
-                                                                            name=area_obj).count()
-                concepts = Associate.objects.filter(document_id__in=documents, name_space=name_space, username=user,
-                                                    name=area_obj).values('concept_url').order_by(
-                    'concept_url').annotate(count=Count('concept_url'))
-                for concept in concepts:
-                    con = Concept.objects.get(concept_url=concept['concept_url'])
-                    json_doc['concepts_per_area'][area][con.concept_name] = concept['count']
-
-            return JsonResponse(json_doc)
-
-        elif type == 'concept_area' and collection_id == 'global':
-            document = request.GET.get('document')
-            collection = request.GET.get('collection')
-            name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-            collection = Collection.objects.get(collection_id=collection)
-            distinct_areas = AddConcept.objects.filter(collection_id=collection).distinct('name')
-            distinct_areas = [x.name_id for x in distinct_areas]
-            user = User.objects.get(username=username, name_space=name_space)
-            if document == '':
-                documents = Document.objects.filter(collection_id=collection)
-                documents = Document.objects.filter(collection_id=collection)
-                if Split.objects.filter(collection_id=collection,username=user,name_space=name_space).exists():
-                    documents = Split.objects.filter(collection_id=collection,username=user,name_space=name_space)
-                    documents = [d.document_id for d in documents]
-            else:
-                documents = Document.objects.filter(collection_id=collection, document_id=document)
-            json_doc = {}
-            json_doc['concepts_per_area'] = {}
-            json_doc['count_per_area'] = {}
-            for area in distinct_areas:
-                area_obj = SemanticArea.objects.get(name=area)
-                json_doc['concepts_per_area'][area] = {}
-                json_doc['count_per_area'][area] = Associate.objects.filter(document_id__in=documents,
-                                                                            name_space=name_space,
-                                                                            name=area_obj).count()
-                concepts = Associate.objects.filter(document_id__in=documents, name_space=name_space,
-                                                    name=area_obj).values('concept_url').order_by(
-                    'concept_url').annotate(count=Count('concept_url'))
-
-                for concept in concepts:
-                    con = Concept.objects.get(concept_url=concept['concept_url'])
-                    json_doc['concepts_per_area'][area][con.concept_name] = concept['count']
-            return JsonResponse(json_doc)
-
-        elif type == 'general' and collection_id == 'personal':
-            document = request.GET.get('document')
-            collection = request.GET.get('collection')
-            json_doc = {}
-            username_req = request.GET.get('user', None)
-            name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-
-            if username_req is None:
-                user = User.objects.get(username=username, name_space=name_space)
-            else:
-                user = User.objects.get(username=username_req, name_space=name_space)
-            # name_space = NameSpace.objects.get(name_space = request.session.get('name_space'))
-            # user = User.objects.get(username=username,name_space = name_space)
-            collection = Collection.objects.get(collection_id=collection)
-            if document == '':
-                documents = Document.objects.filter(collection_id=collection)
-                documents = Document.objects.filter(collection_id=collection)
-                if Split.objects.filter(collection_id=collection,username=user,name_space=name_space).exists():
-                    documents = Split.objects.filter(collection_id=collection,username=user,name_space=name_space)
-                    documents = [d.document_id for d in documents]
-                json_doc['annotated_documents'] = GroundTruthLogFile.objects.filter(document_id__in=documents,
-                                                                                    name_space=name_space,
-                                                                                    username=user).count()
-            else:
-                documents = Document.objects.filter(collection_id=collection, document_id=document)
-            json_doc['mentions'] = Annotate.objects.filter(document_id__in=documents, name_space=name_space,
-                                                           username=user).count()
-            json_doc['concepts'] = Associate.objects.filter(document_id__in=documents, name_space=name_space,
-                                                            username=user).count()
-            json_doc['labels'] = AnnotateLabel.objects.filter(document_id__in=documents, name_space=name_space,
-                                                              username=user).count()
-            json_doc['assertions'] = CreateFact.objects.filter(document_id__in=documents, name_space=name_space,
-                                                               username=user).count()
-            documents_list_ids = [x.document_id for x in documents]
-            json_doc['relationships'] = Link.objects.filter(subject_document_id__in=documents_list_ids,
-                                                            name_space=name_space,
-                                                            username=user).count() + RelationshipPredConcept.objects.filter(
-                subject_document_id__in=documents_list_ids, name_space=name_space, username=user).count() + \
-                                        RelationshipObjConcept.objects.filter(
-                                            subject_document_id__in=documents_list_ids, name_space=name_space,
-                                            username=user).count() + RelationshipSubjConcept.objects.filter(
-                object_document_id__in=documents_list_ids, name_space=name_space,
-                username=user).count() + RelationshipSubjMention.objects.filter(document_id__in=documents,
-                                                                                name_space=name_space,
-                                                                                username=user).count() + RelationshipObjMention.objects.filter(
-                document_id__in=documents, name_space=name_space,
-                username=user).count() + RelationshipPredMention.objects.filter(document_id__in=documents,
-                                                                                name_space=name_space,
-                                                                                username=user).count()
-            return JsonResponse(json_doc)
-
-
-        elif type == 'annotators_per_document' and collection_id is not None:
-            collection = Collection.objects.get(collection_id=collection_id)
-            documents = Document.objects.filter(collection_id=collection)
-            documents = Document.objects.filter(collection_id=collection)
-
-            user = User.objects.get(username=username, name_space=name_space)
-            if Split.objects.filter(collection_id=collection, username=user, name_space=name_space).exists():
-                documents = Split.objects.filter(collection_id=collection, username=user, name_space=name_space)
-                documents = [d.document_id for d in documents]
-            # documents = GroundTruthLogFile.objects.filter(document_id__in=documents).annotate(count=Count('document_id')).order_by('count')
-
-            json_resp = {}
-            dict_docs = []
-            for document in documents:
-                if 'doc_id' in list(document.document_content.keys()):
-                    doc = document.document_content['doc_id']
-                else:
-                    doc = document.document_id
-
-                json_resp[document.document_id] = {}
-                json_resp[document.document_id]['count'] = GroundTruthLogFile.objects.filter(
-                    document_id=document).exclude(username=user_iaa).count()
-                annotators_list = GroundTruthLogFile.objects.filter(document_id=document).exclude(
-                    username=user_iaa).distinct('username')
-                json_resp[document.document_id]['annotators'] = [x.username_id for x in annotators_list]
-            return JsonResponse(json_resp)
-
-
-        elif type == 'annotation_per_document' and collection_id is not None:
-            user = request.session['username']
-            username_req = request.GET.get('user', None)
-            name_space = NameSpace.objects.get(name_space=request.session.get('name_space'))
-
-            if username_req is None:
-                user = User.objects.get(username=username, name_space=name_space)
-            else:
-                user = User.objects.get(username=username_req, name_space=name_space)
-            # user = User.objects.get(username=user, name_space = name_space)
-            collection = Collection.objects.get(collection_id=collection_id)
-            documents = Document.objects.filter(collection_id=collection)
-            documents = Document.objects.filter(collection_id=collection)
-
-            user = User.objects.get(username=username, name_space=name_space)
-            if Split.objects.filter(collection_id=collection, username=user, name_space=name_space).exists():
-                documents = Split.objects.filter(collection_id=collection, username=user, name_space=name_space)
-                documents = [d.document_id for d in documents]
-
-            json_resp = {}
-            dict_docs = []
-
-            for document in documents:
-                json_resp[document.document_id] = {}
-                json_resp[document.document_id]['count'] = 0
-                json_resp[document.document_id]['mentions'] = Annotate.objects.filter(document_id=document,
-                                                                                      username=user,
-                                                                                      name_space=name_space).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['concepts'] = Associate.objects.filter(document_id=document,
-                                                                                       username=user,
-                                                                                       name_space=name_space).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['labels'] = AnnotateLabel.objects.filter(document_id=document,
-                                                                                         username=user,
-                                                                                         name_space=name_space).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['assertions'] = CreateFact.objects.filter(document_id=document,
-                                                                                          username=user,
-                                                                                          name_space=name_space).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['relationships'] = Link.objects.filter(
-                    subject_document_id=document.document_id, username=user, name_space=name_space).exclude(
-                    username=user_iaa).count() + RelationshipPredConcept.objects.filter(
-                    subject_document_id=document.document_id, username=user, name_space=name_space).exclude(
-                    username=user_iaa).count() + RelationshipSubjConcept.objects.filter(
-                    object_document_id=document.document_id, username=user, name_space=name_space).exclude(
-                    username=user_iaa).count() + RelationshipObjConcept.objects.filter(
-                    subject_document_id=document.document_id, username=user, name_space=name_space).exclude(
-                    username=user_iaa).count() + RelationshipPredMention.objects.filter(document_id=document,
-                                                                                        username=user,
-                                                                                        name_space=name_space).exclude(
-                    username=user_iaa).count() + RelationshipSubjMention.objects.filter(document_id=document,
-                                                                                        username=user,
-                                                                                        name_space=name_space).exclude(
-                    username=user_iaa).count() + RelationshipObjMention.objects.filter(document_id=document,
-                                                                                       username=user,
-                                                                                       name_space=name_space).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['mentions']
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['concepts']
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['relationships']
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['assertions']
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['labels']
-                dict_docs.append([document.document_id, json_resp[document.document_id]['count']])
-            # prima vedo quello con più annotazioni.
-            json_to_ret = {}
-            json_to_ret['mentions'] = []
-            json_to_ret['concepts'] = []
-            json_to_ret['relationships'] = []
-            json_to_ret['assertions'] = []
-            json_to_ret['documents'] = []
-            json_to_ret['labels'] = []
-            dict_docs = sorted(dict_docs, key=lambda x: x[1], reverse=True)
-            for k in dict_docs:
-                json_to_ret['documents'].append(k[0])
-                json_to_ret['mentions'].append(json_resp[k[0]]['mentions'])
-                json_to_ret['concepts'].append(json_resp[k[0]]['concepts'])
-                json_to_ret['labels'].append(json_resp[k[0]]['labels'])
-                json_to_ret['assertions'].append(json_resp[k[0]]['assertions'])
-                json_to_ret['relationships'].append(json_resp[k[0]]['relationships'])
-
-            return JsonResponse(json_to_ret)
-
-        elif type == 'annotation_per_document_global' and collection_id is not None:
-            st = time.time()
-            user = request.session['username']
-            name_space = request.session['name_space']
-            name_space = NameSpace.objects.get(name_space=name_space)
-            user = User.objects.get(username=user, name_space=name_space)
-            collection = Collection.objects.get(collection_id=collection_id)
-            documents = Document.objects.filter(collection_id=collection)
-            documents = Document.objects.filter(collection_id=collection)
-
-            user = User.objects.get(username=username, name_space=name_space)
-            if Split.objects.filter(collection_id=collection, username=user, name_space=name_space).exists():
-                documents = Split.objects.filter(collection_id=collection, username=user, name_space=name_space)
-                documents = [d.document_id for d in documents]
-
-            json_resp = {}
-            dict_docs = []
-
-            for document in documents:
-                json_resp[document.document_id] = {}
-                json_resp[document.document_id]['count'] = 0
-                json_resp[document.document_id]['mentions'] = Annotate.objects.filter(document_id=document).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['concepts'] = Associate.objects.filter(document_id=document).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['labels'] = AnnotateLabel.objects.filter(document_id=document).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['assertions'] = CreateFact.objects.filter(document_id=document).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['relationships'] = Link.objects.filter(
-                    subject_document_id=document.document_id).exclude(
-                    username=user_iaa).count() + RelationshipPredConcept.objects.filter(
-                    subject_document_id=document.document_id).exclude(
-                    username=user_iaa).count() + RelationshipSubjConcept.objects.filter(
-                    object_document_id=document.document_id).exclude(
-                    username=user_iaa).count() + RelationshipObjConcept.objects.filter(
-                    subject_document_id=document.document_id).exclude(
-                    username=user_iaa).count() + RelationshipPredMention.objects.filter(document_id=document).exclude(
-                    username=user_iaa).count() + RelationshipSubjMention.objects.filter(document_id=document).exclude(
-                    username=user_iaa).count() + RelationshipObjMention.objects.filter(document_id=document).exclude(
-                    username=user_iaa).count()
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['mentions']
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['concepts']
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['relationships']
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['assertions']
-                json_resp[document.document_id]['count'] += json_resp[document.document_id]['labels']
-                dict_docs.append([document.document_id, json_resp[document.document_id]['count']])
-            # prima vedo quello con più annotazioni.
-            json_to_ret = {}
-
-            json_to_ret['iaa'] = {}
-            json_to_ret['mentions'] = []
-            json_to_ret['concepts'] = []
-            json_to_ret['relationships'] = []
-            json_to_ret['assertions'] = []
-            json_to_ret['documents'] = []
-            json_to_ret['labels'] = []
-            json_to_ret['iaa']['mentions'] = []
-            json_to_ret['iaa']['concepts'] = []
-            json_to_ret['iaa']['relationships'] = []
-            json_to_ret['iaa']['assertions'] = []
-            json_to_ret['iaa']['documents'] = []
-            json_to_ret['iaa']['labels'] = []
-
-            dict_docs = sorted(dict_docs, key=lambda x: x[1], reverse=True)
-            for k in dict_docs:
-                # print(k[0])
-                json_to_ret['documents'].append(k[0])
-                json_to_ret['mentions'].append(json_resp[k[0]]['mentions'])
-                json_to_ret['concepts'].append(json_resp[k[0]]['concepts'])
-                json_to_ret['labels'].append(json_resp[k[0]]['labels'])
-                json_to_ret['assertions'].append(json_resp[k[0]]['assertions'])
-                json_to_ret['relationships'].append(json_resp[k[0]]['relationships'])
-                doc = Document.objects.filter(document_id=k[0])
-                mention_agreement = global_mentions_agreement(collection.collection_id, doc)
-                concepts_agreement = global_concepts_agreement(collection.collection_id, doc)
-                rels_agreement = global_relationships_agreement(collection.collection_id, doc)
-                ass_agreement = global_createfact_agreement(collection.collection_id, doc)
-                labels_agreement = global_labels_agreement(collection.collection_id, doc)
-                json_to_ret['iaa']['mentions'] = round(mention_agreement, 3) if mention_agreement != '' else ''
-                json_to_ret['iaa']['concepts'] = round(concepts_agreement, 3) if concepts_agreement != '' else ''
-                json_to_ret['iaa']['labels'] = round(labels_agreement, 3) if labels_agreement != '' else ''
-                json_to_ret['iaa']['assertions'] = round(ass_agreement, 3) if ass_agreement != '' else ''
-                json_to_ret['iaa']['relationships'] = round(rels_agreement, 3) if rels_agreement != '' else ''
-            end = time.time()
-            print(end - st)
-            return JsonResponse(json_to_ret)
 
 
 def annotate(request, type=None):
@@ -1332,7 +812,7 @@ def collections(request, type=None):
             collection = request.session.get('collection', None)
             if collection is not None:
                 collection = Collection.objects.get(collection_id=collection)
-                tuples = AddConcept.objects.filter(collection_id=collection).values('name').distinct()
+                tuples = CollectionHasConcept.objects.filter(collection_id=collection).values('name').distinct()
                 areas = [concept['name'] for concept in tuples]
                 json_dict = {}
                 json_dict['areas'] = areas
@@ -1426,6 +906,10 @@ def collections(request, type=None):
                     us1 = User.objects.get(name_space=name_space, username=us.username_id)
                     # if us1.username != request.session['username']:
                     json_boj['members'].append({'username': us1.username,'reviewer':us.reviewer,'admin':us.admin, 'profile': us1.profile, 'status': us.status})
+                    if us.admin:
+                        json_boj['admins'].append(
+                            {'username': us1.username, 'reviewer': us.reviewer, 'admin': us.admin,
+                             'profile': us1.profile, 'status': us.status})
 
             # controllo se sono tutti gli utenti appartengono a un profile esatto
             return JsonResponse(json_boj)
@@ -1583,8 +1067,33 @@ def collections(request, type=None):
         else:
             try:
                 with transaction.atomic():
+
+                    data = request.POST
+                    name = data.get('name', None)
+                    type_collection = data.get('type_collection', None)
+                    topic_type = data.get('topic_type', None)
+                    tags = data.getlist('tags[]', None)
+                    labels = data.getlist('labels[]', None)
+                    min_labels = [int(n) for n in data.getlist('min_labels[]', None)]
+                    max_labels = [int(n) for n in data.getlist('max_labels[]', None)]
+                    labels_p = data.getlist('labels_p[]', None)
+                    min_labels_p = [int(n) for n in data.getlist('min_labels_p[]', None)]
+                    max_labels_p = [int(n) for n in data.getlist('max_labels_p[]', None)]
+                    description = data.get('description', None)
+                    share_with = data.get('members', None)
+                    ir_url = data.get('ir_dataset', None)
+                    ir_preanno = data.get('ir_preanno', None)
+                    files = request.FILES.items()
+                    pubmed_ids = data.get('pubmed_ids', None)
+
+
+
+                    #msg = new_collection(request)
+                    session = dict(request.session)
+                    #msg = add_collection.delay(session,type_collection,topic_type,tags,labels,name,min_labels,max_labels,labels_p,min_labels_p,max_labels_p,description,share_with,ir_url,ir_preanno,files,pubmed_ids)
                     msg = new_collection(request)
-                    #msg = add_collection.delay(request)
+                    #msg = try_task.delay("value1", "value2")
+                    # print(msg)
                     return JsonResponse({'status': msg})
 
             except Exception as e:
@@ -1631,7 +1140,7 @@ def collections(request, type=None):
                 DocumentObject.objects.filter(document_id__in=documents).delete()
 
                 CollectionHasLabel.objects.filter(collection_id=collection).delete()
-                AddConcept.objects.filter(collection_id=collection).delete()
+                CollectionHasConcept.objects.filter(collection_id=collection).delete()
                 SessionDoc.objects.filter(collection_id=collection).delete()
                 Document.objects.filter(collection_id=collection).delete()
                 Topic.objects.filter(collection_id=collection).delete()
@@ -1845,6 +1354,8 @@ def signup(request):
     workpath = os.path.dirname(os.path.abspath(__file__))  # Returns the Path your .py file is in
     with open((os.path.join(workpath, '../url.txt')), 'r', encoding='utf-8') as f:
         baseurl = f.read()
+        if '0.0.0.0:' in baseurl:
+            baseurl = 'http://localhost:8000'
         if not baseurl.endswith('/'):
             baseurl = baseurl + '/'
     # if (username and baseurl != ''):
@@ -2160,7 +1671,8 @@ def get_session_params(request):
                 session = sessions.first()
                 role = session.role
                 request.session['role'] = json_resp['role'] = role
-                request.session['topic'] = json_resp['topic'] = session.topic_id.topic_id
+                request.session['topic'] = session.topic_id_id
+                json_resp['topic'] = session.topic_id.topic_id
 
                 # task = CollectionHasTask.objects.filter(collection_id=collection).first()
                 # task = task.task_id.name
@@ -2180,7 +1692,8 @@ def get_session_params(request):
                 session = sessions.first()
                 document = session.document_id
                 role = session.role
-                request.session['topic'] = json_resp['topic'] = session.topic_id.topic_id
+                request.session['topic'] = session.topic_id_id
+                json_resp['topic'] = session.topic_id.topic_id
                 request.session['language'] = json_resp['language'] = document.language
                 request.session['name_space'] = json_resp['name_space'] = user.name_space_id
                 request.session['collection'] = json_resp['collection'] = document.collection_id_id
@@ -2202,7 +1715,8 @@ def get_session_params(request):
                 last_gt = gts.first()
                 name_space = last_gt.name_space
                 document = last_gt.document_id
-                request.session['topic'] = json_resp['topic'] = last_gt.topic_id.topic_id
+                request.session['topic'] =last_gt.topic_id_id
+                json_resp['topic'] = last_gt.topic_id.topic_id
 
                 request.session['language']  = json_resp['language'] = document.language
                 request.session['name_space'] = json_resp['name_space'] =name_space.name_space
@@ -2254,7 +1768,8 @@ def get_session_params(request):
             session = sessions.first()
             document = session.document_id
             role = session.role
-            request.session['topic'] = json_resp['topic'] = session.topic_id.topic_id
+            request.session['topic'] =session.topic_id_id
+            json_resp['topic'] = session.topic_id.topic_id
             request.session['language'] = json_resp['language'] = document.language
             request.session['name_space'] = json_resp['name_space'] = user.name_space_id
             request.session['collection'] = json_resp['collection'] = document.collection_id_id
@@ -2278,7 +1793,8 @@ def get_session_params(request):
             last_gt = gts.first()
             name_space = last_gt.name_space
             document = last_gt.document_id
-            request.session['topic'] = json_resp['topic'] = last_gt.topic_id.topic_id
+            request.session['topic'] =last_gt.topic_id_id
+            json_resp['topic'] = last_gt.topic_id.topic_id
             request.session['language'] = json_resp['language'] = document.language
             request.session['name_space'] = json_resp['name_space'] = name_space.name_space
             request.session['collection'] = json_resp['collection']= document.collection_id_id
@@ -2302,13 +1818,7 @@ def get_session_params(request):
             collections_ids = [c['collection_id'] for c in collections]
             collection = Collection.objects.filter(collection_id__in=collections_ids).order_by(
                 '-insertion_time').first()
-            # task = CollectionHasTask.objects.filter(collection_id=collection).first()
-            # task = task.task_id.name
-            # request.session['task'] = json_resp['task'] = task
-            # request.session['topic'] = json_resp['topic'] = Topic.objects.filter(collection_id=collection).first().id
-            #
-            # types = CollectionHasTask.objects.filter(collection_id=collection)
-            # types = [c.annotation_type.name for c in types]
+
             request.session['annotation_type'] = json_resp['annotation_type']= collection.annotation_type.name
             request.session['collection'] = json_resp['collection'] = collection.collection_id
             documents = Document.objects.filter(collection_id=collection)
@@ -2405,6 +1915,9 @@ def concepts(request, type=None):
         else:
             json_mentions = generate_associations_list_splitted(username, name_space.name_space, document.document_id,
                                                                 language,topic)
+            if username == 'IAA-Inter Annotator Agreement':
+                json_mentions = generate_associations_list_splitted_iaa(username, name_space, document, language, topic)
+
         # print(json_mentions)
         return JsonResponse(json_mentions, safe=False)
 
@@ -2481,9 +1994,9 @@ def concepts(request, type=None):
                     Concept.objects.create(concept_url=url, concept_name=name, description=description)
 
                 concept = Concept.objects.get(concept_url=url)
-                if not AddConcept.objects.filter(concept_url=concept, name=area,
+                if not CollectionHasConcept.objects.filter(concept_url=concept, name=area,
                                                  collection_id=collection).exists():
-                    AddConcept.objects.create(username=user, name_space=name_space, insertion_time=Now(),
+                    CollectionHasConcept.objects.create(
                                               concept_url=concept, name=area, collection_id=collection)
                 if not Associate.objects.filter(username=user, name_space=name_space, name=area, concept_url=concept,topic_id=topic,
                                                 document_id=document, start=mention, stop=mention.stop).exists():
@@ -2712,8 +2225,11 @@ def tag(request, type=None):
         if type == 'full':
             json_mentions = generate_tag_list(username, name_space.name_space, document.document_id, language,topic)
         else:
+
             json_mentions = generate_tag_list_splitted(username, name_space.name_space, document.document_id, language,topic)
-        # print(json_mentions)
+            if username == 'IAA-Inter Annotator Agreement':
+                json_mentions = generate_tag_list_splitted_iaa(username, name_space, document, language, topic)
+
         return JsonResponse(json_mentions, safe=False)
 
     if request.method == 'POST' and type == 'copy':
@@ -2946,9 +2462,9 @@ def set_concept(request):
                 Concept.objects.create(concept_url=url, concept_name=name, description=description)
 
             concept = Concept.objects.get(concept_url=url)
-            if not AddConcept.objects.filter(concept_url=concept, name=area,
+            if not CollectionHasConcept.objects.filter(concept_url=concept, name=area,
                                              collection_id=collection).exists():
-                AddConcept.objects.create(username=user, name_space=name_space, insertion_time=Now(),
+                CollectionHasConcept.objects.create(
                                           concept_url=concept, name=area, collection_id=collection)
             if not Associate.objects.filter(username=user, name_space=name_space, name=area, concept_url=concept,
                                             document_id=document, start=mention, stop=mention.stop).exists():
@@ -3017,6 +2533,8 @@ def change_collection_id(request):
         request.session['collection'] = collection
         documents = Document.objects.filter(collection_id=collection)
         request.session['document'] = documents.first().document_id
+        request.session['language'] = documents.first().language
+        request.session['topic'] = Topic.objects.filter(collection_id = collection).first().id
         if SessionDoc.objects.filter(username=user,document_id__in=documents).exists():
             sessions = SessionDoc.objects.filter(username=user,document_id__in=documents).order_by('-last_view')
             session = sessions.first()
@@ -3107,7 +2625,7 @@ def get_collection_concepts(request):
     """ This view returns the list of concepts found for a collection"""
 
     collection = Collection.objects.get(collection_id=request.session['collection'])
-    coll_conc = AddConcept.objects.filter(collection_id=collection)
+    coll_conc = CollectionHasConcept.objects.filter(collection_id=collection)
     concepts = []
     for concept in coll_conc:
         json_l = {}
@@ -3171,14 +2689,29 @@ def get_annotated_labels(request):
     doc_id = request.session.get('document', None)
     json_error = {'error': 'an error occurred'}
     if name_space and username and doc_id and language:
-        ns = NameSpace.objects.get(name_space=name_space)
-        topic = Topic.objects.get(id=topic)
-        user = User.objects.get(username=username, name_space=ns)
-        document = Document.objects.get(document_id=doc_id, language=language)
-        labels = AnnotateLabel.objects.filter(username=user, topic_id=topic,name_space=ns, document_id=document)
-        labels = {l.label.name :int(l.grade) for l in labels}
-        labels_obj['labels'] = labels
-        return JsonResponse(labels_obj)
+        if username != 'IAA-Inter Annotator Agreement':
+            ns = NameSpace.objects.get(name_space=name_space)
+            topic = Topic.objects.get(id=topic)
+            user = User.objects.get(username=username, name_space=ns)
+            document = Document.objects.get(document_id=doc_id, language=language)
+            labels = AnnotateLabel.objects.filter(username=user, topic_id=topic,name_space=ns, document_id=document)
+            labels = {l.label.name :int(l.grade) for l in labels}
+            labels_obj['labels'] = labels
+            return JsonResponse(labels_obj)
+        else:
+            topic = Topic.objects.get(id=topic)
+            labs = {}
+            document = Document.objects.get(document_id=doc_id, language=language)
+            users = AnnotateLabel.objects.filter(topic_id=topic, document_id=document).distinct('username')
+            users = list(set([a.username_id for a in users]))
+            document = Document.objects.get(document_id=doc_id, language=language)
+            labels = AnnotateLabel.objects.filter(topic_id=topic, document_id=document).distinct("document_id","topic_id","label","grade")
+            for label in labels:
+                if AnnotateLabel.objects.filter(topic_id=topic, document_id=document,label=label.label,grade=label.grade).count() > len(users) / 2:
+                    labs[label.label.name] = label.grade
+            #labels = {l.label.name :int(l.grade) for l in labels}
+            labels_obj['labels'] = labs
+            return JsonResponse(labels_obj)
     else:
         return JsonResponse(json_error)
 
@@ -3245,14 +2778,19 @@ def labels(request, type=None):
 
         else:
             if name_space and username and doc_id and language and topic:
-                ns = NameSpace.objects.get(name_space=name_space)
-                user = User.objects.get(username=username, name_space=ns)
-                document = Document.objects.get(document_id=doc_id, language=language)
-                topic = Topic.objects.get(id=topic)
-                labels = AnnotateLabel.objects.filter(username=user, name_space=ns,topic_id=topic, document_id=document)
-                labels = [l.label.name for l in labels]
-                # labels = [l.name for l in labels]
-                return JsonResponse(labels, safe=False)
+                    ns = NameSpace.objects.get(name_space=name_space)
+                    user = User.objects.get(username=username, name_space=ns)
+                    document = Document.objects.get(document_id=doc_id, language=language)
+                    topic = Topic.objects.get(id=topic)
+                    labels = AnnotateLabel.objects.filter(username=user, name_space=ns,topic_id=topic, document_id=document)
+                    labels = [l.label.name for l in labels]
+
+
+                    return JsonResponse(labels, safe=False)
+
+
+
+
             else:
                 return JsonResponse(json_error)
 
@@ -3575,25 +3113,53 @@ def object_detection(request,type=None):
                     comment = ''
                 return JsonResponse({'comment':comment})
 
-
-
-        ob = AnnotateObject.objects.filter(username = username, name_space = name_space, document_id = document, topic_id = topic).order_by('-insertion_time')
-        if ob.exists():
+        if username == 'IAA-Inter Annotator Agreement':
+            ob = AnnotateObjectLabel.objects.filter(document_id=document,
+                                               topic_id=topic).values("document_id","topic_id", "points").distinct()
             points = []
+            values = []
+            users = AnnotateObjectLabel.objects.filter(document_id=document,
+                                               topic_id=topic)
+            users = list(set([u.username_id for u in users]))
             for o in ob:
-                points.append(o.points)
                 val = {}
+                object_sel = DocumentObject.objects.get(document_id=document,
+                                               points=o['points'])
+
                 for label in labels:
                     val[label.label_id] = None
-                    annotations = AnnotateObjectLabel.objects.filter(username=username, name_space=name_space,
-                                                                     points=o.points,
-                                                                     document_id=document, label=label.label,
-                                                                     topic_id=topic)
-                    for a in annotations:
-                        val[a.label_id] = int(a.grade)
-                values.append(val)
 
+                annotations = AnnotateObjectLabel.objects.filter(document_id=document,topic_id=topic, points=object_sel).distinct('topic_id','document_id','points')
+                app = False
+                for a in annotations:
+                    if AnnotateObjectLabel.objects.filter(document_id=document, topic_id=topic,points=object_sel,label=a.label, grade=a.grade).count() > len(
+                            users) / 2:
+                        val[a.label_id] = int(a.grade)
+                        app = True
+
+                if app:
+                    values.append(val)
+                    points.append(o.points)
             return JsonResponse({'points': points, 'values': values})
+
+        else:
+            ob = AnnotateObject.objects.filter(username = username, name_space = name_space, document_id = document, topic_id = topic).order_by('-insertion_time')
+            if ob.exists():
+                points = []
+                for o in ob:
+                    points.append(o.points)
+                    val = {}
+                    for label in labels:
+                        val[label.label_id] = None
+                        annotations = AnnotateObjectLabel.objects.filter(username=username, name_space=name_space,
+                                                                         points=o.points,
+                                                                         document_id=document, label=label.label,
+                                                                         topic_id=topic)
+                        for a in annotations:
+                            val[a.label_id] = int(a.grade)
+                    values.append(val)
+
+                return JsonResponse({'points': points, 'values': values})
         return JsonResponse({'points': [], 'values': []})
 
     if request.method == 'POST' and type == 'comment':
@@ -3781,6 +3347,9 @@ def mentions(request, type=None):
         json_mentions = {}
 
         json_mentions['mentions'] = generate_mentions_list(username, name_space, document, language,topic)
+        if username == 'IAA-Inter Annotator Agreement':
+            json_mentions['mentions'] = generate_mentions_list_iaa(username, name_space, document, language, topic)
+
         #json_mentions['mentions_splitted'] = generate_mentions_list(username, name_space, document, language,topic)
 
         # print(json_mentions)
@@ -3973,9 +3542,6 @@ def mentions(request, type=None):
                                                                 request.session['name_space'],
                                                                 request.session['document'],
                                                                 request.session['language'],request.session['topic'])
-            # json_to_return['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-            #                                                                       document.document_id, language,topic)
-
         return JsonResponse(json_to_return)
 
     elif request.method == 'POST' and type == 'copy':
@@ -4087,8 +3653,6 @@ def mentions(request, type=None):
                                                                     request.session['name_space'],
                                                                     request.session['document'],
                                                                     request.session['language'],request.session['topic'])
-                # json_to_return['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-                #                                                                       document.document_id, language,topic.id)
 
             return JsonResponse(json_to_return)
         except Exception as e:
@@ -4190,8 +3754,6 @@ def mentions(request, type=None):
                 json_resp['document'] = new_content
                 json_resp['mentions'] = generate_mentions_list(username, name_space.name_space, document.document_id,
                                                                language,topic.id)
-                # json_resp['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-                #                                                                  document.document_id, language,topic.id)
                 json_resp['concepts'] = generate_associations_list_splitted(username, name_space.name_space,
                                                                             document.document_id, language,topic.id)
                 json_resp['tags'] = generate_tag_list_splitted(username, name_space.name_space,
@@ -4226,6 +3788,8 @@ def relationships(request, type=None):
         json_mentions = {}
         if type is None:
             json_mentions = generate_relationships_list(username, name_space, document, language,topic)
+            if username == 'IAA-Inter Annotator Agreement':
+                json_mentions = generate_relationships_list_iaa(username, name_space, document, language, topic)
 
             return JsonResponse(json_mentions, safe=False)
 
@@ -4538,9 +4102,10 @@ def facts(request, type=None):
 
         language = request.session['language']
         document = request.session['document']
-        json_mentions = {}
         if type is None:
             json_mentions = generate_assertions_list(username, name_space, document, language,topic)
+            if username == 'IAA-Inter Annotator Agreement':
+                json_mentions = generate_assertions_list_iaa(username, name_space, document, language, topic)
 
             return JsonResponse(json_mentions, safe=False)
 
@@ -4980,8 +4545,6 @@ def add_mentions(request):
                                                                 request.session['name_space'],
                                                                 request.session['document'],
                                                                 request.session['language'],request.session['topic'])
-            # json_to_return['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-            #                                                                       document.document_id, language,topic.id)
 
         return JsonResponse(json_to_return)
     except Exception as e:
@@ -5211,8 +4774,6 @@ def delete_single_mention(request):
             json_resp['document'] = new_content
             json_resp['mentions'] = generate_mentions_list(username, name_space.name_space, document.document_id,
                                                            language,topic)
-            # json_resp['mentions_splitted'] = generate_mentions_list_splitted(username, name_space.name_space,
-            #                                                                  document.document_id, language,topic)
             json_resp['concepts'] = generate_associations_list_splitted(username, name_space.name_space,
                                                                         document.document_id, language,topic)
             json_resp['tags'] = generate_tag_list_splitted(username, name_space.name_space, document.document_id,
@@ -5290,86 +4851,86 @@ def add_reviewer(request):
                                 docs = tuple([d for d in docs if d not in docs_user])
                                 # labels
                                 cursor.execute("""
-                                    INSERT INTO annotate_label (document_id, name_space, username, name, language, insertion_time)
-                                        SELECT document_id, name_space, %s, name, language, insertion_time
+                                    INSERT INTO annotate_label (document_id,topic_id, name_space, username, name, language, insertion_time)
+                                        SELECT document_id,topic_id, name_space, %s, name, language, insertion_time
                                         FROM annotate_label
                                         WHERE document_id in %s;
                                      """, [member.username_id, docs])
 
                                 # mentions
                                 cursor.execute("""
-                                    INSERT INTO annotate (start, stop, document_id, language, username, name_space, insertion_time)
-                                        SELECT start, stop, document_id, language, %s, name_space, insertion_time
+                                    INSERT INTO annotate (topic_id,start, stop, document_id, language, username, name_space, insertion_time)
+                                        SELECT topic_id, start, stop, document_id, language, %s, name_space, insertion_time
                                         FROM annotate
                                         WHERE document_id in %s;
                                      """, [member.username_id, docs])
                                 # tags
                                 cursor.execute("""
-                                    INSERT INTO associate_tag (username, name_space, document_id, language, start, stop, insertion_time, name)
-                                        SELECT %s, name_space, document_id, language, start, stop, insertion_time, name
+                                    INSERT INTO associate_tag (topic_id,username, name_space, document_id, language, start, stop, insertion_time, name)
+                                        SELECT topic_id,%s, name_space, document_id, language, start, stop, insertion_time, name
                                         FROM associate_tag
                                         WHERE document_id in %s;
                                                                  """, [member.username_id, docs])
                                 # concepts
                                 cursor.execute("""
-                                    INSERT INTO associate (username, name_space, document_id, language, start, stop, concept_url, insertion_time, name)
-                                        SELECT %s, name_space, document_id, language, start, stop, concept_url, insertion_time, name
+                                    INSERT INTO associate (topic_id,username, name_space, document_id, language, start, stop, concept_url, insertion_time, name)
+                                        SELECT topic_id,%s, name_space, document_id, language, start, stop, concept_url, insertion_time, name
                                         FROM associate
                                         WHERE document_id in %s;
                                      """, [member.username_id, docs])
                                 # assertions
                                 cursor.execute("""
-                                    INSERT INTO create_fact (username, name_space, document_id, language, subject_concept_url, object_concept_url, predicate_concept_url, subject_name, object_name, predicate_name, insertion_time)
-                                        SELECT %s, name_space, document_id, language, subject_concept_url, object_concept_url, predicate_concept_url, subject_name, object_name, predicate_name, insertion_time
+                                    INSERT INTO create_fact (topic_id,username, name_space, document_id, language, subject_concept_url, object_concept_url, predicate_concept_url, subject_name, object_name, predicate_name, insertion_time)
+                                        SELECT topic_id,%s, name_space, document_id, language, subject_concept_url, object_concept_url, predicate_concept_url, subject_name, object_name, predicate_name, insertion_time
                                         FROM create_fact
                                         WHERE document_id in %s;
                                      """, [member.username_id, docs])
                                 # rel obj concept
                                 cursor.execute("""
-                                    INSERT INTO relationship_obj_concept (username, name_space, subject_document_id, subject_language, predicate_document_id, predicate_language, subject_start, subject_stop, predicate_start, predicate_stop, concept_url, insertion_time, name)
-                                        SELECT 	%s, name_space, subject_document_id, subject_language, predicate_document_id, predicate_language, subject_start, subject_stop, predicate_start, predicate_stop, concept_url, insertion_time, name
+                                    INSERT INTO relationship_obj_concept (topic_id,username, name_space, subject_document_id, subject_language, predicate_document_id, predicate_language, subject_start, subject_stop, predicate_start, predicate_stop, concept_url, insertion_time, name)
+                                        SELECT 	topic_id,%s, name_space, subject_document_id, subject_language, predicate_document_id, predicate_language, subject_start, subject_stop, predicate_start, predicate_stop, concept_url, insertion_time, name
                                         FROM relationship_obj_concept
                                         WHERE subject_document_id in %s AND predicate_document_id in %s;
                                      """, [member.username_id, docs, docs])
                                 # rel obj mention
                                 cursor.execute("""
-                                    INSERT INTO relationship_obj_mention (username, name_space, document_id, language, start, stop, predicate_concept_url, subject_concept_url, insertion_time, predicate_name, subject_name)
-                                        SELECT %s, name_space, document_id, language, start, stop, predicate_concept_url, subject_concept_url, insertion_time, predicate_name, subject_name
+                                    INSERT INTO relationship_obj_mention (topic_id,username, name_space, document_id, language, start, stop, predicate_concept_url, subject_concept_url, insertion_time, predicate_name, subject_name)
+                                        SELECT topic_id,%s, name_space, document_id, language, start, stop, predicate_concept_url, subject_concept_url, insertion_time, predicate_name, subject_name
                                         FROM relationship_obj_mention
                                         WHERE document_id in %s;
                                      """, [member.username_id, docs])
                                 # rel sub concept
                                 cursor.execute("""
-                                    INSERT INTO relationship_subj_concept (	username, name_space, object_document_id, object_language, predicate_document_id, predicate_language, object_start, object_stop, predicate_start, predicate_stop, concept_url, insertion_time, name)
-                                        SELECT 	%s, name_space, object_document_id, object_language, predicate_document_id, predicate_language, object_start, object_stop, predicate_start, predicate_stop, concept_url, insertion_time, name
+                                    INSERT INTO relationship_subj_concept (topic_id,	username, name_space, object_document_id, object_language, predicate_document_id, predicate_language, object_start, object_stop, predicate_start, predicate_stop, concept_url, insertion_time, name)
+                                        SELECT 	topic_id,%s, name_space, object_document_id, object_language, predicate_document_id, predicate_language, object_start, object_stop, predicate_start, predicate_stop, concept_url, insertion_time, name
                                         FROM relationship_subj_concept
                                         WHERE object_document_id in %s AND predicate_document_id in %s;
                                      """, [member.username_id, docs, docs])
                                 # rel sub mention
                                 cursor.execute("""
-                                    INSERT INTO relationship_subj_mention (	username, name_space, document_id, language, start, stop, predicate_concept_url, object_concept_url, insertion_time, predicate_name, object_name)
-                                    SELECT 	%s, name_space, document_id, language, start, stop, predicate_concept_url, object_concept_url, insertion_time, predicate_name, object_name
+                                    INSERT INTO relationship_subj_mention (topic_id,	username, name_space, document_id, language, start, stop, predicate_concept_url, object_concept_url, insertion_time, predicate_name, object_name)
+                                    SELECT 	topic_id,%s, name_space, document_id, language, start, stop, predicate_concept_url, object_concept_url, insertion_time, predicate_name, object_name
                                     FROM relationship_subj_mention
                                         WHERE document_id in %s;
                                      """, [member.username_id, docs])
                                 # rel pred concept
                                 cursor.execute("""
-                                    INSERT INTO relationship_pred_concept (	username, name_space, subject_document_id, subject_language, object_document_id, object_language, subject_start, subject_stop, object_start, object_stop, concept_url, insertion_time, name)
-                                        SELECT %s, name_space, subject_document_id, subject_language, object_document_id, object_language, subject_start, subject_stop, object_start, object_stop, concept_url, insertion_time, name
+                                    INSERT INTO relationship_pred_concept (topic_id,	username, name_space, subject_document_id, subject_language, object_document_id, object_language, subject_start, subject_stop, object_start, object_stop, concept_url, insertion_time, name)
+                                        SELECT topic_id,%s, name_space, subject_document_id, subject_language, object_document_id, object_language, subject_start, subject_stop, object_start, object_stop, concept_url, insertion_time, name
                                         FROM relationship_pred_concept
                                         WHERE object_document_id in %s AND subject_document_id in %s;
                                      """, [member.username_id, docs, docs])
                                 # rel pred mention
                                 cursor.execute("""
-                                    INSERT INTO relationship_pred_mention (		username, name_space, document_id, language, start, stop, object_concept_url, subject_concept_url, insertion_time, object_name, subject_name)
-                                    SELECT 	%s, name_space, document_id, language, start, stop, object_concept_url, subject_concept_url, insertion_time, object_name, subject_name
+                                    INSERT INTO relationship_pred_mention (	topic_id,	username, name_space, document_id, language, start, stop, object_concept_url, subject_concept_url, insertion_time, object_name, subject_name)
+                                    SELECT 	topic_id,%s, name_space, document_id, language, start, stop, object_concept_url, subject_concept_url, insertion_time, object_name, subject_name
                                     FROM relationship_pred_mention
                                         WHERE document_id in %s;
                                      """, [member.username_id, docs])
                                 # rel all mention
                                 cursor.execute("""
-                                    INSERT INTO link (username, name_space, subject_document_id, subject_language, subject_start, subject_stop, predicate_document_id, predicate_language, predicate_start, predicate_stop, object_document_id, object_language, object_start, object_stop, insertion_time)
-                                        SELECT %s, name_space, subject_document_id, subject_language, subject_start, subject_stop, predicate_document_id, predicate_language, predicate_start, predicate_stop, object_document_id, object_language, object_start, object_stop, insertion_time
+                                    INSERT INTO link (topic_id,username, name_space, subject_document_id, subject_language, subject_start, subject_stop, predicate_document_id, predicate_language, predicate_start, predicate_stop, object_document_id, object_language, object_start, object_stop, insertion_time)
+                                        SELECT topic_id,%s, name_space, subject_document_id, subject_language, subject_start, subject_stop, predicate_document_id, predicate_language, predicate_start, predicate_stop, object_document_id, object_language, object_start, object_stop, insertion_time
                                         FROM link
                                         WHERE subject_document_id in %s and object_document_id in %s and predicate_document_id in %s;
                                      """, [member.username_id, docs, docs, docs])
@@ -6994,7 +6555,7 @@ def delete_annotation_all(request):
 
     name_space = NameSpace.objects.get(name_space=name_space)
     user = User.objects.get(username=user, name_space=name_space)
-    user_iaa = User.objects.get(username="IAA-Inter Annotator Agreement", name_space=name_space)
+    #user_iaa = User.objects.get(username="IAA-Inter Annotator Agreement", name_space=name_space)
 
     language = request.session['language']
     document = Document.objects.get(document_id=request.session['document'], language=language)
@@ -7020,27 +6581,27 @@ def delete_annotation_all(request):
             GroundTruthLogFile.objects.filter(username=user, name_space=name_space, topic_id=topic,document_id=document).delete()
             json_resp['document'] = create_new_content(document, user,topic)
 
-            Annotate.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic, document_id=document).delete()
-            Associate.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic, document_id=document).delete()
-            AssociateTag.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic, document_id=document).delete()
-            AnnotateLabel.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic, document_id=document).delete()
-            Link.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic,
-                                subject_document_id=document.document_id).delete()
-            CreateFact.objects.filter(username=user_iaa, name_space=name_space, topic_id=topic,document_id=document).delete()
-            RelationshipObjMention.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space,
-                                                  document_id=document).delete()
-            RelationshipObjConcept.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space,
-                                                  subject_document_id=document.document_id).delete()
-            RelationshipSubjConcept.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space,
-                                                   object_document_id=document.document_id).delete()
-            RelationshipSubjMention.objects.filter(username=user_iaa, topic_id=topic,name_space=name_space,
-                                                   document_id=document).delete()
-            RelationshipPredConcept.objects.filter(username=user_iaa, topic_id=topic,name_space=name_space,
-                                                   subject_document_id=document.document_id).delete()
-            RelationshipPredMention.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space,
-                                                   document_id=document).delete()
-            AnnotateObject.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space, document_id=document).delete()
-            GroundTruthLogFile.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space, document_id=document).delete()
+            # Annotate.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic, document_id=document).delete()
+            # Associate.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic, document_id=document).delete()
+            # AssociateTag.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic, document_id=document).delete()
+            # AnnotateLabel.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic, document_id=document).delete()
+            # Link.objects.filter(username=user_iaa, name_space=name_space,topic_id=topic,
+            #                     subject_document_id=document.document_id).delete()
+            # CreateFact.objects.filter(username=user_iaa, name_space=name_space, topic_id=topic,document_id=document).delete()
+            # RelationshipObjMention.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space,
+            #                                       document_id=document).delete()
+            # RelationshipObjConcept.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space,
+            #                                       subject_document_id=document.document_id).delete()
+            # RelationshipSubjConcept.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space,
+            #                                        object_document_id=document.document_id).delete()
+            # RelationshipSubjMention.objects.filter(username=user_iaa, topic_id=topic,name_space=name_space,
+            #                                        document_id=document).delete()
+            # RelationshipPredConcept.objects.filter(username=user_iaa, topic_id=topic,name_space=name_space,
+            #                                        subject_document_id=document.document_id).delete()
+            # RelationshipPredMention.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space,
+            #                                        document_id=document).delete()
+            # AnnotateObject.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space, document_id=document).delete()
+            # GroundTruthLogFile.objects.filter(username=user_iaa,topic_id=topic, name_space=name_space, document_id=document).delete()
 
     except Exception as e:
         json_resp = {'error': e}
@@ -7079,7 +6640,7 @@ def delete_collection(request):
             GroundTruthLogFile.objects.filter(document_id__in=documents).delete()
 
             CollectionHasLabel.objects.filter(collection_id=collection).delete()
-            AddConcept.objects.filter(collection_id=collection).delete()
+            CollectionHasConcept.objects.filter(collection_id=collection).delete()
             Collection.objects.filter(collection_id=collection).delete()
             Document.objects.filter(collection_id=collection).delete()
 
@@ -7260,27 +6821,26 @@ def download_annotations(request):
 
     user = request.session['username']
     name_space = request.session['name_space']
-    # document = request.session['document']
     collection = request.session['collection']
     format = request.GET.get('format', None)
-    annotation = request.GET.get('annotation', None)
     annotators = request.GET.get('annotators', None)
     document = request.GET.get('document', None)
+    topic = request.GET.get('topic', None)
 
     batch = request.GET.get('batch', None)
     json_resp = {}
     json_resp['annotations'] = []
     if format == 'json':
-        json_resp = create_json_to_download(annotation, annotators, batch, name_space, document, collection)
+        json_resp = create_json_to_download(annotators, batch, name_space, document, collection,topic)
         return JsonResponse(json_resp)
 
     elif format == 'csv':
-        resp = create_csv_to_download(annotation, annotators, batch, name_space, document, collection)
+        resp = create_csv_to_download(annotators, batch, name_space, document, collection,topic)
         return resp
-    elif format == 'xml':
-        resp = create_bioc_xml(annotation, annotators, batch, user, name_space, document, collection)
-        return HttpResponse(resp, content_type='application/xml')
 
+    elif format == 'trec':
+        resp = create_csv_to_download(annotators, batch, name_space, document, collection,topic,trec=True)
+        return resp
 
 from doctron_app.utils_upload_documents import *
 
@@ -7721,7 +7281,11 @@ def copy_annotation(request):
 # from RelAnno import tron
 
 
-def autotron_annotation(request):
+def auto_annotation(request):
+
+
+
+
     return JsonResponse({'msg':'ok'})
     # username = request.session['username']
     # name_space = request.session['name_space']
@@ -8953,14 +8517,13 @@ def create_new_round(request):
                                     insertion_time=Now())
         # copy concepts
         cursor = connection.cursor()
-        concepts = AddConcept.objects.filter(collection_id=collection).values('concept_url', 'name', 'username',
-                                                                              'name_space', 'insertion_time',
+        concepts = CollectionHasConcept.objects.filter(collection_id=collection).values('concept_url', 'name',
                                                                               'collection_id')
         for a in concepts:
             cursor.execute(
-                "INSERT INTO add_concept (concept_url,name,insertion_time,username,name_space,collection_id) "
-                "VALUES (%s,%s,%s,%s,%s,%s)",
-                [a['concept_url'], a['name'], a['insertion_time'], a['username'], a['name_space'], new_id])
+                "INSERT INTO collection_has_concept (concept_url,name,collection_id) "
+                "VALUES (%s,%s,%s)",
+                [a['concept_url'], a['name'], new_id])
         tags = CollectionHasTag.objects.filter(collection_id=collection).values('name',
                                                                               'collection_id')
         for a in tags:
@@ -9345,6 +8908,48 @@ def topic(request):
             request.session['topic'] = topic.id
             return HttpResponse(status=200)
 
+def guidelines(request):
+    if request.method == 'GET':
+        col_id = request.GET.get('collection_id',None)
+        if not col_id:
+            return HttpResponse(status = 500)
+        collection = Collection.objects.get(collection_id = col_id)
+        guidelines = collection.guidelines
+        if not guidelines:
+            guidelines = ''
+        return JsonResponse({'guidelines':guidelines})
+
+    elif request.method == 'POST':
+        body_json = json.loads(request.body)
+
+        col_id = body_json['collection_id']
+        guidelines = body_json['guidelines']
+        if not col_id:
+            return HttpResponse(status = 500)
+        try:
+            collection = Collection.objects.get(collection_id = col_id)
+            collection.guidelines = guidelines
+            collection.save()
+            return HttpResponse(status = 200)
+        except Exception as e:
+            print(e)
+            return HttpResponse(status = 500)
+
+def uploadAnnotations(request):
+
+    if request.method == 'POST':
+        try:
+            files = request.FILES.items()
+            for filename, file in files:
+                if filename.startswith('annotations_'):
+                    upload_preannotations(file,request.session['annotation_type'],request.session['collection'])
+
+
+
+            return HttpResponse(status=200)
+        except Exception as e:
+            return HttpResponse(status=500)
+
 
 def comment(request):
     document = request.session.get('document',None)
@@ -9402,5 +9007,43 @@ def comment(request):
         except Exception as e:
             return HttpResponse(status = 500)
     return HttpResponse(status = 500)
+
+
+
+
+# dashborad
+def update_document_id_from_dashboard(request):
+    """
+    This view updates the document id of the session, basically use for moving to annotated or not annotated documents
+    This views purpose is moving from Dashboard Page to actual indexing page of the cell that user selects inside the tables
+    """
+    body_json = json.loads(request.body)
+    document_id = body_json['document']
+    collection = body_json['collection']
+    topic = body_json['topic']
+    topic = int(topic)     # cast the topic to int
+    print('topic',topic)
+
+    language = request.session['language']
+
+    name_space = request.session.get('name_space', 'Human')
+    role = request.session.get('role')
+    username = request.session.get('username')
+
+    if Document.objects.filter(document_id=document_id, language=language).exists():
+        request.session['document'] = document_id
+        request.session['collection'] = collection
+        with transaction.atomic():
+            if username and name_space and collection and role and topic:
+                document = Document.objects.get(document_id=document_id)
+                with connection.cursor() as cursor:
+                    cursor.execute("""INSERT INTO session_doc (document_id, language, username, name_space, role, last_view,collection_id,topic_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
+                    ON CONFLICT (username, name_space, collection_id, role,topic_id)
+                    DO UPDATE SET
+                        last_view = %s,document_id=%s,language=%s;""",[document.document_id,document.language,username,name_space,role,datetime.now(),document.collection_id_id,topic,datetime.now(),document.document_id,document.language])
+        return JsonResponse({'msg': 'ok'})
+    else:
+        return HttpResponse(status=500)
 
 # fine

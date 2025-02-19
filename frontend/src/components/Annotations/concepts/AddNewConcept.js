@@ -8,8 +8,7 @@ import {Col, Row} from "react-bootstrap";
 import Button from "@mui/material/Button";
 import Mention from "../mentions/Mention";
 import RemoveIcon from '@mui/icons-material/Remove';
-import axios from "axios";
-import {ButtonGroup} from "@mui/material";
+
 import IconButton from '@mui/material/IconButton';
 
 import Badge from 'react-bootstrap/Badge'

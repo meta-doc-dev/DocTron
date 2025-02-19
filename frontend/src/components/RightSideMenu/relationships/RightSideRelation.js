@@ -1,13 +1,6 @@
 import {Col, Row} from "react-bootstrap";
 import Button from "@mui/material/Button";
 
-import axios from "axios";
-import {ButtonGroup} from "@mui/material";
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from '@mui/material/TextField';
-import Badge from 'react-bootstrap/Badge'
-import SaveIcon from '@mui/icons-material/Save';
-import HubIcon from '@mui/icons-material/Hub';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
@@ -27,13 +20,7 @@ import {
     faList, faPlusCircle,
     faProjectDiagram, faArrowLeft, faArrowRight, faTrash, faSave, faFileInvoice
 } from "@fortawesome/free-solid-svg-icons";
-import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
-import DocumentToolBar from "../../Document/ToolBar/DocumentToolBar";
-import AddIcon from '@mui/icons-material/Add';
-import Collapse from "@mui/material/Collapse";
-import Paper from "@mui/material/Paper";
-// import './documents.css'
-import {CircularProgress} from "@mui/material";
+
 import {AppContext} from "../../../App";
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';

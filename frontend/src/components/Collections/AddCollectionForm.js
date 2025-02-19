@@ -296,7 +296,7 @@ export default function AddCollectionForm() {
                 }
             })
         }
-        if (['Graded labeling','Object detection'].indexOf(AnnotationType) !== -1) {
+        if (['Graded labeling'].indexOf(AnnotationType) !== -1) {
 
             AddLabel.map(el => {
                 var inputl = document.getElementById(`label_${el}`);
@@ -330,7 +330,7 @@ export default function AddCollectionForm() {
         var all_lab = []
         var all_max_lab = []
         var all_min_lab = []
-        if(AnnotationType === "Passages annotation"){
+        if(AnnotationType === "Passages annotation" || AnnotationType === 'Object detection'){
             AddLabelPassage.map(el => {
                 var inputl = document.getElementById(`label_p_${el}`);
                 lab.push(inputl.value)
@@ -415,7 +415,7 @@ export default function AddCollectionForm() {
             var max_labels_p = []
             var tags = []
             var members = []
-            if(AnnotationType === "Graded labeling" || AnnotationType === 'Object detection') {
+            if(AnnotationType === "Graded labeling" ) {
 
                 AddLabel.map((el, index) => {
                     input = document.getElementById(`label_${el}`);
@@ -440,7 +440,7 @@ export default function AddCollectionForm() {
 
                 })
             }
-            if(AnnotationType === "Passages annotation" ) {
+            if(AnnotationType === "Passages annotation" || AnnotationType === 'Object detection') {
 
                 AddLabelPassage.map((el, index) => {
                     input = document.getElementById(`label_p_${el}`);
@@ -909,7 +909,6 @@ export default function AddCollectionForm() {
                                     AddFiles('documents')
                                 }} multiple type="file"/>
                                 <ThemeProvider theme={theme}>
-                                    {/*<Button variant="contained"  onChange={()=>GetFiles('documents')} color='neutral_updload' component="span" startIcon={<UploadFileIcon/>}>*/}
                                     <Button sx={{marginTop: '15px'}} variant="contained" color='neutral_updload'
                                             component="span" startIcon={<UploadFileIcon/>}>
                                         Upload documents

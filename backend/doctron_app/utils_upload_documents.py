@@ -1,21 +1,8 @@
-#from django.db.backends.postgresql.psycopg_any import NumericRange
-from django.shortcuts import render
-from django.http import HttpResponseRedirect
-from django.shortcuts import redirect
-from django.contrib.auth import login as auth_login,authenticate,logout as auth_logout
-from django.contrib.auth.models import User as User1
-from django.contrib.auth.models import *
-from django.contrib.auth.decorators import login_required
-import hashlib
 
 from psycopg2._range import NumericRange
 
 from doctron_app.upload.ir_datases import load_ir_url
-from doctron_app.upload.utils_upload import *
-from doctron_app.upload.utils_pubmed import *
 from doctron_app.utils import *
-from doctron_app.upload.configure import *
-
 from django.db import transaction
 import json
 import os
@@ -935,16 +922,16 @@ def elaborate_concept(concept_url, concept_name, concept_description, area, coll
     area = SemanticArea.objects.get(name=area)
     concept = Concept.objects.get(concept_url=concept_url)
 
-    has_area = HasArea.objects.filter(name=area, concept_url=concept)
-    if not has_area.exists():
-        HasArea.objects.create(name=area, concept_url=concept)
+    #has_area = HasArea.objects.filter(name=area, concept_url=concept)
+    #if not has_area.exists():
+    #    HasArea.objects.create(name=area, concept_url=concept)
 
     # collection = Collection.objects.get(collection_id=collection.collection_id)
-    addconcept = AddConcept.objects.filter(collection_id=collection, username=username, name_space=username.name_space,
+    addconcept = CollectionHasConcept.objects.filter(collection_id=collection,
                                            concept_url=concept, name=area)
     if not addconcept.exists():
-        AddConcept.objects.create(collection_id=collection, username=username, name_space=username.name_space,
-                                  concept_url=concept, insertion_time=Now(), name=area)
+        CollectionHasConcept.objects.create(collection_id=collection,
+                                  concept_url=concept,  name=area)
 
 
 def upload_topics(file, collection):
@@ -995,7 +982,6 @@ def new_collection(request):
     name = request.POST.get('name', None)
     type_collection = request.POST.get('type_collection', None)
     topic_type = request.POST.get('topic_type', None)
-    task = request.POST.get('task', None)
     tags = request.POST.getlist('tags[]', None)
     labels = request.POST.getlist('labels[]', None)
     min_labels = [int(n) for n in request.POST.getlist('min_labels[]', None)]
@@ -1003,7 +989,6 @@ def new_collection(request):
     labels_p = request.POST.getlist('labels_p[]', None)
     min_labels_p = [int(n) for n in request.POST.getlist('min_labels_p[]', None)]
     max_labels_p = [int(n) for n in request.POST.getlist('max_labels_p[]', None)]
-    #annotation_types = request.POST.getlist('annotationtypes[]', None)
     description = request.POST.get('description', None)
     to_enc = name + request.session['username']
     collection_id = hashlib.md5(to_enc.encode()).hexdigest()
@@ -1101,11 +1086,11 @@ def new_collection(request):
                         if not Document.objects.filter(document_id=pid).exists() :
                             if (file.name.endswith('json') or file.name.endswith('csv') or file.name.endswith('txt') or file.name.endswith('pdf')):
                                 Document.objects.create(batch=1, collection_id=collection, provenance='user',
-                                                        document_id=pid, language=language,honeypot=False,
+                                                        document_id=pid, language=language,honeypot=False,doc_id_not_hashed=json_content['doc_id'],
                                                         document_content=json_content, insertion_time=Now())
                             elif (file.name.endswith('png') or file.name.endswith('jpg') or file.name.endswith('jpeg')):
                                 Document.objects.create(batch=1, collection_id=collection, provenance='user',
-                                                        document_id=pid, language=language, honeypot=False,
+                                                        document_id=pid, language=language, honeypot=False,doc_id_not_hashed=json_content['doc_id'],
                                                         document_content=json_content, insertion_time=Now(),image=file.read())
 
             pubmed_ids = request.POST.get('pubmed_ids', None)

@@ -1,5 +1,5 @@
 import {Col, Row} from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import {Redirect, useNavigate} from "react-router-dom";
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
 import Badge from 'react-bootstrap/Badge'
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -53,6 +53,8 @@ import HoneyPotDialog from "./dialogs/HoneyPotDialog";
 import ColorTagsAreas from "./ColorTagsAreas";
 import ReviseDialog from "./dialogs/ReviseDialog";
 import NewReviewerDialog from "./dialogs/NewReviewerDialog";
+import GuidelinesDialog from "@components/Collections/dialogs/GuidelinesDialog";
+import PreannotationsDialog from "@components/Collections/dialogs/PreannotationsDialog";
 
 export default function Collection(props) {
     const {
@@ -123,6 +125,8 @@ export default function Collection(props) {
         'Student': false,
         'Admin': false
     })
+    const [OpenGuidelinessDialog, SetOpenGuidelinessDialog] = useState(false)
+    const [AddPreannotationDialog,SetAddPreannotationDialog] = useState(false)
     const [AddLabel, SetAddLabel] = useState(false)
     const [Color, SetColor] = useState(props.color)
     const [AreasColors, SetAreasColors] = useState(false)
@@ -682,6 +686,8 @@ export default function Collection(props) {
     const handleCloseRoundDialog = () => {
         SetError(false)
         SetOpenNewRoundDialog(false);
+        SetOpenGuidelinessDialog(false)
+        SetAddPreannotationDialog(false)
         SetRevise(false)
         SetNewRev(false)
         SetNewAd(false)
@@ -858,17 +864,18 @@ export default function Collection(props) {
         }
 
     }
-
     const navigate = useNavigate();
 
     useEffect(() => {
-      if (Redir === true) {
-        navigate("/index");
-      }
+        if (Redir === true  ) {
+            navigate("/index");
+        }
     }, [Redir, navigate]);
+
 
     return (
         <div style={{marginBottom: '30px'}}>
+            {/*{Redir && <Redirect to={"/index"}/>}*/}
             <TransferAnnotationDialog setoverwrite={SetOverWrite} options={AllOptions} collection={props.collection}
                                       memberfrom={MemberFrom} memberto={MemberTo} setmemberfrom={SetMemberFrom}
                                       setmemebeto={SetMemberTo} transfer={TransferAnnotations} open={ShowTransfer}
@@ -884,6 +891,9 @@ export default function Collection(props) {
                              open={OpenAddTagsDialog} handleClose={handleCloseAddTagsDialog}/>
             <DeleteCollectionDialog open={OpenDeleteCollDialog} handleClose={handleCloseCollectionDialog}
                                     name={props.collection.name} error={Error} deletecollection={deleteCollection}/>
+            <GuidelinesDialog loading={LoadingRound} open={OpenGuidelinessDialog} handleClose={handleCloseRoundDialog}
+                            name={props.collection.name} id={props.collection.id} admin={Admins.indexOf(Username) !== -1 || props.collection.creator === Username}
+                            />
             <NewRoundDialog loading={LoadingRound} open={OpenNewRoundDialog} handleClose={handleCloseRoundDialog}
                             name={props.collection.name} error={Error} createRound={createRound}/>
             {/*
@@ -903,6 +913,8 @@ export default function Collection(props) {
             <HoneyPotDialog open={OpenHoneyPot} handleClose={handleCloseHP} name={props.collection.name}
                             collection={props.collection} error={Error} honeypot={HoneyPot} sethoneypot={SetHoneyPot}
                             documents={CollectionDocuments} createpot={createhoneypot}/>
+            <PreannotationsDialog open={AddPreannotationDialog} handleClose={handleCloseRoundDialog} name={props.collection.name}
+                            collection={props.collection} error={Error} annotation={AnnotationType} />
 
 
             <Card sx={{minWidth: 275, maxHeight: '30%', backgroundColor: '#dddddd40'}} elevation={3}>
@@ -944,15 +956,13 @@ export default function Collection(props) {
                         <hr/>
                         <h6 style={{marginBottom: '1%'}}>Modality:</h6>
                         <div>The modality determine how the users access and the modify the documents. In the <b>collaborative
-                            open</b> modality, the users can annotate all the documents of the collection. In the <b>collaborative
-                            restricted</b> modality, the users can annotate exclusively the documents assigned to them;
-                            if no document is assigned, then no document can be modified. Finally, the
+                            </b> modality, the users can annotate all the documents of the collection. In the
                             in <b>competitive</b> modality, the annotators cannot see each other annotations.
                         </div>
                         <div>
                             <Chip sx={{margin: '5px'}} variant={Modality === 0 ? 'filled' : 'outlined'}
                                   disabeld={Username !== props.collection.creator}
-                                  label={'Collaborative open'} color={'success'} size="small" onClick={(e) => {
+                                  label={'Collaborative'} color={'success'} size="small" onClick={(e) => {
                                 if (Username === props.collection.creator) {
                                     axios.post('collections/modality', {
                                         collection: props.collection.id,
@@ -964,7 +974,7 @@ export default function Collection(props) {
                                 }
 
                             }}/>
-                            <Chip sx={{margin: '5px'}} variant={Modality === 2 ? 'filled' : 'outlined'}
+                            {/*<Chip sx={{margin: '5px'}} variant={Modality === 2 ? 'filled' : 'outlined'}
                                   disabeld={Username !== props.collection.creator}
                                   label={'Collaborative restricted'} color={'success'} size="small" onClick={(e) => {
                                 if (Username === props.collection.creator) {
@@ -976,7 +986,7 @@ export default function Collection(props) {
 
                                     })
                                 }
-                            }}/>
+                            }}/>*/}
                             <Chip sx={{margin: '5px'}} variant={Modality === 1 ? 'filled' : 'outlined'}
                                   disabeld={Username !== props.collection.creator}
                                   label={'Competitive'} color={'success'} size="small" onClick={(e) => {
@@ -1231,32 +1241,24 @@ export default function Collection(props) {
                     {Invitation !== 'invited' ? <>
                         <Button size="small" style={{marginRight: '1%'}}
                                 onClick={() => SetShowCollectionDetails(prev => !prev)}>More</Button>
-                        {(Username === props.collection.creator || Admins.indexOf(Username) !== -1) &&
+                        <Button size="small" style={{marginRight: '1%'}}
+                                onClick={() => SetOpenGuidelinessDialog(true)}>Guidelines</Button>
+                        {(Username === props.collection.creator || Admins.indexOf(Username) !== -1) && window.baseurl !== 'https://doctron.dei.unipd.it/' &&
                             <Button size="small" style={{marginRight: '1%'}}
-                                    onClick={() => SetOpenQrelsDialog(prev => !prev)}>Qrels schema</Button>}
-                        {(Username === props.collection.creator || Admins.indexOf(Username) !== -1) &&
-                            <Button size="small" style={{marginRight: '1%'}}
-                                    onClick={() => SetOpenNewRoundDialog(prev => !prev)}>New Iteration</Button>}
-                        {(Username === props.collection.creator || Admins.indexOf(Username) !== -1) &&
+                                    onClick={() => SetOpenNewRoundDialog(prev => !prev)}>New Round</Button>}
+                        {(Username === props.collection.creator || Admins.indexOf(Username) !== -1) && window.baseurl !== 'https://doctron.dei.unipd.it/' &&
                             <Button size="small" style={{marginRight: '1%'}}
                                     onClick={() => SetOpenSplitCollection(prev => !prev)}>Split</Button>}
-                        {(Username === props.collection.creator || Admins.indexOf(Username) !== -1) &&
+                        {(Username === props.collection.creator || Admins.indexOf(Username) !== -1) && window.baseurl !== 'https://doctron.dei.unipd.it/' &&
                             <Button size="small" style={{marginRight: '1%'}}
                                     onClick={() => SetOpenHoneyPot(prev => !prev)}>HoneyPot</Button>}
+                        {(Username === props.collection.creator || Admins.indexOf(Username) !== -1 ) && window.baseurl !== 'https://doctron.dei.unipd.it/' &&
+                            <Button size="small" style={{marginRight: '1%'}}
+                                    onClick={() => SetAddPreannotationDialog(prev => !prev)}>Load annotations</Button>}
 
-                        {/*
-                        {Reviewers.indexOf(Username) !== -1 &&  <Button size="small" style={{marginRight:'1%'}} onClick={()=>SetRevise(prev=>!prev)}>Review</Button>}
-*/}
 
-
-                        {/*
-                        <Button disabled={Modality === 1} href={'collections/'+props.collection.id} size="small" style={{marginRight:'1%'}}>Documents</Button>
-*/}
                         <Button onClick={redirToAnnotation} size="small" style={{marginRight: '1%'}}>Annotate</Button>
-                        {/*<Button size="small" style={{marginRight:'1%'}}>Download</Button>*/}
-                        {/*<Button size="small" style={{marginRight:'1%'}}>Stats</Button>*/}
-                        {/*<Button onClick={()=>SetShowTransfer(prev=>!prev)} size="small" style={{marginRight:'1%'}}>Transfer</Button>*/}
-                        {Username === props.collection.creator && <>
+                        {Username === props.collection.creator && Admins.indexOf(Username) !== -1 && window.baseurl !== 'https://doctron.dei.unipd.it/' && <>
                             {/*<Button size="small" style={{marginRight:'1%'}}>Add documents</Button>*/}
                             <Button color="error" onClick={() => SetOpenDeleteCollDialog(true)} size="small"
                                     style={{marginRight: '1%'}}>Delete</Button></>}

@@ -1,0 +1,20 @@
+#tableAg .custom-header .ag-header-cell-label {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    background-color: white;
+    color: #333;
+
+}
+#tableAg .ag-header-row {
+    background-color: white;
+    color: #333;
+
+}
+/* Stile per la prima colonna (username) */
+#tableAg .custom-username-cell {
+    font-size: 14px;
+    font-weight: bold;
+    background-color: white;
+    color: #333;
+}

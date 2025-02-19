@@ -1,10 +1,7 @@
 import {Col, Row} from "react-bootstrap";
 import Button from "@mui/material/Button";
 
-import axios from "axios";
-import {ButtonGroup} from "@mui/material";
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from '@mui/material/TextField';
+
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
 import Badge from 'react-bootstrap/Badge'
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -34,13 +31,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import DocumentToolBar from "../Document/ToolBar/DocumentToolBar";
-import AddIcon from '@mui/icons-material/Add';
-import Collapse from "@mui/material/Collapse";
-import Paper from "@mui/material/Paper";
-import { styled } from '@mui/material/styles';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import Box from '@mui/material/Box';
-import {AppContext} from "../../App";
+
 
 export default function CreditsPage(props){
     useEffect(() => {
@@ -50,7 +41,7 @@ export default function CreditsPage(props){
         <div style={{textAlign:"center",padding:"5% 10%"}}>
             <h1>Credits</h1>
             <Row style={{margin:'5% 0'}}>
-                <Col md={4}>
+                <Col md={3}>
                     <img style={{borderRadius:'50%',height:'30vh'}}  alt={'irrera'} src={'https://www.dei.unipd.it/~irreraorne/img/personal/personal-image.jpg'}/>
                     <div style={{margin:"2vh 0"}}>
                        <h4>Ornella Irrera</h4><hr/>
@@ -59,7 +50,7 @@ export default function CreditsPage(props){
                        </div>
                     </div>
                 </Col>
-                <Col md={4}>
+                <Col md={3}>
                     <img style={{borderRadius:'50%',height:'30vh'}}  alt={'marchesin'} src={'http://metatron.dei.unipd.it/static/img/stefano_480x480.png'}/>
                     <div style={{margin:"2vh 0"}}>
                         <h4>Stefano Marchesin</h4><hr/>
@@ -68,7 +59,16 @@ export default function CreditsPage(props){
                         </div>
                     </div>
                 </Col>
-                <Col md={4}>
+                <Col md={3}>
+                    <img style={{borderRadius:'50%',height:'30vh'}}  alt={'marchesin'} src={'http://metatron.dei.unipd.it/static/img/farzad_480x480.png'}/>
+                    <div style={{margin:"2vh 0"}}>
+                        <h4>Farzad Shami</h4><hr/>
+                        <div>
+                            farzad.shami@studenti.unipd.it
+                        </div>
+                    </div>
+                </Col>
+                <Col md={3}>
                     <img style={{borderRadius:'50%',height:'30vh'}}  alt={'silvello'} src={'http://www.dei.unipd.it/~silvello/img/personal/personal-image.jpg'}/>
                     <div style={{margin:"2vh 0"}}>
                         <h4>Gianmaria Silvello</h4><hr/>
@@ -84,7 +84,7 @@ export default function CreditsPage(props){
                 <Col md={12}>
                     <h3>Acknowledgements</h3>
                     <div>
-                        This work is supported by the <a target={'_blank'} href={"https://www.examode.eu/"}>ExaMode</a> project, as part of the European Union Horizon 2020 program under Grant Agreement no. 825292.
+                        This work is supported by the <a target={'_blank'} href={"https://hereditary-project.eu/"}>HEREDITARY</a> project, as part of the European Union Horizon 2020 program under Grant Agreement no. 101137074.
 
 
                     </div>

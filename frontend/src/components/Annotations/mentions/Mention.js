@@ -53,21 +53,20 @@ import {Popover} from "@mui/material";
 import Button from "@mui/material/Button";
 import {TextField} from "@mui/material";
 import SelectMentionToDelete from "./modals/SelectMentionToDelete";
-import LabelSlider from "../../RightSideMenu/labels/LabelSlider";
-import LabelsRadio from "../../RightSideMenu/labels/LabelsRadio";
+
 import EditIcon from "@mui/icons-material/Edit";
 import CommentModal from "./modals/CommentModal";
 
 
 export default function Mention(props){
     props.mention.position = props.loc
-    const { areascolors,concepts,inarel,expand,annotationtypes,labels,modality,newmention,binaryrel,addtagmodal,relationshipslist,tags_split,curannotator,opensnack,sourcetext,predicatetext,targettext,targetconcepts,predicateconcepts,sourceconcepts,snackmessage,username,showrelspannel,predicate,target,newrelation,readonlyrelation,view,source,document_id,tags,currentdiv,firstsel,curmention,secondsel,documentdescription,mentions,addconceptmodal,mentiontohighlight,startrange,endrange } = useContext(AppContext);
+    const { areascolors,concepts,inarel,expand,annotationtype,labels,modality,newmention,binaryrel,addtagmodal,relationshipslist,tags_split,curannotator,opensnack,sourcetext,predicatetext,targettext,targetconcepts,predicateconcepts,sourceconcepts,snackmessage,username,showrelspannel,predicate,target,newrelation,readonlyrelation,view,source,document_id,tags,currentdiv,firstsel,curmention,secondsel,documentdescription,mentions,addconceptmodal,mentiontohighlight,startrange,endrange } = useContext(AppContext);
     const [DocumentDesc,SetDocumentDesc] = documentdescription
     const [MentionsInvolved,SetMentionsInvolved] = useState([])
     const [OpenMenuTags,SetOpenMenuTags] = useState(false)
     const [MentionsList,SetMentionsList] = mentions
     const [View,SetView] = view
-    const [AnnotationTypes,SetAnnotationTypes] = annotationtypes
+    const [AnnotationType,SetAnnotationType] = annotationtype
     const [Start,SetStart] = startrange
     const [End,SetEnd] = endrange
     const [Source,SetSource] = source
@@ -556,7 +555,7 @@ export default function Mention(props){
         if(Modality === 2 || View === 4) {
             SetOpenSnack(true)
             SetSnackMessage({'message': 'You cannot annotate this document'})
-        }else if(AnnotationTypes.indexOf('Entity tagging') === -1){
+        }else if(AnnotationType === 'Entity tagging'){
                 SetOpenSnack(true)
                 SetSnackMessage({'message': 'Entity tagging is not allowed here'})
         }else {
@@ -895,7 +894,7 @@ export default function Mention(props){
 
                     <StyledMenu
                         id={id}
-                        open={menuPosition !== null && View !== 4 && (AnnotationTypes.indexOf('Entity tagging') !== -1)}
+                        open={menuPosition !== null && View !== 4 && (AnnotationType === 'Entity tagging')}
                         // open={contextMenu !== null && View !== 4}
                         onClose={handleClose}
                         onClick={(e)=>{
@@ -1006,7 +1005,7 @@ export default function Mention(props){
 
 
 
-                                {AnnotationTypes.indexOf('Entity linking') !== -1 && <MenuItem onClick={(e)=> {
+                                {AnnotationType === 'Entity linking' && <MenuItem onClick={(e)=> {
                                     handleConcept(e)
                                 }}>
                                     <ListItemIcon>
@@ -1014,7 +1013,7 @@ export default function Mention(props){
                                     </ListItemIcon>
                                     Add Concept</MenuItem>}
 
-                                {AnnotationTypes.indexOf('Relationships annotation') !== -1 && <MenuItem onClick={(e) => {
+                                {AnnotationType === 'Relationships annotation' && <MenuItem onClick={(e) => {
                                     handleRelationship(e)
                                 }}>
                                     <ListItemIcon>
@@ -1022,7 +1021,7 @@ export default function Mention(props){
                                     </ListItemIcon>
                                     Add Relationship</MenuItem>}
 
-                                {AnnotationTypes.indexOf('Relationships annotation') !== -1 && <MenuItem onClick={(e)=>{
+                                {AnnotationType === 'Relationships annotation' && <MenuItem onClick={(e)=>{
                                     handleRelationship(e,true)
                                 }}>
                                     <ListItemIcon>
@@ -1092,40 +1091,3 @@ export default function Mention(props){
 }
 
 
-/*
-<StyledMenu
-    id={id}
-    open={menuPosition !== null && openPassAnno && View !== 4 && (AnnotationTypes.indexOf('Passages annotation') !== -1 || OpenMenuTags)}
-    onClose={handleClose}
-    // elevation={0}
-    anchorReference="anchorPosition"
-    anchorPosition={
-        menuPosition !== null
-            ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
-            : undefined
-    }
-    /!*anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'center',
-    }}
-    transformOrigin={{
-        vertical: 'top',
-        horizontal: 'center',
-    }}*!/
-
->
-    <div></div>
-    <div style={{padding:'5%'}}>
-        <h6>Select Passage labels</h6>
-        {Labels['labels_passage'].map((o, i) =>
-            <div>
-                {parseInt(Labels['values_passage'][i][1]) - parseInt(Labels['values_passage'][i][0]) + 1 > 5 ? <LabelSlider label={o} details = {Labels['details_passage'][i]} value={null} min={Labels['values_passage'][i][0]} max={Labels['values_passage'][i][1]} type_lab={'passage'} type_anno={'quick'}/> :
-                    <LabelsRadio  label={o} details = {Labels['details_passage'][i]}  value={null} min={Labels['values_passage'][i][0]} max={Labels['values_passage'][i][1]} type_lab={'passage'} type_anno={'quick'}/> }
-
-            </div>
-
-        )}
-    </div>
-
-
-</StyledMenu>*/

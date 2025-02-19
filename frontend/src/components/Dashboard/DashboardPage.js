@@ -1,14 +1,15 @@
 import React, { useEffect } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import axios from "axios";
 import "./style.css";
 import DashboardLayout from "./DashboardLayout";
 
+
 const DashboardPage = () => {
-    useEffect(() => {
-        axios.defaults.baseURL = window.baseurl ? window.baseurl.replace(/\/dashboard\/$/, "/") : "http://localhost:8000/";
+/*    useEffect(() => {
+        axios.defaults.baseURL = window.baseurl ? window.baseurl.replace(/\/dashboard\/$/, "/") : {window.baseurl};
         axios.defaults.withCredentials = true; 
-      }, []);
+      }, []);*/
 
   return (
     <DashboardLayout>

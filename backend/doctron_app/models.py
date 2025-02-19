@@ -188,6 +188,7 @@ class Collection(models.Model):
     options = models.JSONField()
     modality = models.TextField()
     type = models.TextField()
+    guidelines = models.TextField()
     topic_type = models.TextField()
     annotation_type = models.ForeignKey('AnnotationType', models.DO_NOTHING,db_column='annotation_type')
 
@@ -264,6 +265,7 @@ class DjangoSession(models.Model):
 
 class Document(models.Model):
     document_id = models.TextField(primary_key=True)
+    doc_id_not_hashed = models.TextField()
     language = models.TextField()
     provenance = models.TextField()
     document_content = models.JSONField()
@@ -290,6 +292,16 @@ class AddConcept(models.Model):
         managed = False
         db_table = 'add_concept'
         unique_together = (('collection_id', 'username', 'concept_url','name'),)
+
+class CollectionHasConcept(models.Model):
+    collection_id = models.ForeignKey('Collection', models.DO_NOTHING, db_column='collection_id')
+    concept_url = models.ForeignKey('Concept', models.DO_NOTHING, db_column='concept_url',primary_key=True)
+    name = models.ForeignKey('SemanticArea', models.DO_NOTHING, db_column='name')
+
+    class Meta:
+        managed = False
+        db_table = 'collection_has_concept'
+        unique_together = (('collection_id', 'concept_url','name'),)
 
 class GroundTruthLogFile(models.Model):
     username = models.ForeignKey('User', models.DO_NOTHING, db_column='username')

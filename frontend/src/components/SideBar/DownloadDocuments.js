@@ -3,9 +3,6 @@ import Button from "@mui/material/Button";
 import Collapse from '@mui/material/Collapse';
 import RemoveIcon from '@mui/icons-material/Remove';
 import axios from "axios";
-import {ButtonGroup} from "@mui/material";
-import Autocomplete from "@mui/material/Autocomplete";
-import TextField from '@mui/material/TextField';
 import React, {useState, useEffect, useContext, createContext, useRef} from "react";
 import Badge from 'react-bootstrap/Badge'
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -59,17 +56,21 @@ import {CircularProgress} from "@mui/material";
 import CircleOutlinedIcon from '@mui/icons-material/CircleOutlined';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 export default function DownloadDocument(props){
-    const { collection,document_id,users,username, inarel,labelstosave,showfilter,fields,fieldsToAnn,expand } = useContext(AppContext);
+    const { collection,document_id,users,username, annotationtype,topic,showfilter,fields,fieldsToAnn,expand } = useContext(AppContext);
     const [Collection,SetCollection] = collection
     const [DocumentID,SetDocumentID] = document_id
     const [Username,SetUsername] = username
+    const [Topic,SetTopic] = topic
     const [Batch,SetBatch] = useState(false)
     const [FormatValue,SetFormatValue] = useState('json')
     const [AnnotatorValue,SetAnnotatorValue] = useState(Username)
+    const [AnnotationType, SetAnnotationType] = annotationtype
     const [AnnotationValue,SetAnnotationValue] = useState('mentions')
     const [DocumentsValue,SetDocumentsValue] = useState(DocumentID)
+    const [TopicValue,SetTopicValue] = useState(Topic)
     const [BatchValue,SetBatchValue] = useState(1)
     const [UsersList,SetUsersList] = users
+    const [Admins,SetAdmins] = useState([])
     var FileDownload = require('js-file-download');
 
     useEffect(()=>{
@@ -85,6 +86,7 @@ export default function DownloadDocument(props){
         axios.get('collections/users',{params:{collection:Collection}})
             .then(response=>{
                 SetUsersList(response.data['members'])
+                SetAdmins(response.data['admins'])
             })
             .catch(error=>{
                 console.log('error',error)
@@ -113,13 +115,14 @@ export default function DownloadDocument(props){
                 annotators: AnnotatorValue,
                 annotation: AnnotationValue,
                 document: DocumentsValue,
+                topic: TopicValue,
                 batch:BatchValue,
             }
         })
             .then(function (response) {
                 console.log('message', response.data);
                 let filename = AnnotationValue + '.'+FormatValue.toLowerCase()
-                if(FormatValue === 'json' || FormatValue === 'biocjson'){
+                if(FormatValue === 'json'){
                     FileDownload(JSON.stringify(response.data,null,4), filename);
 
                 }else{
@@ -141,42 +144,68 @@ export default function DownloadDocument(props){
         <div className='download'>
 
 
-
             <h5>Download</h5>
             <div className='selectclass'>
                 <FormControl fullWidth>
-                <InputLabel id="format">Format</InputLabel>
-                <Select
-                    labelId="format"
-                    id="format"
-                    value={FormatValue}
-                    sx={{width:'100%'}}
-                    label="Format"
-                    size={'small'}
+                    <InputLabel id="format">Format</InputLabel>
+                    <Select
+                        labelId="format"
+                        id="format"
+                        value={FormatValue}
+                        variant={'outlined'}
+                        sx={{width: '100%'}}
+                        label="Format"
+                        size={'small'}
 
-                    onChange={(e)=>{SetFormatValue(e.target.value)}}
-                >
+                        onChange={(e) => {
+                            SetFormatValue(e.target.value)
+                        }}
+                    >
 
-                    <MenuItem value={'json'}>JSON</MenuItem>
-                    <MenuItem value={'csv'}>CSV</MenuItem>
-                    {AnnotationValue !== 'labels' && AnnotationValue !== 'assertions' && <MenuItem value={'xml'}>BioC/XML</MenuItem>}
-                    {/*<MenuItem value={'biocxml'}>BIOC/XML</MenuItem>*/}
-                    {/*<MenuItem value={'biocjson'}>BIOC/JSON</MenuItem>*/}
-                </Select></FormControl>
+                        <MenuItem value={'json'}>JSON</MenuItem>
+                        <MenuItem value={'csv'}>CSV</MenuItem>
+                        {['Graded labeling', 'Passage annotation'].indexOf(AnnotationType) !== -1 &&
+                            <MenuItem value={'trec'}>TREC-like</MenuItem>}
+
+                    </Select></FormControl>
             </div>
+            <div className='selectclass'>
+                <FormControl fullWidth>
+                    <InputLabel id="format">Topic</InputLabel>
+                    <Select
+                        labelId="topic"
+                        id="topic"
+                        value={TopicValue}
+                        variant={'outlined'}
+                        sx={{width: '100%'}}
+                        label="Topic"
+                        size={'small'}
 
+                        onChange={(e) => {
+                            SetTopicValue(e.target.value)
+                        }}
+                    >
+
+                        <MenuItem value={Topic}>This topic</MenuItem>
+                        <MenuItem value={'all'}>All topics</MenuItem>
+
+
+                    </Select></FormControl>
+            </div>
             <div className='selectclass'><FormControl fullWidth>
                 <InputLabel id="doc">Documents</InputLabel>
                 <Select
                     labelId="doc"
                     id="format_select"
                     size={'small'}
-
+                    variant={'outlined'}
 
                     value={DocumentsValue}
-                    sx={{width:'100%'}}
+                    sx={{width: '100%'}}
                     label="Documents"
-                    onChange={(e)=>{SetDocumentsValue(e.target.value)}}
+                    onChange={(e) => {
+                        SetDocumentsValue(e.target.value)
+                    }}
                 >
 
                     <MenuItem value={DocumentID}>This document</MenuItem>
@@ -198,63 +227,40 @@ export default function DownloadDocument(props){
                     onChange={(e) => {
                         SetBatchValue(e.target.value)
                     }}
-                >
+                    variant={'outlines'}>
 
-                    {Array.from({length:parseInt(Batch)},(v,k)=>k+1).map(batch =>
+                    {Array.from({length: parseInt(Batch)}, (v, k) => k + 1).map(batch =>
                         <MenuItem value={parseInt(batch)}>{batch.toString()}</MenuItem>)}
                     <MenuItem value={'all'}>All batches</MenuItem>
 
                 </Select></FormControl>
             </div>}
 
-            <div className='selectclass'><FormControl fullWidth>
-                <InputLabel id="ann">Annotation</InputLabel>
-                <Select
-                    labelId="ann"
-                    id="format_select"
-                    value={AnnotationValue}
-                    sx={{width:'100%'}}
-                    size={'small'}
 
-                    label="annotation"
-                    onChange={(e)=>{SetAnnotationValue(e.target.value)}}
-                 variant={'outlined'}>
+            {UsersList && Admins && Admins.indexOf(Username) !== -1 &&
+                <div className='selectclass'><FormControl fullWidth>
+                    <InputLabel id="annotator">Annotator</InputLabel>
+                    <Select
+                        labelId="annotator"
+                        id="format_select"
+                        value={AnnotatorValue}
+                        sx={{width: '100%'}}
+                        label="Annotator"
+                        size={'small'}
+                        onChange={(e) => {
+                            SetAnnotatorValue(e.target.value)
+                        }}
+                        variant={'outlined'}>
 
-                    <MenuItem value={'mentions'}>Mentions</MenuItem>
-                    <MenuItem value={'concepts'}>Concepts</MenuItem>
-                    <MenuItem value={'tags'}>Tags</MenuItem>
-                    <MenuItem value={'relationships'}>Relationships</MenuItem>
-                    {FormatValue !== 'xml' && <MenuItem value={'assertions'}>Fact</MenuItem>}
-                    {FormatValue !== 'xml' && <MenuItem value={'labels'}>Labels</MenuItem>}
-                    {FormatValue === 'json' && <MenuItem value={'all'}>All</MenuItem>}
-
-                </Select></FormControl>
-            </div>
-
-            {UsersList && <div className='selectclass'><FormControl fullWidth>
-                <InputLabel id="annotator">Annotator</InputLabel>
-                <Select
-                    labelId="annotator"
-                    id="format_select"
-                    value={AnnotatorValue}
-                    sx={{width: '100%'}}
-                    label="Annotator"
-                    size={'small'}
-                    onChange={(e) => {
-                        SetAnnotatorValue(e.target.value)
-                    }}
-                 variant={'outlined'}>
-
-                    <MenuItem value={Username}>{Username}</MenuItem>
-                    {UsersList.map(u => <MenuItem value={u.username}>{u.username}</MenuItem>)}
+                        <MenuItem value={Username}>{Username}</MenuItem>
+                        {UsersList.map(u => <MenuItem value={u.username}>{u.username}</MenuItem>)}
 
 
+                        <MenuItem value={'IAA-Inter Annotator Agreement'}>IAA-Inter Annotator Agreement</MenuItem>
+                        <MenuItem value={'all'}>All</MenuItem>
 
-                    <MenuItem value={'IAA-Inter Annotator Agreement'}>IAA-Inter Annotator Agreement</MenuItem>
-                    <MenuItem value={'all'}>All</MenuItem>
-
-                </Select></FormControl>
-            </div>}
+                    </Select></FormControl>
+                </div>}
             <Button className='selectclass' onClick={downloadAnnotations} variant="contained">Download</Button>
 
 

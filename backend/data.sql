@@ -1,0 +1,4 @@
+
+--DROP DATABASE IF EXISTS doctron_db;
+
+CREATE DATABASE doctron_db WITH OWNER = postgres ENCODING = 'UTF8' TABLESPACE = pg_default CONNECTION LIMIT = -1;
