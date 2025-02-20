@@ -6,10 +6,10 @@ import DashboardLayout from "./DashboardLayout";
 
 
 const DashboardPage = () => {
-/*    useEffect(() => {
-        axios.defaults.baseURL = window.baseurl ? window.baseurl.replace(/\/dashboard\/$/, "/") : {window.baseurl};
+    useEffect(() => {
+        axios.defaults.baseURL = window.baseurl ? window.baseurl.replace(/\/dashboard\/$/, "/") : 'http://localhost:8000/';
         axios.defaults.withCredentials = true; 
-      }, []);*/
+      }, []);
 
   return (
     <DashboardLayout>

@@ -83,6 +83,40 @@ const MyStatisticsPage = () => {
     const [documentStats, setDocumentStats] = useState(null);
 
     useEffect(() => {
+        if (!collectionID || !username || !selectedTopic) {
+            return;
+        }
+        if (statsActiveTab === "inter-agreement") {
+            axios.get(`document-wise-agreement`, {
+                params: {
+                    collection_id: collectionID,
+                    topic_id: selectedTopic,
+                    username: selectedUser,
+                    annotation_type: selectedCollection?.annotation_type_name
+                }
+            }).then((response) => {
+                setDocumentStats(response.data);
+            }).catch((error) => {
+                console.error("Error fetching user statistics:", error);
+            });
+        } else {
+            axios.get(`document-wise${statsActiveTab === 'global' ? '-global' : ''}`, {
+                params: {
+                    collection_id: collectionID,
+                    topic_id: actualSelectedTopic,
+                    username: selectedUser,
+                    annotation_type: selectedCollection?.annotation_type_name
+                }
+            }).then((response) => {
+                setDocumentStats(response.data);
+            }).catch((error) => {
+                console.error("Error fetching user statistics:", error);
+            });
+        }
+
+    }, [selectedTopic, username, collectionID, statsActiveTab, actualSelectedTopic]);
+
+    useEffect(() => {
         if (!collectionID || !username || !selectedTopic || statsActiveTab === "inter-agreement") {
 
             axios.get(`document-wise-agreement`, {
@@ -97,7 +131,8 @@ const MyStatisticsPage = () => {
             }).catch((error) => {
                 console.error("Error fetching user statistics:", error);
             });
-        }else{
+        }
+    /*    else{
             axios.get(`document-wise${statsActiveTab === 'global' ? '-global' : ''}`, {
                 params: {
                     collection_id: collectionID,
@@ -110,7 +145,7 @@ const MyStatisticsPage = () => {
             }).catch((error) => {
                 console.error("Error fetching user statistics:", error);
             });
-        }
+        }*/
 
     }, [selectedTopic, username, collectionID, statsActiveTab, actualSelectedTopic]);
 
