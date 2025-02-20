@@ -1,6 +1,6 @@
 # DocTron version 1.0.0
 <p align="center">
-   <img src="./img/logo_1.png" alt="logo" />
+   <img src="./img/logo.png" alt="logo" width="500px"/>
 </p>
 DocTron is an open-source, collaborative, web-based annotation targeting IR domain. 
 All the source code, the installation guidelines, and instructions to use the tool are availanle in this repository.
@@ -27,7 +27,7 @@ this will setup the database restoring the database schema and providing some te
 ## UI - User interface
 In the annotation interface you can visualize your annotations and annotate collections' documents.
 <p align="center">
-   <img src="./img/ui.jpg" alt="ui" width="900px"/>
+   <img src="./img/ui.png" alt="ui" width="900px"/>
 </p>
 
    1. In the main header it is possible to logout, and access to collection and statistics dashboard pages;
@@ -47,13 +47,13 @@ DocTron provides 7 annotation templates you can use to annotate documents with r
    8. **Objects detection.** An object is a portion of an image. To detect an object in an image in DocTron, users should identify the perimeter of the object. Objects can be associated with a graded label that identify the value of a label of the object with respect to the topic. An example is reported in the Figure above.
       
 <p align="center">
-   <img src="./img/objdec.jpg" alt="objdec" width="900px"/>
+   <img src="./img/obj.png" alt="objdect" width="900px"/>
 </p>
 
 ## Statistics dashboard 
 In the statistics dashborard, reachable by clicking on _Statistics_ button of the main header, you can visualize statistics related to the collections.
 <p align="center">
-   <img src="./img/stats.jpg" alt="stats" width="900px"/>
+   <img src="./img/stats.png" alt="stats" width="900px"/>
 </p>
 
    1. In the dashboard on the left it is possible to change collection basing on the annotation template;
@@ -68,7 +68,7 @@ DocTron allows the users to create one or more  _collections_. A collection is c
 All the documents can be annotated with respect to all the topics by all the member of a collection. 
 Each member of the collection is an _annotator_ which has the default permission: they can annotate the documents. _Reviewers_ are allowed to review the annotations produced by the annotators; the _admins_ have the highest permissions: they can modify both reviewers' and annotators' annotations, they can check statistics of the collection and IAA metrics. Admins can keep track of the annotation workflow, define and refine guidelines and oversees the entire work of all the collection members. The workflow of annotation is provided in the Figure below.
 <p align="center">
-   <img src="./img/workflow.jpg" alt="workflow" width="900px"/>
+   <img src="./img/wf.png" alt="workflow" width="500px"/>
 </p>
 
 Collections can be _collaborative_ and _competititve_: in collaborative modality all the annotators can annotate the entire collection and have access to other members' annotations and majority voting based ground truth. In contrast, in competitive mode, annotators cannot see each other work. This is particularly relevant when it is important to assess the quality of the annotations and, if needed, establish new guidelines. 
