@@ -94,7 +94,7 @@ The collections a user can annotate contain the following information: creator, 
 Some of these features are accessible only by the admins --i.e., collection split, honeypot definition, invitation of new members or reviewers, delete of the collection.
 
 <p align="center">
-   <img src="./img/8.png" alt="logo" width="900px"/>
+   <img src="./img/collection.png" alt="collection" width="900px"/>
 </p>
 
 
