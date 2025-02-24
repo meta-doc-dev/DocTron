@@ -6,7 +6,7 @@ services:
     volumes:
       - ./data.sql:/docker-entrypoint-initdb.d/init.sql
       - ./data/db:/var/lib/postgresql/data
-      - ./backup_db_1:/backup_db_1.tar
+      - ./backup_db_2:/backup_db_2.tar
 
     environment:
       - POSTGRES_USER=postgres

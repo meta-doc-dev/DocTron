@@ -67,6 +67,7 @@ urllib3==2.2.3
 vine==5.1.0
 warc3-wet==0.2.5
 warc3-wet-clueweb09==0.2.5
+krippendorff
 wcwidth==0.2.13
 webencodings==0.5.1
 wrapt==1.16.0
