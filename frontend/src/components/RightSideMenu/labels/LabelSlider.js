@@ -89,8 +89,11 @@ export default function LabelSlider(props) {
 
 
     const handleChange = (event, newValue) => {
-        setValue(newValue); // Aggiorna lo stato
-        AdddeleteLabel(event, props.label, newValue)
+        if(CurAnnotator === Username){
+            setValue(newValue); // Aggiorna lo stato
+            AdddeleteLabel(event, props.label, newValue)
+        }
+
 
     };
 
@@ -108,6 +111,7 @@ export default function LabelSlider(props) {
                     if (props.type_lab === 'label') {
                         axios.post('labels/insert', {label: label, score: score})
                             .then(response => {
+                                SetAnnotatedLabels(response.data['labels'])
 
 
                             })
@@ -179,13 +183,13 @@ export default function LabelSlider(props) {
 
                 } aria-label="info">
   <InfoIcon fontSize="inherit"/>
-</IconButton>: {value !== null ? value : 'not set'}    </span> <span> <Button size={'small'} sx={{textAlign: 'right'}}
+</IconButton>: {value !== null ? value : 'not set'}    </span> <span> <Button  disabled={CurAnnotator !== Username} size={'small'} sx={{textAlign: 'right'}}
                                                                               onClick={() => {
                                                                                   SetShowCommentDialog(prev=>!prev)
                                                                               }}>Comment</Button> </span>
 
 
-                <span> <Button size={'small'} sx={{textAlign: 'right'}}
+                <span> <Button disabled={CurAnnotator !== Username} size={'small'} sx={{textAlign: 'right'}}
                                onClick={() => {
                                    setValue(null)
                                    if(props.type_lab === 'passage') {

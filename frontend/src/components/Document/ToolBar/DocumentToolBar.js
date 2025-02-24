@@ -45,6 +45,7 @@ function DocumentToolBar(props){
     const [SnackMessage,SetSnackMessage] = snackmessage;
     const [OpenSnack,SetOpenSnack] = opensnack
 
+/*
     function copyAnnotation(e){
         e.preventDefault()
         e.stopPropagation()
@@ -62,6 +63,7 @@ function DocumentToolBar(props){
     )
 
     }
+*/
 
 
     return(
@@ -73,10 +75,10 @@ function DocumentToolBar(props){
                 {InARel ? <div className={"exit"}>Press <h6 style={{display:"inline-block"}}>Esc </h6>{' '}<ExitToAppIcon /> to exit from relationship annotation</div> : <>
 
                     {CurAnnotator === Username ? <><DeleteAnnotation/>
-                        {AnnotationType === 'Facts annotation' && <CreateFact/>}</> : <><span style={{marginLeft:'20px'}}>
-                    Annotator: <b>{CurAnnotator}</b>
+                        {AnnotationType === 'Facts annotation' && <></>}</> : <><span style={{marginLeft:'20px'}}>
+                    {/*Annotator: <b>{CurAnnotator}</b>*/}
                 </span>
-                        <div style={{display:"inline-block",marginLeft:'20px'}}>
+                 {/*       <div style={{display:"inline-block",marginLeft:'20px'}}>
                             <Tooltip title={"Copy entire annotation"}>
                                 <IconButton variant= 'contained' size = 'small' color="primary" onClick={(e)=>copyAnnotation(e)}>
                                     <ContentCopyIcon />
@@ -84,8 +86,8 @@ function DocumentToolBar(props){
                             </Tooltip>
 
 
-                        </div>
-                        <div style={{display:"inline-block",marginLeft:'20px'}}>
+                        </div>*/}
+                       {/* <div style={{display:"inline-block",marginLeft:'20px'}}>
                             <Tooltip title={"Back to my annotation"}>
                                 <IconButton variant= 'contained' size = 'small' color="primary" onClick={()=> {
                                     SetCurAnnotator(Username);
@@ -94,11 +96,9 @@ function DocumentToolBar(props){
                                     <KeyboardReturnIcon />
                                 </IconButton>
                             </Tooltip>
-                            {/*<Button variant={'text'} size = 'small' onClick={()=>SetCurAnnotator(Username)} startIcon={<ArrowLeftIcon color={'primary'} />}>*/}
-                            {/*    My annotation*/}
-                            {/*</Button>*/}
 
-                        </div>
+
+                        </div>*/}
                     </>}
 
 

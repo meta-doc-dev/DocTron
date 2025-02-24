@@ -129,6 +129,42 @@ def return_start_stop_for_backend(start, stop, position, document_content):
 
     return mention_start,mention_stop
 
+def generate_objects_list(username,name_space,document,language,topic,gt=False):
+
+    """This view returns the list of metnions annotated by a user for a document"""
+
+    json_mentions = []
+    c = 0
+    name_space = NameSpace.objects.get(name_space=name_space)
+    topic = Topic.objects.get(id=topic)
+    user = User.objects.get(username=username, name_space=name_space)
+    document = Document.objects.get(document_id=document, language=language)
+    annotations = AnnotateObject.objects.filter(username=user,topic_id=topic, name_space=name_space, document_id=document, language=language).order_by('insertion_time')
+    for annotation in annotations:
+        obj = DocumentObject.objects.get(document_id=document, points=annotation.points, language=language)
+        # mention = annotation.start
+
+        json_m = {}
+
+
+        # json_m['concepts'] = []
+        json_m['object_id'] = 'object_'+str(c)
+        c += 1
+        json_m['object'] = obj.points
+
+        json_m['labels'] = {}
+        labels = CollectionHasLabel.objects.filter(collection_id = document.collection_id,passage_annotation = True)
+        for label in labels:
+            json_m['labels'][label.label_id] = None
+        annotations = AnnotateObjectLabel.objects.filter(username = user,name_space = name_space,document_id=document,points = annotation.points)
+        for a in annotations:
+            json_m['labels'][a.label_id] = int(a.grade)
+
+
+        json_m['time'] = str(annotation.insertion_time).split('.')[0:-1][0]
+
+        json_mentions.append(json_m)
+    return json_mentions
 
 def generate_mentions_list(username,name_space,document,language,topic,gt=False):
 
@@ -245,10 +281,9 @@ def generate_objects_list(username,name_space,document,language,topic,gt=False):
     document = Document.objects.get(document_id=document, language=language)
     annotations = AnnotateObject.objects.filter(username=user,topic_id=topic, name_space=name_space, document_id=document, language=language).order_by('insertion_time')
     for annotation in annotations:
-        mention = annotation.points
+        points = annotation.points
 
         json_m = {}
-        points = mention.points
         json_m['points'] = points
 
 
@@ -3050,7 +3085,7 @@ def generate_ground_truth(user,name_space,document,language,topic):
     json_gt['labels'] = [{l.label.name:int(l.grade)} for l in labels]
 
     # mentions & concepts
-    #json_gt['objects'] = generate_object_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
+    json_gt['objects'] = generate_objects_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
     json_gt['passages'] = generate_mentions_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
     json_gt['concepts'] = generate_associations_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
     json_gt['tags'] = generate_tag_list(user.username,name_space.name_space,document.document_id,document.language,topic.id)
@@ -3127,7 +3162,7 @@ def update_gt(user,name_space,document,language,topic):
             GroundTruthLogFile.objects.filter(username=user, name_space=name_space,topic_id=topic, document_id=document, language=language).delete()
 
         json_gt = generate_ground_truth(user, name_space, document, language,topic)
-        if json_gt['labels'] != [] or json_gt['passages'] != [] or json_gt['concepts'] != [] or json_gt['concepts'] != []  or json_gt['relationships'] != []:
+        if json_gt['labels'] != [] or json_gt['passages'] != [] or json_gt['concepts'] != [] or json_gt['concepts'] != []  or json_gt['relationships'] != []or json_gt['objects'] != []:
             GroundTruthLogFile.objects.create(username=user, name_space=name_space, insertion_time=Now(), gt_json=json_gt,topic_id=topic,
                                           document_id=document, language=language)
 

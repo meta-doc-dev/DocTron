@@ -65,7 +65,7 @@ export default function DownloadDocument(props){
     const [FormatValue,SetFormatValue] = useState('json')
     const [AnnotatorValue,SetAnnotatorValue] = useState(Username)
     const [AnnotationType, SetAnnotationType] = annotationtype
-    const [AnnotationValue,SetAnnotationValue] = useState('mentions')
+    const [AnnotationValue,SetAnnotationValue] = useState(AnnotationType)
     const [DocumentsValue,SetDocumentsValue] = useState(DocumentID)
     const [TopicValue,SetTopicValue] = useState(Topic)
     const [BatchValue,SetBatchValue] = useState(1)
@@ -122,6 +122,9 @@ export default function DownloadDocument(props){
             .then(function (response) {
                 console.log('message', response.data);
                 let filename = AnnotationValue + '.'+FormatValue.toLowerCase()
+                if(FormatValue.toLowerCase() === 'trec'){
+                    filename = AnnotationValue + '.qrels'
+                }
                 if(FormatValue === 'json'){
                     FileDownload(JSON.stringify(response.data,null,4), filename);
 

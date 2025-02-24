@@ -177,10 +177,9 @@ def login(request):
     # print('login')
     try:
         if request.method == 'POST':
-            
             md5_pwd = ''
             username = request.POST.get('username', False)
-            annotation_type = request.POST.get('annotation_type', "Graded labeling")
+            annotation_type = request.POST.get('annotation_type', False)
             mode1 = 'Human'
             password = request.POST.get('password', False)
             orcid = request.POST.get("orcid",False)
@@ -215,18 +214,12 @@ def login(request):
                         request.session['language'] = document.language
                         request.session['name_space'] = user.name_space_id
                         request.session['collection'] = document.collection_id_id
-                        # task = CollectionHasTask.objects.filter(collection_id = document.collection_id).first()
-                        # task = task.task_id.name
-                        # request.session['task'] = task
                         request.session['topic'] = session.topic_id_id
-                        # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-                        # types = [c.annotation_type.name for c in types]
                         request.session['annotation_type'] = document.collection_id.annotation_type.name
                         request.session['document'] = document.document_id
                         request.session['batch'] = document.batch
                         request.session['role'] = role
                         request.session['fields'] = request.session['fields_to_ann'] =  get_fields_list(request.session['document'],request.session['language'])
-
                     elif GroundTruthLogFile.objects.filter(username = user,document_id__in=documents).exists():
                         gts = GroundTruthLogFile.objects.filter(username = user,document_id__in=documents).order_by('-insertion_time')
                         last_gt = gts.first()
@@ -237,12 +230,7 @@ def login(request):
                         request.session['language'] = document.language
                         request.session['name_space'] = name_space.name_space
                         request.session['collection'] = document.collection_id_id
-                        # task = CollectionHasTask.objects.filter(collection_id = document.collection_id).first()
-                        # task = task.task_id.name
-                        # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-                        # types = [c.annotation_type.name for c in types]
                         request.session['annotation_type'] = document.collection_id.annotation_type.name
-                        # request.session['task'] = task
                         request.session['document'] = document.document_id
                         request.session['batch'] = document.batch
                         request.session['fields'] = request.session['fields_to_ann'] =  get_fields_list(request.session['document'],request.session['language'])
@@ -255,21 +243,22 @@ def login(request):
                         collection = collections.first()
                         request.session['annotation_type'] = collection.annotation_type.name
                         t = Topic.objects.filter(collection_id=collection)
-                        print(type(t))
-                        print(type(collections))
+
                         if t.exists():
-                            t = t.first()
+                            t = sorted(t, key=lambda x: x.topic_id)
+                            t = t[0]
                             request.session['topic'] = t.id
-                        # request.session['task'] = task
                         request.session['collection'] = collection.collection_id
                         docs = Document.objects.filter(collection_id = collection)
                         if Split.objects.filter(username=user, collection_id=collection,
                                                 document_id__in=docs).exists():
                             docs = Split.objects.filter(username=user, collection_id=collection,
                                                 document_id__in=docs)
-                            docs = sorted([d.document_id_id for d in docs])
+                            docs = sorted(docs, key=lambda x: x.document_id.document_content['doc_id'])
                         else:
-                            docs = sorted([d.document_id for d in docs])
+                            docs = sorted(docs, key=lambda x: x.document_content['doc_id'])
+
+                        docs = [d.document_id for d in docs]
                         document = Document.objects.get(document_id = docs[0])
 
                         request.session['document'] = document.document_id
@@ -300,22 +289,23 @@ def login(request):
                         response = JsonResponse(resp, status=200)
                         return response
 
-                    if username == 'demo':
-                        user = User.objects.filter(username=username, password=md5_pwd).first()
-                        AnnotatePassage.objects.filter(username=user).delete()
-                        Annotate.objects.filter(username=user).delete()
-                        Associate.objects.filter(username=user).delete()
-                        AssociateTag.objects.filter(username=user).delete()
-                        CreateFact.objects.filter(username=user).delete()
-                        AnnotateObject.objects.filter(username=user).delete()
-                        AnnotateObjectLabel.objects.filter(username=user).delete()
-                        Link.objects.filter(username=user).delete()
-                        RelationshipPredConcept.objects.filter(username=user).delete()
-                        RelationshipSubjConcept.objects.filter(username=user).delete()
-                        RelationshipObjConcept.objects.filter(username=user).delete()
-                        RelationshipObjMention.objects.filter(username=user).delete()
-                        RelationshipSubjMention.objects.filter(username=user).delete()
-                        RelationshipPredMention.objects.filter(username=user).delete()
+                    # if username == 'demo':
+                    #     user = User.objects.filter(username=username, password=md5_pwd).first()
+                    #     AnnotatePassage.objects.filter(username=user).delete()
+                    #     Annotate.objects.filter(username=user).delete()
+                    #     AnnotateLabel.objects.filter(username=user).delete()
+                    #     Associate.objects.filter(username=user).delete()
+                    #     AssociateTag.objects.filter(username=user).delete()
+                    #     CreateFact.objects.filter(username=user).delete()
+                    #     AnnotateObject.objects.filter(username=user).delete()
+                    #     AnnotateObjectLabel.objects.filter(username=user).delete()
+                    #     Link.objects.filter(username=user).delete()
+                    #     RelationshipPredConcept.objects.filter(username=user).delete()
+                    #     RelationshipSubjConcept.objects.filter(username=user).delete()
+                    #     RelationshipObjConcept.objects.filter(username=user).delete()
+                    #     RelationshipObjMention.objects.filter(username=user).delete()
+                    #     RelationshipSubjMention.objects.filter(username=user).delete()
+                    #     RelationshipPredMention.objects.filter(username=user).delete()
 
                     return redirect('doctron_app:index')
 
@@ -569,9 +559,9 @@ def dashboard(request, subpath=None):
     """Serve React frontend for all `/dashboard/*` routes."""
     username = request.session.get('username', False)
     profile = request.session.get('profile', False)
-
-    if username:
-        context = {'username': username, 'profile': profile}
+    baseurl = get_baseurl()
+    if (username and baseurl != ''):
+        context = {'username': username, 'profile': profile, 'baseurl': baseurl}
         return render(request, 'doctron_app/index.html', context)
     else:
         return redirect('doctron_app:login')
@@ -690,7 +680,7 @@ def collections(request, type=None):
                     modality = 2
                 collection_type = collection.type
                 topic_type = collection.topic_type
-            print(modality, collection.collection_id)
+
 
             json_resp = {'modality': modality,"collection_type":collection_type,'topic_type':topic_type}
 
@@ -732,10 +722,12 @@ def collections(request, type=None):
                 creator = ShareCollection.objects.filter(collection_id = c, creator = True)
                 json_boj['creator'] = creator.first().username_id
                 json_boj['name_space'] = creator.first().username.name_space_id
+
                 #types = [c.annotation_type.name for c in types]
                 json_boj['annotation_type'] = c.annotation_type.name
                 json_boj['collection_type'] = c.type
                 json_boj['description'] = c.description
+                json_boj['topics'] = Topic.objects.filter(collection_id=c).count()
                 json_boj['members'] = []
                 time = str(c.insertion_time)
                 before_p = time.split('+')
@@ -1565,11 +1557,6 @@ def get_session_params(request):
                 request.session['collection'] = document.collection_id_id
                 request.session['topic'] = last_gt.topic_id_id
                 request.session['topic_type'] = last_gt.topic_id.type
-
-                # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-                # task = task.task_id.name
-                # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-                # types = [c.annotation_type.name for c in types]
                 request.session['annotation_type'] = document.collection_id.annotation_type.name
                 # request.session['task'] = task
                 request.session['document'] = document.document_id
@@ -1585,13 +1572,13 @@ def get_session_params(request):
                 collections_ids = [c['collection_id'] for c in collections]
                 collection = Collection.objects.filter(collection_id__in=collections_ids).order_by(
                     '-insertion_time').first()
-                # task = CollectionHasTask.objects.filter(collection_id=collection).first()
-                # task = task.task_id.name
-                # request.session['task'] = task
-                request.session['topic'] = Topic.objects.filter(collection_id=collection).first().id
 
-                # types = CollectionHasTask.objects.filter(collection_id=collection)
-                # types = [c.annotation_type.name for c in types]
+                t = Topic.objects.filter(collection_id=collection)
+
+                if t.exists():
+                    t = sorted(t, key=lambda x: x.topic_id)
+                    t = t[0]
+                    request.session['topic'] = t.id
                 request.session['types'] = collection.annotation_type.name
                 request.session['collection'] = collection.collection_id
                 documents = Document.objects.filter(collection_id=collection)
@@ -1599,9 +1586,11 @@ def get_session_params(request):
                                         document_id__in=documents).exists():
                     documents = Split.objects.filter(username=user, collection_id=collection,
                                                      document_id__in=documents)
-                    documents = sorted([d.document_id_id for d in documents])
+                    documents = sorted(documents, key=lambda x: x.document_id.document_content['doc_id'])
                 else:
-                    documents = sorted([d.document_id for d in documents])
+                    documents = sorted(documents, key=lambda x: x.document_content['doc_id'])
+
+                documents = [d.document_id for d in documents]
                 document = Document.objects.get(document_id=documents[0])
 
                 request.session['document'] = document.document_id
@@ -1763,7 +1752,9 @@ def get_session_params(request):
             json_resp['fields'] = request.session['fields'] = fields
 
     else:
-        if SessionDoc.objects.filter(username=user).exists():
+        annot_type_coll = Collection.objects.filter(annotation_type=AnnotationType.objects.get(name=request.session['annotation_type']))
+        docs = Document.objects.filter(collection_id__in=annot_type_coll)
+        if SessionDoc.objects.filter(username=user,collection_id__in=annot_type_coll).exists():
             sessions = SessionDoc.objects.filter(username=user).order_by('-last_view')
             session = sessions.first()
             document = session.document_id
@@ -1773,14 +1764,6 @@ def get_session_params(request):
             request.session['language'] = json_resp['language'] = document.language
             request.session['name_space'] = json_resp['name_space'] = user.name_space_id
             request.session['collection'] = json_resp['collection'] = document.collection_id_id
-            # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-            # task = task.task_id.name
-            # request.session['task'] = json_resp['task'] = task
-            # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-            # task = task.task_id.name
-            # request.session['task'] = json_resp['task'] = task
-            # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-            # types = [c.annotation_type.name for c in types]
             request.session['annotation_type'] = json_resp['annotation_type'] = document.collection_id.annotation_type.name
             request.session['document'] = json_resp['document'] = document.document_id
             request.session['batch'] = json_resp['batch'] = document.batch
@@ -1788,8 +1771,8 @@ def get_session_params(request):
             request.session['fields'] = json_resp['fields'] = request.session['fields_to_ann'] = json_resp['fields_to_ann']= get_fields_list(request.session['document'],
                                                                                            request.session['language'])
 
-        elif GroundTruthLogFile.objects.filter(username=user).exists():
-            gts = GroundTruthLogFile.objects.filter(username=user).order_by('-insertion_time')
+        elif GroundTruthLogFile.objects.filter(username=user,document_id__in=docs).exists():
+            gts = GroundTruthLogFile.objects.filter(username=user,document_id__in=docs).order_by('-insertion_time')
             last_gt = gts.first()
             name_space = last_gt.name_space
             document = last_gt.document_id
@@ -1798,12 +1781,6 @@ def get_session_params(request):
             request.session['language'] = json_resp['language'] = document.language
             request.session['name_space'] = json_resp['name_space'] = name_space.name_space
             request.session['collection'] = json_resp['collection']= document.collection_id_id
-            # task = CollectionHasTask.objects.filter(collection_id=document.collection_id).first()
-            # task = task.task_id.name
-            # request.session['task'] = json_resp['task'] = task
-            #
-            # types = CollectionHasTask.objects.filter(collection_id=document.collection_id)
-            # types = [c.annotation_type.name for c in types]
             request.session['annotation_type'] = json_resp['annotation_type'] = document.collection_id.annotation_type.name
             request.session['document'] = json_resp['document']= document.document_id
             request.session['batch'] = json_resp['batch'] = document.batch
@@ -1811,9 +1788,9 @@ def get_session_params(request):
                                                                                            request.session['language'])
 
         # se non ho ultima annotazione ma ho collezioni, allora setto la collezione all'ultima aggiunta e al primo doc della prima batch
-        elif ShareCollection.objects.filter(username=user).exclude(
+        elif ShareCollection.objects.filter(username=user,collection_id__in=annot_type_coll).exclude(
                 status='invited').exists():  # non importa il name space in questo caso
-            collections = ShareCollection.objects.filter(username=user).exclude(status='invited').values(
+            collections = ShareCollection.objects.filter(username=user,collection_id__in=annot_type_coll).exclude(status='invited').values(
                 'collection_id').distinct()
             collections_ids = [c['collection_id'] for c in collections]
             collection = Collection.objects.filter(collection_id__in=collections_ids).order_by(
@@ -1924,7 +1901,9 @@ def concepts(request, type=None):
     if request.method == 'POST' and type == 'copy':
 
         json_body = json.loads(request.body)
-        json_resp = copy_concepts_aux(username, name_space.name_space, document.document_id, language, json_body)
+        annotator = json_body['user']
+
+        json_resp = copy_concepts_aux(username, name_space.name_space, document.document_id, language, json_body,request.session['topic'],annotator)
         return JsonResponse(json_resp)
 
     elif request.method == 'POST' and type == 'comment':
@@ -2004,7 +1983,7 @@ def concepts(request, type=None):
                                              insertion_time=Now(), concept_url=concept, name=area, start=mention,topic_id=topic,
                                              stop=mention.stop, document_id=document)
 
-                    update_gt(user, name_space, document, request.session['language'],request.session['topic'])
+                    update_gt(user, name_space, document, request.session['language'],topic)
             json_resp['concepts'] = generate_associations_list_splitted(request.session['username'],
                                                                         request.session['name_space'],
                                                                         request.session['document'],
@@ -2235,7 +2214,9 @@ def tag(request, type=None):
     if request.method == 'POST' and type == 'copy':
 
         json_body = json.loads(request.body)
-        json_resp = copy_tags_aux(username, name_space.name_space, document.document_id, language, json_body)
+        annotator = json_body['user']
+        topic = request.session['topic']
+        json_resp = copy_tags_aux(username, name_space.name_space, document.document_id, language, json_body,topic,annotator)
         return JsonResponse(json_resp)
 
     elif request.method == 'POST' and type == 'comment':
@@ -2319,7 +2300,7 @@ def tag(request, type=None):
                                                 insertion_time=Now(), name=area, start=mention,
                                                 stop=mention.stop, document_id=document)
 
-                    update_gt(user, name_space, document, request.session['language'],request.session['topic'])
+                    update_gt(user, name_space, document, request.session['language'],topic)
             json_resp['concepts'] = generate_associations_list_splitted(request.session['username'],
                                                                         request.session['name_space'],
                                                                         request.session['document'],
@@ -2352,7 +2333,7 @@ def tag(request, type=None):
         json_resp = {'msg': 'ok'}
 
         mentions_list = generate_mentions_list(username, name_space.name_space, document.document_id,
-                                               request.session['language'])
+                                               request.session['language'],request.session['topic'])
 
         # name_space = NameSpace.objects.get(name_space=name_space)
         # document = Document.objects.get(document_id=document, language=language)
@@ -2451,12 +2432,12 @@ def set_concept(request):
         with transaction.atomic():
             if not SemanticArea.objects.filter(name=area).exists():
                 SemanticArea.objects.create(name=area)
-                areas = get_areas_collection(collection.collection_id)
-                tags = get_tags_collection(collection.collection_id)
-                options = {k: 'rgba(65, 105, 225, 1)' for k in list(set(areas + tags)) if
-                           k not in list(set(areas + tags))}
-                collection.options = options
-                collection.save()
+            areas = get_areas_collection(collection.collection_id)
+            tags = get_tags_collection(collection.collection_id)
+            options = {k: 'rgba(65, 105, 225, 1)' for k in list(set(areas + tags)) if
+                       k not in list(set(areas + tags))}
+            collection.options = options
+            collection.save()
             area = SemanticArea.objects.get(name=area)
             if not Concept.objects.filter(concept_url=url).exists():
                 Concept.objects.create(concept_url=url, concept_name=name, description=description)
@@ -2606,7 +2587,9 @@ def change_collection_id(request):
                                                                                        request.session['language'])
 
         # print('session doc', request.session['document'])
-        json_resp = {'document_id': request.session['document'],'topic': request.session['topic']}
+        top_id = Topic.objects.get(id=request.session['topic'])
+        top_id = top_id.topic_id
+        json_resp = {'document_id': request.session['document'],'topic': top_id}
         return JsonResponse(json_resp)
 
 
@@ -2656,19 +2639,18 @@ def get_annotators(request):
     """This view returns the list of annotators of a document"""
 
     document = Document.objects.get(document_id=request.session['document'], language=request.session['language'])
-    gts = GroundTruthLogFile.objects.filter(document_id=document)
+    gts = GroundTruthLogFile.objects.filter(document_id=document,topic_id=request.session['topic'])
     usernames = [g.username_id for g in gts]
-    print(usernames)
     if gts.count() > 0:
         users = list(gts.order_by('username').values_list('username', flat=True).distinct())
     else:
         users = []
-    print(users)
     if request.session['username'] in users:
         users.remove(request.session['username'])
 
     users.insert(0, request.session['username'])
-    users.append("IAA-Inter Annotator Agreement")
+    if len(users) > 2:
+        users.append("IAA-Inter Annotator Agreement")
     return JsonResponse(users, safe=False)
 
 
@@ -2877,7 +2859,13 @@ def labels(request, type=None):
                                                  insertion_time=Now(), grade=score, topic_id=topic,name_space=name_space)
                     update_gt(user, name_space, document, language,topic)
 
-                    return JsonResponse({'msg': 'ok'})
+                    labels = AnnotateLabel.objects.filter(username=user, topic_id=topic, name_space=name_space,
+                                                          document_id=document)
+                    labels = {l.label.name: int(l.grade) for l in labels}
+                    labels_obj = {}
+                    labels_obj['labels'] = labels
+                    return JsonResponse(labels_obj)
+
             elif points is not None:
                     dobj = DocumentObject.objects.get(document_id=document, points=points)
                     if AnnotateObjectLabel.objects.filter(username=user, document_id=document,points=dobj, language=language, label=label,
@@ -3096,7 +3084,7 @@ def object_detection(request,type=None):
         document = request.session.get('document',None)
         document = request.GET.get('document',document)
         username = request.session.get('username', None)
-        username = request.GET.get('username',username)
+        username = request.GET.get('user',username)
 
         if None in [name_space, username, topic, document]:
             return HttpResponse(status = 500)
@@ -3203,13 +3191,16 @@ def object_detection(request,type=None):
                                                   topic_id=topic,insertion_time = Now(),language = document.language,
                                                   points=points)
 
+                    update_gt(username, name_space, document, document.language, topic)
+
+
 
         except Exception as e:
             print(e)
             return HttpResponse(status = 500)
         finally:
             ob = AnnotateObject.objects.filter(username=username, name_space=name_space, document_id=document,
-                                               topic_id=topic).order_by('-insertion_time')
+                                               topic_id=topic).order_by('insertion_time')
             if ob.exists():
                 points = []
                 values = []
@@ -3281,6 +3272,7 @@ def object_detection(request,type=None):
                         for a in annotations:
                             val[a.label_id] = int(a.grade)
                     values.append(val)
+
 
                 return JsonResponse({'points': points, 'values': values})
             return JsonResponse({'points': [], 'values': []})
@@ -3550,7 +3542,10 @@ def mentions(request, type=None):
         document = Document.objects.get(document_id=document, language=language)
         json_body = json.loads(request.body)
         mention = json_body['mention']
-        json_resp = copy_mention_aux(user, name_space, document, language, mention)
+        annotator = json_body['user']
+        topic = request.session['topic']
+
+        json_resp = copy_mention_aux(user, name_space, document, language, mention, topic, annotator)
         return JsonResponse(json_resp)
 
     elif request.method == 'POST' and type == 'comment':
@@ -6956,6 +6951,8 @@ def copy_annotation(request):
     name_space = request.session['name_space']
     body_json = json.loads(request.body)
     username_source = body_json['user']
+    topic = request.session['topic']
+    topic = Topic.objects.get(id = topic)
     name_space = NameSpace.objects.get(name_space=name_space)
     document = Document.objects.get(document_id=document, language=language)
     user = User.objects.get(username=username, name_space=name_space)
@@ -6963,262 +6960,171 @@ def copy_annotation(request):
     try:
         with transaction.atomic():
             if username_source is not None:
-                # copy mentions
-                for annotation in Annotate.objects.filter(document_id=document, username=user_source,
-                                                          name_space=name_space, language=language):
-                    mention = Mention.objects.get(start=annotation.start_id, stop=annotation.stop, document_id=document,
-                                                  language=language)
-                    annotation = Annotate.objects.filter(document_id=document, username=user, name_space=name_space,
-                                                         language=language, start=mention,
-                                                         stop=mention.stop)
-                    if not annotation.exists():
-                        Annotate.objects.create(document_id=document, username=user, name_space=name_space,
-                                                language=language,
-                                                start=mention, insertion_time=Now(),
-                                                stop=mention.stop)
+                with transaction.atomic():
+                    with connection.cursor() as cursor:
+                        if request.session['annotation_type'] == 'Graded labeling':
+                            AnnotateLabel.objects.filter(username = user, document_id = document, topic_id = topic).delete()
+                            # copy labels
+                            cursor.execute("""
+                                                 INSERT INTO annotate_label (document_id,topic_id, name_space, username, language, insertion_time, label, grade)
+                                                     SELECT document_id,topic_id, name_space, %s, language, insertion_time, label, grade
+                                                     FROM annotate_label
+                                                     WHERE document_id = %s and topic_id = %s and username = %s;
+                                                  """, [user.username, document.document_id, topic.id, username_source])
 
-                for annotation in Associate.objects.filter(document_id=document, username=user_source,
-                                                           name_space=name_space,
-                                                           language=language):
-                    mention = Mention.objects.get(start=annotation.start_id, stop=annotation.stop, document_id=document,
-                                                  language=language)
-                    concept = Concept.objects.get(concept_url=annotation.concept_url_id)
-                    name = SemanticArea.objects.get(name=annotation.name_id)
-                    annotation = Associate.objects.filter(document_id=document, username=user, name_space=name_space,
-                                                          language=language, start=mention,
-                                                          stop=mention.stop, concept_url=concept, name=name)
-                    if not annotation.exists():
-                        Associate.objects.create(document_id=document, username=user, name_space=name_space,
-                                                 language=language,
-                                                 start=mention, insertion_time=Now(),
-                                                 stop=mention.stop, concept_url=concept, name=name)
+                        if request.session['annotation_type'] == 'Facts annotation':
+                            CreateFact.objects.filter(username = user, document_id = document, topic_id = topic).delete()
+                            # copy labels
+                            cursor.execute("""
+                                                 INSERT INTO create_fact (document_id,topic_id, name_space, username, language, insertion_time, subject_concept_url, predicate_concept_url, object_concept_url, subject_name, predicate_name, object_name)
+                                                     SELECT document_id,topic_id, name_space, %s, language, insertion_time, subject_concept_url, predicate_concept_url, object_concept_url, subject_name, predicate_name, object_name
+                                                     FROM create_fact
+                                                     WHERE document_id = %s and topic_id = %s and username = %s;
+                                                  """, [user.username, document.document_id, topic.id, username_source])
 
-                for annotation in AnnotateLabel.objects.filter(document_id=document, username=user_source,
-                                                               name_space=name_space,
-                                                               language=language):
-                    label = Label.objects.get(name=annotation.name_id)
-                    annotation = AnnotateLabel.objects.filter(document_id=document, username=user,
-                                                              name_space=name_space,
-                                                              language=language, label=label)
-                    if not annotation.exists():
-                        AnnotateLabel.objects.create(document_id=document, username=user, name_space=name_space,
-                                                     language=language,
-                                                     insertion_time=Now(), label=label)
+                        if request.session['annotation_type'] == 'Passages annotation':
+                                Annotate.objects.filter(username = user, document_id = document, topic_id = topic).delete()
+                                AnnotatePassage.objects.filter(username = user, document_id = document, topic_id = topic).delete()
+                                # copy labels
+                                cursor.execute("""
+                                     INSERT INTO annotate (start, stop, document_id, language, username, name_space, insertion_time, topic_id)
+                                         SELECT start, stop, document_id, language, %s, name_space, insertion_time, topic_id
+                                         FROM annotate
+                                         WHERE document_id = %s and topic_id = %s and username = %s;
+                                                      """, [user.username, document.document_id, topic.id, username_source])
+                                cursor.execute("""
+                                         INSERT INTO annotate_passage (username, name_space, document_id, language, start, stop, grade, insertion_time, topic_id, label)
+                                             SELECT %s, name_space, document_id, language, start, stop, grade, insertion_time, topic_id, label
+                                             FROM annotate_passage
+                                             WHERE document_id = %s and topic_id = %s and username = %s;
+                                          """,
+                               [user.username, document.document_id, topic.id, username_source])
 
-                for annotation in CreateFact.objects.filter(document_id=document, username=user_source,
-                                                            name_space=name_space,
-                                                            language=language):
+                        if request.session['annotation_type'] == 'Object detection':
+                            AnnotateObject.objects.filter(username=user, document_id=document, topic_id=topic).delete()
+                            AnnotateObjectLabel.objects.filter(username=user, document_id=document, topic_id=topic).delete()
+                            # copy labels
+                            cursor.execute("""
+                                  INSERT INTO annotate_object (topic_id, document_id, language, username, name_space, points, insertion_time)
+                                      SELECT topic_id, document_id, language, %s, name_space, points, insertion_time
+                                      FROM annotate_object
+                                      WHERE document_id = %s and topic_id = %s and username = %s;
+                                   """,
+                                           [user.username, document.document_id, topic.id, username_source])
+                            cursor.execute("""
+                                  INSERT INTO annotate_object_label (document_id,topic_id, name_space, username, language, insertion_time, points,label,grade)
+                                      SELECT document_id,topic_id, name_space, %s, language, insertion_time, points,label, grade
+                                      FROM annotate_object_label
+                                      WHERE document_id = %s and topic_id = %s and username = %s;
+                                   """,
+                                           [user.username, document.document_id, topic.id, username_source])
 
-                    facts = CreateFact.objects.filter(document_id=document, username=user, name_space=name_space,
-                                                      language=language,
-                                                      subject_concept_url=annotation.subject_concept_url,
-                                                      subject_name=annotation.subject_name,
-                                                      object_concept_url=annotation.object_concept_url,
-                                                      object_name=annotation.object_name,
-                                                      predicate_concept_url=annotation.predicate_concept_url,
-                                                      predicate_name=annotation.predicate_name)
-                    if not facts.exists():
-                        CreateFact.objects.create(document_id=document, username=user, name_space=name_space,
-                                                  insertion_time=Now(),
-                                                  language=language,
-                                                  subject_concept_url=annotation.subject_concept_url,
-                                                  subject_name=annotation.subject_name,
-                                                  object_concept_url=annotation.object_concept_url,
-                                                  object_name=annotation.object_name,
-                                                  predicate_concept_url=annotation.predicate_concept_url,
-                                                  predicate_name=annotation.predicate_name)
+                        if request.session['annotation_type'] in ['Entity tagging', 'Relationships annotation']:
+                            Annotate.objects.filter(username=user, document_id=document, topic_id=topic).delete()
+                            AssociateTag.objects.filter(username=user, document_id=document, topic_id=topic).delete()
+                            # copy labels
+                            cursor.execute("""
+                                               INSERT INTO annotate (start, stop, document_id, language, username, name_space, insertion_time, topic_id)
+                                                   SELECT start, stop, document_id, language, %s, name_space, insertion_time, topic_id
+                                                   FROM annotate
+                                                   WHERE document_id = %s and topic_id = %s and username = %s;
+                                                """,
+                                           [user.username, document.document_id, topic.id, username_source])
+                            cursor.execute("""
+                                               INSERT INTO associate_tag (username, name_space, document_id, language, start, stop, insertion_time, name, topic_id)
+                                                   SELECT %s, name_space, document_id, language, start, stop, insertion_time, name, topic_id
+                                                   FROM associate_tag
+                                                   WHERE document_id = %s and topic_id = %s and username = %s;
+                                                """,
+                                           [user.username, document.document_id, topic.id, username_source])
 
-                for annotation in RelationshipObjMention.objects.filter(document_id=document, username=user_source,
-                                                                        name_space=name_space,
-                                                                        language=language):
-                    mention = Mention.objects.get(document_id=document, language=language, start=annotation.start_id,
-                                                  stop=annotation.stop)
-                    rels = RelationshipObjMention.objects.filter(document_id=document, username=user,
-                                                                 name_space=name_space,
-                                                                 language=language, start=mention,
-                                                                 stop=mention.stop,
-                                                                 subject_concept_url=annotation.subject_concept_url,
-                                                                 subject_name=annotation.subject_name,
-                                                                 predicate_concept_url=annotation.predicate_concept_url,
-                                                                 predicate_name=annotation.predicate_name)
-                    if not rels.exists():
-                        RelationshipObjMention.objects.create(document_id=document, username=user,
-                                                              name_space=name_space,
-                                                              language=language, start=mention, stop=mention.stop,
-                                                              subject_concept_url=annotation.subject_concept_url,
-                                                              insertion_time=Now(),
-                                                              subject_name=annotation.subject_name,
-                                                              predicate_concept_url=annotation.predicate_concept_url,
-                                                              predicate_name=annotation.predicate_name)
+                        if request.session['annotation_type'] in ['Entity linking','Relationships annotation']:
+                            Associate.objects.filter(username=user, document_id=document,
+                                                          topic_id=topic).delete()
+                            Annotate.objects.filter(username=user, document_id=document,
+                                                               topic_id=topic).delete()
+                            # copy labels
+                            cursor.execute("""
+                                                        INSERT INTO annotate (start, stop, document_id, language, username, name_space, insertion_time, topic_id)
+                                                            SELECT start, stop, document_id, language, %s, name_space, insertion_time, topic_id
+                                                            FROM annotate
+                                                            WHERE document_id = %s and topic_id = %s and username = %s;
+                                                         """,
+                                           [user.username, document.document_id, topic.id, username_source])
+                            cursor.execute("""
+                                                        INSERT INTO associate (username, name_space, document_id, language, start, stop, concept_url, insertion_time, name, topic_id, comment)
+                                                            SELECT %s, name_space, document_id, language, start, stop, concept_url, insertion_time, name, topic_id, comment
+                                                            FROM associate
+                                                            WHERE document_id = %s and topic_id = %s and username = %s;
+                                                         """,
+                                           [user.username, document.document_id, topic.id, username_source])
 
-                for annotation in RelationshipSubjMention.objects.filter(document_id=document, username=user_source,
-                                                                         name_space=name_space,
-                                                                         language=language):
-                    mention = Mention.objects.get(document_id=document, language=language, start=annotation.start_id,
-                                                  stop=annotation.stop)
-                    rels = RelationshipSubjMention.objects.filter(document_id=document, username=user,
-                                                                  name_space=name_space,
-                                                                  language=language, start=mention,
-                                                                  stop=mention.stop,
-                                                                  object_concept_url=annotation.object_concept_url,
-                                                                  object_name=annotation.object_name,
-                                                                  predicate_concept_url=annotation.predicate_concept_url,
-                                                                  predicate_name=annotation.predicate_name)
-                    if not rels.exists():
-                        RelationshipSubjMention.objects.filter(document_id=document, username=user,
-                                                               name_space=name_space,
-                                                               language=language, start=mention,
-                                                               stop=mention.stop, insertion_time=Now(),
-                                                               object_concept_url=annotation.object_concept_url,
-                                                               object_name=annotation.object_name,
-                                                               predicate_concept_url=annotation.predicate_concept_url,
-                                                               predicate_name=annotation.predicate_name)
+                        if request.session['annotation_type'] == 'Relationships annotation':
+                            Link.objects.filter(username=user, subject_document_id=document.document_id,
+                                                     topic_id=topic).delete()
+                            RelationshipObjMention.objects.filter(username=user, document_id=document,
+                                                    topic_id=topic).delete()
+                            RelationshipSubjMention.objects.filter(username=user, document_id=document,
+                                                                  topic_id=topic).delete()
+                            RelationshipPredMention.objects.filter(username=user, document_id=document,
+                                                                  topic_id=topic).delete()
+                            RelationshipSubjConcept.objects.filter(username=user, predicate_document_id=document.document_id,
+                                                    topic_id=topic).delete()
+                            RelationshipObjConcept.objects.filter(username=user, subject_document_id=document.document_id,
+                                                                  topic_id=topic).delete()
+                            RelationshipPredConcept.objects.filter(username=user, subject_document_id=document.document_id,
+                                                                  topic_id=topic).delete()
+                            # copy labels
+                            cursor.execute("""
+                                 INSERT INTO link (username, name_space, subject_document_id, subject_language, subject_start, subject_stop, predicate_document_id, predicate_language, predicate_start, predicate_stop, object_document_id, object_language, object_start, object_stop, insertion_time, topic_id, comment)
+                                     SELECT %s, name_space, subject_document_id, subject_language, subject_start, subject_stop, predicate_document_id, predicate_language, predicate_start, predicate_stop, object_document_id, object_language, object_start, object_stop, insertion_time, topic_id, comment
+                                     FROM link
+                                     WHERE subject_document_id = %s and topic_id = %s and username = %s;
+                                  """,
+                                           [user.username, document.document_id, topic.id, username_source])
+                            cursor.execute("""
+                                 INSERT INTO relationship_pred_concept (username, name_space, subject_document_id, subject_language, object_document_id, object_language, subject_start, subject_stop, object_start, object_stop, concept_url, insertion_time, name, topic_id)
+                                     SELECT username, name_space, subject_document_id, subject_language, object_document_id, object_language, subject_start, subject_stop, object_start, object_stop, concept_url, insertion_time, name, topic_id
+                                     FROM relationship_pred_concept
+                                     WHERE subject_document_id = %s and topic_id = %s and username = %s;
+                                  """,
+                                           [user.username, document.document_id, topic.id, username_source])
+                            cursor.execute("""
+                                     INSERT INTO relationship_obj_concept (username, name_space, subject_document_id, subject_language, predicate_document_id, predicate_language, subject_start, subject_stop, predicate_start, predicate_stop, concept_url, insertion_time, name, topic_id)
+                                         SELECT %s, name_space, subject_document_id, subject_language, predicate_document_id, predicate_language, subject_start, subject_stop, predicate_start, predicate_stop, concept_url, insertion_time, name, topic_id
+                                         FROM relationship_obj_concept
+                                         WHERE subject_document_id = %s and topic_id = %s and username = %s;
+                                      """,
+                                           [user.username, document.document_id, topic.id, username_source])
+                            cursor.execute("""
+                                 INSERT INTO relationship_subj_concept (document_id,topic_id, name_space, username, language, insertion_time, start,stop,concept_url,name)
+                                     SELECT %s, name_space, object_document_id, object_language, predicate_document_id, predicate_language, object_start, object_stop, predicate_start, predicate_stop, concept_url, insertion_time, name, topic_id
+                                     FROM relationship_subj_concept
+                                     WHERE object_document_id = %s and topic_id = %s and username = %s;
+                                  """,
+                                           [user.username, document.document_id, topic.id, username_source])
+                            cursor.execute("""
+                                 INSERT INTO relationship_subj_mention (username, name_space, document_id, language, start, stop, predicate_concept_url, object_concept_url, insertion_time, predicate_name, object_name, topic_id)
+                                     SELECT %s, name_space, document_id, language, start, stop, predicate_concept_url, object_concept_url, insertion_time, predicate_name, object_name, topic_id, comment
+                                     FROM relationship_subj_mention
+                                     WHERE document_id = %s and topic_id = %s and username = %s;
+                                  """,
+                                           [user.username, document.document_id, topic.id, username_source])
+                            cursor.execute("""
+                                 INSERT INTO relationship_obj_mention (username, name_space, document_id, language, start, stop, predicate_concept_url, subject_concept_url, insertion_time, predicate_name, subject_name, topic_id)
+                                     SELECT %s, name_space, document_id, language, start, stop, predicate_concept_url, subject_concept_url, insertion_time, predicate_name, subject_name, topic_id, comment
+                                     FROM relationship_obj_mention
+                                     WHERE document_id = %s and topic_id = %s and username = %s;
+                                  """,
+                                           [user.username, document.document_id, topic.id, username_source])
+                            cursor.execute("""
+                                 INSERT INTO relationship_pred_mention (username, name_space, document_id, language, start, stop, object_concept_url, subject_concept_url, insertion_time, object_name, subject_name, topic_id)
+                                     SELECT %s, name_space, document_id, language, start, stop, object_concept_url, subject_concept_url, insertion_time, object_name, subject_name, topic_id
+                                     FROM relationship_pred_mention
+                                     WHERE document_id = %s and topic_id = %s and username = %s;
+                                  """,
+                                           [user.username, document.document_id, topic.id, username_source])
 
-                for annotation in RelationshipPredMention.objects.filter(document_id=document, username=user_source,
-                                                                         name_space=name_space,
-                                                                         language=language):
-                    mention = Mention.objects.get(document_id=document, language=language, start=annotation.start_id,
-                                                  stop=annotation.stop)
-                    rels = RelationshipPredMention.objects.filter(document_id=document, username=user,
-                                                                  name_space=name_space,
-                                                                  language=language, start=mention,
-                                                                  stop=mention.stop,
-                                                                  object_concept_url=annotation.object_concept_url,
-                                                                  object_name=annotation.object_name,
-                                                                  subject_concept_url=annotation.subject_concept_url,
-                                                                  subject_name=annotation.subject_name)
-                    if not rels.exists():
-                        RelationshipPredMention.objects.create(document_id=document, username=user,
-                                                               name_space=name_space, insertion_time=Now(),
-                                                               language=language, start=mention,
-                                                               stop=mention.stop,
-                                                               object_concept_url=annotation.object_concept_url,
-                                                               object_name=annotation.object_name,
-                                                               subject_concept_url=annotation.subject_concept_url,
-                                                               subject_name=annotation.subject_name)
-
-                for annotation in RelationshipPredConcept.objects.filter(subject_document_id=document.document_id,
-                                                                         username=user_source,
-                                                                         name_space=name_space,
-                                                                         subject_language=language):
-                    concept = annotation.concept_url
-                    area = annotation.name
-
-                    rels = RelationshipPredConcept.objects.filter(subject_document_id=annotation.subject_document_id,
-                                                                  subject_language=annotation.subject_language,
-                                                                  object_document_id=annotation.object_document_id,
-                                                                  object_language=annotation.object_language,
-                                                                  username=user, name_space=name_space,
-                                                                  concept_url=concept, name=area,
-                                                                  subject_start=annotation.subject_start,
-                                                                  subject_stop=annotation.subject_stop,
-                                                                  object_start=annotation.object_start,
-                                                                  object_stop=annotation.object_stop)
-                    if not rels.exists():
-                        RelationshipPredConcept.objects.create(subject_document_id=annotation.subject_document_id,
-                                                               subject_language=annotation.subject_language,
-                                                               insertion_time=Now(),
-                                                               object_document_id=annotation.object_document_id,
-                                                               object_language=annotation.object_language,
-                                                               username=user, name_space=name_space,
-                                                               concept_url=concept, name=area,
-                                                               subject_start=annotation.subject_start,
-                                                               subject_stop=annotation.subject_stop,
-                                                               object_start=annotation.object_start,
-                                                               object_stop=annotation.object_stop)
-
-                for annotation in RelationshipSubjConcept.objects.filter(object_document_id=document.document_id,
-                                                                         username=user_source,
-                                                                         name_space=name_space,
-                                                                         object_language=language):
-                    concept = annotation.concept_url
-                    area = annotation.name
-
-                    rels = RelationshipSubjConcept.objects.filter(object_document_id=annotation.object_document_id,
-                                                                  object_language=annotation.object_language,
-                                                                  predicate_document_id=annotation.predicate_document_id,
-                                                                  predicate_language=annotation.predicate_language,
-                                                                  username=user, name_space=name_space,
-                                                                  concept_url=concept, name=area,
-                                                                  predicate_start=annotation.predicate_start,
-                                                                  predicate_stop=annotation.predicate_stop,
-                                                                  object_start=annotation.object_start,
-                                                                  object_stop=annotation.object_stop)
-                    if not rels.exists():
-                        RelationshipSubjConcept.objects.create(object_document_id=annotation.object_document_id,
-                                                               object_language=annotation.object_language,
-                                                               insertion_time=Now(),
-                                                               predicate_document_id=annotation.predicate_document_id,
-                                                               predicate_language=annotation.predicate_language,
-                                                               username=user, name_space=name_space,
-                                                               concept_url=concept,
-                                                               name=area, predicate_start=annotation.predicate_start,
-                                                               predicate_stop=annotation.predicate_stop,
-                                                               object_start=annotation.object_start,
-                                                               object_stop=annotation.object_stop)
-
-                for annotation in RelationshipObjConcept.objects.filter(subject_document_id=document.document_id,
-                                                                        username=user_source,
-                                                                        name_space=name_space,
-                                                                        subject_language=language):
-                    concept = annotation.concept_url
-                    area = annotation.name
-
-                    rels = RelationshipObjConcept.objects.filter(subject_document_id=annotation.subject_document_id,
-                                                                 subject_language=annotation.subject_language,
-                                                                 predicate_document_id=annotation.predicate_document_id,
-                                                                 predicate_language=annotation.predicate_language,
-                                                                 username=user, name_space=name_space,
-                                                                 concept_url=concept, name=area,
-                                                                 predicate_start=annotation.predicate_start,
-                                                                 predicate_stop=annotation.predicate_stop,
-                                                                 subject_start=annotation.subject_start,
-                                                                 subject_stop=annotation.subject_stop)
-                    if not rels.exists():
-                        RelationshipObjConcept.objects.create(subject_document_id=annotation.subject_document_id,
-                                                              subject_language=annotation.subject_language,
-                                                              insertion_time=Now(),
-                                                              predicate_document_id=annotation.predicate_document_id,
-                                                              predicate_language=annotation.predicate_language,
-                                                              username=user, name_space=name_space,
-                                                              concept_url=concept, name=area,
-                                                              predicate_start=annotation.predicate_start,
-                                                              predicate_stop=annotation.predicate_stop,
-                                                              subject_start=annotation.subject_start,
-                                                              subject_stop=annotation.subject_stop)
-
-                for annotation in Link.objects.filter(subject_document_id=document.document_id,
-                                                      username=user_source,
-                                                      name_space=name_space,
-                                                      subject_language=language):
-
-                    rels = Link.objects.filter(subject_document_id=annotation.subject_document_id,
-                                               subject_language=annotation.subject_language,
-                                               predicate_document_id=annotation.predicate_document_id,
-                                               predicate_language=annotation.predicate_language,
-                                               object_document_id=annotation.object_document_id,
-                                               object_language=annotation.object_language,
-                                               username=user, name_space=name_space,
-                                               subject_start=annotation.subject_start,
-                                               subject_stop=annotation.subject_stop,
-                                               predicate_start=annotation.predicate_start,
-                                               predicate_stop=annotation.predicate_stop,
-                                               object_start=annotation.object_start,
-                                               object_stop=annotation.object_stop)
-                    if not rels.exists():
-                        Link.objects.filter(subject_document_id=annotation.subject_document_id,
-                                            subject_language=annotation.subject_language,
-                                            predicate_document_id=annotation.predicate_document_id,
-                                            predicate_language=annotation.predicate_language,
-                                            object_document_id=annotation.object_document_id,
-                                            object_language=annotation.object_language,
-                                            username=user, name_space=name_space,
-                                            subject_start=annotation.subject_start, insertion_time=Now(),
-                                            subject_stop=annotation.subject_stop,
-                                            predicate_start=annotation.predicate_start,
-                                            predicate_stop=annotation.predicate_stop,
-                                            object_start=annotation.object_start,
-                                            object_stop=annotation.object_stop)
 
         update_gt(user, name_space, document, language,topic)
         return JsonResponse({'msg': 'ok'})
@@ -8405,25 +8311,21 @@ def copy_all_annotations_for_user_study(request):
         return HttpResponse(status=200)
 
 
-def create_coehns(request):
-    """This viws computes the coehns kappa for a pair of users"""
-
-    collection = request.GET.get('collection', None)
-    user1 = request.GET.get('user1', None)
-    user2 = request.GET.get('user2', None)
-    document = request.GET.get('document', None)
-    if None in [user1, user2, collection]:
-        return HttpResponse(status=500)
-    collection = Collection.objects.get(collection_id=collection)
-    documents = Document.objects.filter(collection_id=collection)
-    if document != '' and document != 'All':
-        documents = Document.objects.filter(document_id=document)
-
-    json_obj = {}
-    for tipo in ['mentions', 'concepts', 'relations', 'assertions', 'labels']:
-        json_obj[tipo] = create_cohen([user1, user2], collection, documents, tipo)
-
-    return JsonResponse(json_obj)
+# def create_coehns(request):
+#     """This viws computes the coehns kappa for a pair of users"""
+#
+#     collection = request.GET.get('collection', None)
+#     user1 = request.GET.get('user1', None)
+#     user2 = request.GET.get('user2', None)
+#     document = request.GET.get('document', None)
+#     topic = request.GET.get('topic', None)
+#     if None in [document,topic]:
+#         return HttpResponse(status=500)
+#
+#
+#     json_obj[tipo] = create_cohen(document, topic)
+#
+#     return JsonResponse(json_obj)
 
 
 def create_fleiss_overview(request):
@@ -8810,9 +8712,9 @@ def change_role(request):
                     json_doc['split'] = 'yes'
                 else:
                     json_doc['split'] = 'no'
-            #
+
                 docs_list.append(json_doc)
-            #
+
             for document in not_annotated_docs:
                 json_doc = {'id': document.document_content['doc_id'], 'hashed_id': document.document_id,
                             'annotated': False, 'batch': document.batch}
@@ -8896,8 +8798,12 @@ def topic(request):
                             last_view = %s,document_id=%s,language=%s;""",[request.session['document'],request.session['language'],request.session['username'],request.session['name_space'],request.session['role'],datetime.now(),request.session['collection'],request.session['topic'],datetime.now(),request.session['document'],request.session['language']])
 
             else:
+                topics = sorted(topics,key=lambda t: t.topic_id)
                 for t in topics:
+                    details = t.details
+                    details['query_id'] = t.topic_id
                     json_resp['topics'].append(t.details)
+
         return JsonResponse(json_resp)
 
     elif request.method == 'POST':

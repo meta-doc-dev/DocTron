@@ -64,7 +64,7 @@ def copy_assertion_aux(username,name_space,document,language,assertion):
         return {'error':e}
 
 
-def copy_mention_aux(user,name_space,document,language,mention):
+def copy_mention_aux(user,name_space,document,language,mention,topic,username_source):
     start = mention['start']
     stop = mention['stop']
 
@@ -82,12 +82,25 @@ def copy_mention_aux(user,name_space,document,language,mention):
     json_resp = {'msg':'ok'}
     try:
         with transaction.atomic():
+            topic_obj = Topic.objects.get(id=topic)
             mention = Mention.objects.get(start = start, stop = stop, document_id = document, language = language)
-            annotation = Annotate.objects.filter(start = mention, document_id = document,language = language, username=user, name_space = name_space)
-            if not annotation.exists():
-                Annotate.objects.create(start=mention,stop=mention.stop, document_id=document, language=language, username=user,
-                                        name_space=name_space,insertion_time = Now())
-            update_gt(user,name_space,document,language)
+            # copy labels
+            cursor = connection.cursor()
+            cursor.execute("""
+                                  INSERT INTO annotate (start, stop, document_id, language, username, name_space, insertion_time, topic_id)
+                                      SELECT start, stop, document_id, language, %s, name_space, insertion_time, topic_id
+                                      FROM annotate
+                                      WHERE document_id = %s and topic_id = %s and username = %s and start = %s and stop = %s;;
+                                                   """,
+                           [user.username, document.document_id, topic_obj.id, username_source,mention.start,mention.stop])
+            cursor.execute("""
+                                      INSERT INTO annotate_passage (username, name_space, document_id, language, start, stop, grade, insertion_time, topic_id, label)
+                                          SELECT %s, name_space, document_id, language, start, stop, grade, insertion_time, topic_id, label
+                                          FROM annotate_passage
+                                          WHERE document_id = %s and topic_id = %s and username = %s and start = %s and stop = %s ON CONFLICT DO NOTHING;
+                                       """,
+                           [user.username, document.document_id, topic_obj.id, username_source,mention.start,mention.stop])
+            update_gt(user,name_space,document,language,topic_obj)
             return json_resp
     except Exception as e:
         json_resp = {'error': e}
@@ -95,13 +108,10 @@ def copy_mention_aux(user,name_space,document,language,mention):
         print(e)
         return json_resp
 
-def copy_tags_aux(username,name_space,document,language,json_body):
+def copy_tags_aux(username,name_space,document,language,json_body,topic,username_source):
     name_space = NameSpace.objects.get(name_space=name_space)
     user = User.objects.get(username=username, name_space=name_space)
     document = Document.objects.get(document_id=document, language=language)
-    # json_body = json.loads(request.body)
-    user_source = json_body['user']
-    user_source = User.objects.get(username=user_source, name_space=name_space)
     mention = json_body['mention']
     start = mention['start']
     stop = mention['stop']
@@ -114,30 +124,31 @@ def copy_tags_aux(username,name_space,document,language,json_body):
 
     # position = '_'.join(position.split('_')[:-1])
     start, stop = return_start_stop_for_backend(start, stop, position, document.document_content)
-    associations = AssociateTag.objects.filter(start=start, stop=stop, username=user_source, name_space=name_space,
-                                            document_id=document)
-    names = [a.name for a in associations]
+
 
     # non controllo se tra le mentions c'è già in quanto la sto copiando
     json_resp = {'msg': 'ok'}
     try:
         with transaction.atomic():
-            mention = Mention.objects.get(start=start, stop=stop, document_id=document, language=language)
-            annotation = Annotate.objects.filter(start=mention, document_id=document, language=language, username=user,
-                                                 name_space=name_space)
-            if not annotation.exists():
-                Annotate.objects.create(start=mention, stop=mention.stop, document_id=document, language=language,
-                                        username=user,
-                                        name_space=name_space, insertion_time=Now())
-            for c in names:
-                association = AssociateTag.objects.filter(start=mention, document_id=document, language=language,
-                                                       username=user,
-                                                       name_space=name_space,name=c)
-                if not association.exists():
-                    AssociateTag.objects.create(start=mention, stop=mention.stop, document_id=document, language=language,
-                                             username=user,
-                                             name_space=name_space, name=c, insertion_time=Now())
-            update_gt(user, name_space, document, language)
+            topic_obj = Topic.objects.get(id=topic)
+            mention = Mention.objects.get(start = start, stop = stop, document_id = document, language = language)
+            # copy labels
+            cursor = connection.cursor()
+            cursor.execute("""
+                                  INSERT INTO annotate (start, stop, document_id, language, username, name_space, insertion_time, topic_id)
+                                      SELECT start, stop, document_id, language, %s, name_space, insertion_time, topic_id
+                                      FROM annotate
+                                      WHERE document_id = %s and topic_id = %s and username = %s and start = %s and stop = %s ON CONFLICT DO NOTHING;
+                                                   """,
+                           [user.username, document.document_id, topic_obj.id, username_source,mention.start,mention.stop])
+            cursor.execute("""
+                                      INSERT INTO associate_tag (username, name_space, document_id, language, start, stop, name, insertion_time, topic_id)
+                                          SELECT %s, name_space, document_id, language, start, stop, name, insertion_time, topic_id
+                                          FROM associate_tag
+                                          WHERE document_id = %s and topic_id = %s and username = %s and start = %s and stop = %s ON CONFLICT DO NOTHING;
+                                       """,
+                           [user.username, document.document_id, topic_obj.id, username_source,mention.start,mention.stop])
+            update_gt(user,name_space,document,language,topic_obj)
             return json_resp
     except Exception as e:
         json_resp = {'error': e}
@@ -145,13 +156,10 @@ def copy_tags_aux(username,name_space,document,language,json_body):
         print(e)
         return json_resp
     
-def copy_concepts_aux(username,name_space,document,language,json_body):
+def copy_concepts_aux(username,name_space,document,language,json_body,topic,username_source):
     name_space = NameSpace.objects.get(name_space=name_space)
     user = User.objects.get(username=username, name_space=name_space)
     document = Document.objects.get(document_id=document, language=language)
-    # json_body = json.loads(request.body)
-    user_source = json_body['user']
-    user_source = User.objects.get(username=user_source, name_space=name_space)
     mention = json_body['mention']
     start = mention['start']
     stop = mention['stop']
@@ -164,30 +172,31 @@ def copy_concepts_aux(username,name_space,document,language,json_body):
 
     # position = '_'.join(position.split('_')[:-1])
     start, stop = return_start_stop_for_backend(start, stop, position, document.document_content)
-    associations = Associate.objects.filter(start=start, stop=stop, username=user_source, name_space=name_space,
-                                            document_id=document)
-    concepts = [a.concept_url for a in associations]
-    names = [a.name for a in associations]
+
 
     # non controllo se tra le mentions c'è già in quanto la sto copiando
     json_resp = {'msg': 'ok'}
     try:
         with transaction.atomic():
-            mention = Mention.objects.get(start=start, stop=stop, document_id=document, language=language)
-            annotation = Annotate.objects.filter(start=mention, document_id=document, language=language, username=user,
-                                                 name_space=name_space)
-            if not annotation.exists():
-                Annotate.objects.create(start=mention,stop = mention.stop, document_id=document, language=language, username=user,
-                                        name_space=name_space, insertion_time=Now())
-            for c in concepts:
-                area = names[concepts.index(c)]
-                association = Associate.objects.filter(start=mention, document_id=document, language=language,
-                                                       username=user,
-                                                       name_space=name_space, concept_url=c, name=area)
-                if not association.exists():
-                    Associate.objects.create(start=mention,stop = mention.stop, document_id=document, language=language, username=user,
-                                             name_space=name_space, concept_url=c, name=area, insertion_time=Now())
-            update_gt(user, name_space, document, language)
+            topic_obj = Topic.objects.get(id=topic)
+            mention = Mention.objects.get(start = start, stop = stop, document_id = document, language = language)
+            # copy labels
+            cursor = connection.cursor()
+            cursor.execute("""
+                                  INSERT INTO annotate (start, stop, document_id, language, username, name_space, insertion_time, topic_id)
+                                      SELECT start, stop, document_id, language, %s, name_space, insertion_time, topic_id
+                                      FROM annotate
+                                      WHERE document_id = %s and topic_id = %s and username = %s and start = %s and stop = %s ON CONFLICT DO NOTHING;
+                                                   """,
+                           [user.username, document.document_id, topic_obj.id, username_source,mention.start,mention.stop])
+            cursor.execute("""
+                                      INSERT INTO associate (username, name_space, document_id, language, start, stop, name, insertion_time, topic_id, concept_url)
+                                          SELECT %s, name_space, document_id, language, start, stop, name, insertion_time, topic_id, concept_url
+                                          FROM associate
+                                          WHERE document_id = %s and topic_id = %s and username = %s and start = %s and stop = %s ON CONFLICT DO NOTHING;
+                                       """,
+                           [user.username, document.document_id, topic_obj.id, username_source,mention.start,mention.stop])
+            update_gt(user,name_space,document,language,topic_obj)
             return json_resp
     except Exception as e:
         json_resp = {'error': e}

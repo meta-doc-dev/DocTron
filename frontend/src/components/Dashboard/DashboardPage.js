@@ -7,7 +7,8 @@ import DashboardLayout from "./DashboardLayout";
 
 const DashboardPage = () => {
     useEffect(() => {
-        axios.defaults.baseURL = window.baseurl ? window.baseurl.replace(/\/dashboard\/$/, "/") : 'http://localhost:8000/';
+        console.log('BASEURL DASHBOARD',window.baseurl)
+        axios.defaults.baseURL = window.baseurl ? window.baseurl.replace(/\/dashboard\/$/, "/") : 'https://doctron.dei.unipd.it/';
         axios.defaults.withCredentials = true; 
       }, []);
 

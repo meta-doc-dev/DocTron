@@ -33,7 +33,7 @@ export default function Demo(props){
             <Row>
             {/*<Col md={2}></Col>*/}
             <Col md={12}>
-            <div>Here you can find a set of short videos showing the features of MetaTron</div>
+            <div>Here you can find a set of short videos showing the features of DocTron</div>
             <div id = 'annotation_types'>
             <h2>Annotation Types</h2>
             <div>
@@ -56,7 +56,7 @@ export default function Demo(props){
                         </ol>
                     </p><br/>
                     <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                        <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/mentions_annotation.mp4" />
+                        <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/mentions_annotation.mp4" />
                     </video>
                         <div>Video 1: mentions annotation</div>
                     </div>
@@ -73,7 +73,7 @@ export default function Demo(props){
                             concept will be immediately linked.
                                 <br/>
                                 <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                                    <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/suggestion.mp4" />
+                                    <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/suggestion.mp4" />
                                 </video>
                                     <div>Video 2: Annotation suggestion from the mention panel</div>
                                 </div>
@@ -82,7 +82,7 @@ export default function Demo(props){
                             is also linked to a concept, all the mentions found will be also linked to that concept.
                             <br/>
                                 <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                                    <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/annotate_all.mp4" />
+                                    <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/annotate_all.mp4" />
                                 </video>
                                     <div>Video 3: Annotate all the mention with the same textual content of the selected mention</div>
 
@@ -104,7 +104,7 @@ export default function Demo(props){
                         the first chars of a concept and the list will filtered keeping all the concepts whose name contain the typed chars.
                     </p>
                     <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                        <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/concepts_annotation.mp4" />
+                        <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/concepts_annotation.mp4" />
                     </video>
                         <div>Video 4: concepts linking annotation</div>
                     </div>
@@ -112,7 +112,7 @@ export default function Demo(props){
                 <div>
                     <h4>3 - Relationships annotation</h4>
                     <p className='dem'>To create a new relationship, open the mention panel of s mention and click on <i>Add relationship</i>.
-                        Once clicked, MetaTron will enter in <i>relationship mode</i> and the selected mention will be the subject of the relationship. On the right,
+                        Once clicked, doctron will enter in <i>relationship mode</i> and the selected mention will be the subject of the relationship. On the right,
                         a relationship panel provides an overview of the relationship.
                         Relationships comprehend a subject, a predicate and an object. Each of them can be a mention or a concept. Each relationship must contain
                         at least a mention. To select new mentions composing the relationship, right-click on the target mention and select the role -- e.g., subject, predicate, object.
@@ -127,7 +127,7 @@ export default function Demo(props){
                         </ol>
                     </p>
                     <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                        <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/full_rel.mp4" />
+                        <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/full_rel.mp4" />
                     </video>
                         <div>Video 5: three relationships annotations. The first one consists in typing the predicate, the second
                         one in adding a predicate concepts, the third one has the subject mention and the predicate and object concepts.</div>
@@ -140,7 +140,7 @@ export default function Demo(props){
                     main interface. An assertion panel is displayed and it is possible to add subject, predicate and object via the
                     <i>Add subject, Add predicate</i> and <i>Add object</i> buttons.</p>
                     <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                        <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/assertion_annotation.mp4" />
+                        <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/assertion_annotation.mp4" />
                     </video><div className={'caption'}>Video 6: Assertion annotation</div></div>
                 </div>
                 <div>
@@ -148,7 +148,7 @@ export default function Demo(props){
                     <p className='dem'>Labels are classes associated to the entire document. To select one or more labels, click on <i>Annotations</i> button
                     on the main interface and select the <i>labels</i> option. The list of labels will appear and each label is a button that can selected or deselected.</p>
                     <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                        <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/labels_annotation.mp4" />
+                        <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/labels_annotation.mp4" />
                     </video><div className={'caption'}>Video 7: labels annotation</div></div>
                 </div>
             </div>
@@ -159,7 +159,7 @@ export default function Demo(props){
                         it is possible to edit and delete each relationship and assertion annotated. The labels have been already described above.
                     </p>
                     <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                        <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/annotations.mp4" />
+                        <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/annotations.mp4" />
                     </video><div className={'caption'}>Video 8: annotations list for each annotation type</div></div>
                 </div>
                 <div id={'sidebar'}>
@@ -172,20 +172,20 @@ export default function Demo(props){
                         <li><b>Change document</b>: change the document to annotate. It is possible to filter by ID, batch, annotated and not annotated documents;
                         <br/>
                             <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                                <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/change_doc.mp4" />
+                                <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/change_doc.mp4" />
                             </video><div className={'caption'}>Video 9: sidebar change document, collections and settings</div></div>
                         </li>
                         <li><b>Change collection</b>: change the collection between those associated to the user. Each collection is provided with the percentage of documents annotated so far by the user;</li>
                         <li><b>Copy annotations</b>: check the annotators of the collection and copy one or more of her annotations. It is possible also to get and edit the annotations selected via majority voting among all the annotations ;
                         <br/>
                             <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                                <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/members.mp4" />
+                                <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/members.mp4" />
                             </video><div className={'caption'}>Video 10: Copy the annotation of a member, or the annotation obtained via majority voting</div></div>
 
                         </li>
                         <li><b>Statistics</b>: get an overview of the statistics of the document's annotations;
                             <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                                <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/quickstats.mp4" />
+                                <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/quickstats.mp4" />
                             </video><div>Video 11: statistics of the current document</div><br/>
                 </div>
                         </li>
@@ -197,12 +197,12 @@ export default function Demo(props){
                         <li><b>Automatic annotation</b>: Automatic annotation with AutoTron: two modes are possible: GCA - annotates relationships, GDA - annotates assertions;
                                 <br/>
                             <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                                <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/autotron_gca.mp4" />
+                                <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/autotron_gca.mp4" />
                             </video>
                                 <div className={'caption'}>Video 12: AutoTron Gene Cancer association</div>
                             </div><br/>
                             <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                                <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/autotron_gda.mp4" />
+                                <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/autotron_gda.mp4" />
                             </video>
                                 <div className={'caption'}>Video 13: AutoTron Gene Disease association</div></div>
 
@@ -222,7 +222,7 @@ export default function Demo(props){
                     that creates a new collection is asked to specify: the collection name, the description, a set of labels, a set of concepts, the annotators invited to annotate the collection,
                     the list of documents that can be uploaded in JSON, CSV, PDF, TXT formats, a list of IDS or DOIs whose abstract and title will be downloaded from Sementic Scholar, OpenAIRE and PubMed.</p>
                     <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                        <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/new_collection.mp4" />
+                        <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/new_collection.mp4" />
                     </video>                    <div className={'caption'}>Video 14: create a new collection</div></div>
                 </div>
 
@@ -231,7 +231,7 @@ export default function Demo(props){
                     The page hosts a table where each row represents a document and shows data such as: the id, the date of last annotation and, for each annotation type
                     shows all the annotations, the number of annotators and their names. In addition, it is possible also to download the annotations, view the document's text and delete the document (and all the related annotations).</p>
                     <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                        <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/documents.mp4" />
+                        <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/documents.mp4" />
                     </video>                    <div className={'caption'}>Video 15: collection documents table</div></div>
 
                 </div>
@@ -255,7 +255,7 @@ export default function Demo(props){
 
                     </p>
                     <div className='videoclass'><video width="900px" height="600px" controls="controls">
-                        <source type="video/mp4" src="https://metatron.dei.unipd.it/static/video/stats.mp4" />
+                        <source type="video/mp4" src="https://doctron.dei.unipd.it/static/video/stats.mp4" />
                     </video>
                     <div className={'caption'}>Video 16: statistics page</div>
                     </div>

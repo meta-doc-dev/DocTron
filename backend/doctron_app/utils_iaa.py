@@ -6,6 +6,9 @@ from django.contrib.auth.models import User as User1
 from django.contrib.auth.models import *
 from django.contrib.auth.decorators import login_required
 import hashlib
+import numpy as np
+
+import krippendorff
 from django.db.models.functions import Now
 from django.db.models import Count
 from django.contrib.postgres.aggregates import ArrayAgg
@@ -26,100 +29,526 @@ from sklearn.metrics import cohen_kappa_score
 
 
 
-def create_cohen(couple, collection, documents, type = 'concepts'):
+def create_cohen(document, topic):
 
-    user_1 = User.objects.get(username=couple[0])
-    user_2 = User.objects.get(username=couple[1])
+    # identify annotators
+    document = Document.objects.get(document_id=document)
+    topic = Topic.objects.get(id=topic)
+    users = ShareCollection.objects.filter(collection_id=document.collection_id).values_list('username',flat=True)
+    users = [u.username for u in users]
+    annotations = {u: [] for u in users}
+    annotation_type = document.collection_id.annotation_type.name
+    if annotation_type == "Graded labeling":
+        labels = CollectionHasLabel.objects.filter(collection_id = document.collection_id,labels_annotation=True).values_list('label', flat=True)
 
-    
-    documents = Document.objects.filter(document_id__in=documents)
-    doc_list = [a.document_id for a in documents]
-    # annotations = Associate.objects.filter(document_id__in=documents, username__in=[user_1, user_2]).distinct('start','stop','concept_url','name')
-    name_space = NameSpace.objects.get(name_space = 'Human')
-    user_iaa = User.objects.get(username='IAA-Inter Annotator Agreement', name_space=name_space)
-
-    if type == 'concepts':
-        annotations = Associate.objects.filter(document_id__in=documents, username__in=[user_1, user_2]).exclude(username=user_iaa).values('start', 'stop',
-                                                                                                           'concept_url',
-                                                                                                           'name').annotate(
-            usernames=ArrayAgg('username')).order_by('start', 'stop', 'concept_url', 'name')
-    elif type == 'assertions':
-        annotations = CreateFact.objects.filter(document_id__in=documents).exclude(username=user_iaa).values(
-            'subject_concept_url', 'subject_name', 'object_name', 'object_concept_url', 'predicate_name',
-            'predicate_concept_url').annotate(
-            usernames=ArrayAgg('username')).order_by('subject_concept_url', 'subject_name', 'object_name',
-                                                     'object_concept_url', 'predicate_name', 'predicate_concept_url')
-    elif type == 'relations':
-        relations1 = Link.objects.filter(subject_document_id__in=doc_list).exclude(username=user_iaa).values(
-            'subject_start', 'subject_stop', 'object_start', 'object_stop', 'predicate_start',
-            'predicate_stop').annotate(
-            usernames=ArrayAgg('username')).order_by('subject_start', 'subject_stop', 'object_start', 'object_stop',
-                                                     'predicate_start', 'predicate_stop')
-
-        relations2 = RelationshipSubjConcept.objects.filter(object_document_id__in=doc_list).exclude(
-            username=user_iaa).values(
-            'object_start', 'object_stop', 'concept_url', 'name', 'predicate_start', 'predicate_stop').annotate(
-            usernames=ArrayAgg('username')).order_by('object_start', 'object_stop', 'concept_url', 'name',
-                                                     'predicate_start', 'predicate_stop')
-        relations3 = RelationshipPredConcept.objects.filter(subject_document_id__in=doc_list).exclude(
-            username=user_iaa).values(
-            'object_start', 'object_stop', 'concept_url', 'name', 'subject_start', 'subject_stop').annotate(
-            usernames=ArrayAgg('username')).order_by('object_start', 'object_stop', 'concept_url', 'name',
-                                                     'subject_start', 'subject_stop')
-        relations4 = RelationshipObjConcept.objects.filter(subject_document_id__in=doc_list).exclude(
-            username=user_iaa).values(
-            'predicate_start', 'predicate_stop', 'concept_url', 'name', 'subject_start', 'subject_stop').annotate(
-            usernames=ArrayAgg('username')).order_by('predicate_start', 'predicate_stop', 'concept_url',
-                                                     'name', 'subject_start', 'subject_stop')
-        relations5 = RelationshipSubjMention.objects.filter(document_id__in=documents).exclude(username=user_iaa).values(
-            'object_concept_url', 'object_name', 'predicate_concept_url', 'predicate_name', 'start', 'stop').annotate(
-            usernames=ArrayAgg('username')).order_by('object_concept_url', 'object_name', 'predicate_concept_url',
-                                                     'predicate_name', 'start', 'stop')
-        relations6 = RelationshipObjMention.objects.filter(document_id__in=documents).exclude(username=user_iaa).values(
-            'subject_concept_url', 'subject_name', 'predicate_concept_url', 'predicate_name', 'start', 'stop').annotate(
-            usernames=ArrayAgg('username')).order_by('subject_concept_url', 'subject_name', 'predicate_concept_url',
-                                                     'predicate_name', 'start', 'stop')
-        relations7 = RelationshipPredMention.objects.filter(document_id__in=documents).exclude(username=user_iaa).values(
-            'subject_concept_url', 'subject_name', 'object_concept_url', 'object_name', 'start', 'stop').annotate(
-            usernames=ArrayAgg('username')).order_by('subject_concept_url', 'subject_name', 'object_concept_url',
-                                                     'object_name', 'start', 'stop')
-        annotations = list(chain( relations7, relations6, relations5, relations4, relations3, relations2, relations1))
+        if len(users) > 0:
+            for u in users:
+                user = User.objects.filter(username=u).first()
+                for l in labels:
+                    score = None
+                    anno = AnnotateLabel.objects.filter(document_id=document,username = user, topic_id=topic, label=l)
+                    if anno.exists():
+                        score = anno.first().grade
+                    annotations[u].append(score)
 
 
 
-    elif type == 'labels':
-        annotations = AnnotateLabel.objects.filter(document_id__in=documents).exclude(username=user_iaa).values(
-            'name').annotate(
-            usernames=ArrayAgg('username')).order_by('name')
-    elif type == 'mentions':
-        annotations = Associate.objects.filter(document_id__in=documents, username__in=[user_1, user_2]).exclude(
-            username=user_iaa).values('start', 'stop').annotate(
-            usernames=ArrayAgg('username')).order_by('start', 'stop')
-    user1_ratings = []
-    user2_ratings = []
+    if annotation_type == "Passages annotation":
+
+        labels = CollectionHasLabel.objects.filter(collection_id=document.collection_id, passage_annotation=True)
+        passages = AnnotatePassage.objects.filter(document_id=document, topic_id=topic).distinct(
+            'start','stop')
+        if len(users) > 0:
+            for u in users:
+                user = User.objects.filter(username=u).first()
+                for l in labels:
+                    for p in passages:
+                        score = None
+                        anno = AnnotatePassage.objects.filter(document_id=document,username=user,start=p.start,stop=p.stop, topic_id=topic, label=l)
+                        if anno.exists():
+                            score = anno.first().grade
+                        annotations[u].append(score)
 
 
-    for a in annotations:
-        users_anno = a['usernames']
-        if user_1.username in users_anno:
-            user1_ratings.append(1)
-        else:
-            user1_ratings.append(0)
+    if annotation_type == "Entity linking":
+        entities = AssociateTag.objects.filter(document_id=document, topic_id=topic).distinct(
+            'start', 'stop')
+        if len(users) > 0:
+            for u in users:
+                user = User.objects.filter(username=u).first()
+                for e in entities:
+                    tag = None
+                    anno = AssociateTag.objects.filter(document_id=document, username=user, start=e.start,
+                                                          stop=e.stop, topic_id=topic)
+                    if anno.exists():
+                        tag = anno.first().tag_name
+                    annotations[u].append(tag)
 
-        if user_2.username in users_anno:
-            user2_ratings.append(1)
-        else:
-            user2_ratings.append(0)
 
-    co = cohen_kappa_score(user1_ratings, user2_ratings)
-    diff = False  # agreement massimo
-    for element1, element2 in zip(user1_ratings, user2_ratings):
-        if element1 != element2:
-            diff = True
-            break
-    if user2_ratings == user1_ratings == [] or diff == False:
-        co = 1.0
-    return co
+
+    if annotation_type == "Entity tagging":
+        entities = Associate.objects.filter(document_id=document, topic_id=topic).distinct(
+            'start', 'stop')
+        if len(users) > 0:
+            for u in users:
+                user = User.objects.filter(username=u).first()
+                for e in entities:
+                    concept = None
+                    anno = Associate.objects.filter(document_id=document, username=user, start=e.start,
+                                                       stop=e.stop, topic_id=topic)
+                    if anno.exists():
+                        concept = anno.first().concept_url_id
+                    annotations[u].append(concept)
+
+
+    if annotation_type == "Objects detection":
+        labels = CollectionHasLabel.objects.filter(collection_id=document.collection_id, passage_annotation=True)
+        passages = AnnotateObject.objects.filter(document_id=document, topic_id=topic).distinct(
+            'points')
+        if len(users) > 0:
+            for u in users:
+                user = User.objects.filter(username=u).first()
+                for l in labels:
+                    for p in passages:
+                        score = None
+                        anno = AnnotateObjectLabel.objects.filter(document_id=document,username=user,points=p.points, topic_id=topic, label=l)
+                        if anno.exists():
+                            score = anno.first().grade
+                        annotations[u].append(score)
+
+    if annotation_type == "Facts annotation":
+        facts = CreateFact.objects.filter(document_id=document, topic_id=topic).distinct(
+            'subject_concept_url', 'predicate_concept_url','object_concept_url','subject_name', 'predicate_name','object_name')
+        if len(users) > 0:
+            for u in users:
+                user = User.objects.filter(username=u).first()
+                for p in facts:
+                    score = 0
+                    f = CreateFact.objects.filter(document_id=document, username=user, subject_concept_url=p.subject_concept_url,predicate_concept_url=p.predicate_concept_url,object_concept_url=p.object_concept_url,predicate_name=p.predicate_name,object_name=p.object_name,subject_name=p.subject_name,
+                                                              topic_id=topic)
+                    if f.exists():
+                        score = 1
+                    annotations[u].append(score)
+
+    if annotation_type == "Relationships annotation":
+        link = Link.objects.filter(subject_document_id=document.document_id, topic_id=topic).distinct(
+            'subject_start', 'predicate_start', 'object_start', 'subject_stop', 'predicate_stop',
+            'object_stop')
+
+        rels_1 = RelationshipObjConcept.objects.filter(subject_document_id=document.document_id, topic_id=topic).distinct(
+            'subject_start', 'subject_stop', 'predicate_start', 'predicate_stop', 'concept_url',
+            'name')
+
+        rels_2 = RelationshipObjMention.objects.filter(document_id=document, topic_id=topic).distinct(
+            'start', 'stop', 'subject_concept_url', 'predicate_concept_url', 'predicate_name',
+            'subject_name')
+
+        rels_3 = RelationshipSubjConcept.objects.filter(object_document_id=document.document_id, topic_id=topic).distinct(
+            'object_start', 'object_stop', 'predicate_start', 'predicate_stop', 'concept_url',
+            'name')
+
+        rels_4 = RelationshipSubjMention.objects.filter(document_id=document, topic_id=topic).distinct(
+            'start', 'stop', 'object_concept_url', 'predicate_concept_url', 'predicate_name',
+            'object_name')
+
+        rels_5 = RelationshipPredConcept.objects.filter(subject_document_id=document.document_id, topic_id=topic).distinct(
+            'object_start', 'object_stop', 'subject_start', 'subject_stop', 'concept_url',
+            'name')
+
+        rels_6 = RelationshipPredMention.objects.filter(document_id=document, topic_id=topic).distinct(
+            'start', 'stop', 'subject_concept_url', 'object_concept_url', 'subject_name',
+            'object_name')
+
+        if len(users) > 0:
+            for u in users:
+                user = User.objects.filter(username=u).first()
+                for p in link:
+                    score = 0
+                    f = Link.objects.filter(subject_document_id=document.document_id, username=user,
+                                                  subject_start=p.subject_start,
+                                                  predicate_start=p.predicate_start,
+                                                  object_start=p.object_start,
+                                                  predicate_stop=p.predicate_stop, object_stop=p.object_stop,
+                                                  subject_stop=p.subject_stop,
+                                                  topic_id=topic)
+                    if f.exists():
+                        score = 1
+                    annotations[u].append(score)
+
+                for p in rels_3:
+                    score = 0
+                    f = RelationshipSubjConcept.objects.filter(object_document_id=document.document_id, username=user,
+                                                  object_start=p.object_start,
+                                                  predicate_start=p.predicate_start,
+                                                  object_stop=p.object_stop,
+                                                  predicate_stop=p.predicate_stop,
+                                                  concept_url=p.concept_url,
+                                                  name=p.name,
+                                                  topic_id=topic)
+                    if f.exists():
+                        score = 1
+                    annotations[u].append(score)
+
+                for p in rels_1:
+                    score = 0
+                    f = RelationshipObjConcept.objects.filter(subject_document_id=document.document_id, username=user,
+                                                              subject_start=p.subject_start,
+                                                              predicate_start=p.predicate_start,
+                                                              subject_stop=p.subject_stop,
+                                                              predicate_stop=p.predicate_stop,
+                                                              concept_url=p.concept_url,
+                                                              name=p.name,
+                                                              topic_id=topic)
+                    if f.exists():
+                        score = 1
+                    annotations[u].append(score)
+
+                for p in rels_2:
+                    score = 0
+                    f = RelationshipObjMention.objects.filter(document_id=document, username=user,
+                                                              start=p.start, stop=p.stop,
+                                                              subject_concept_url=p.subject_concept_url,
+                                                              subject_name=p.subject_name,
+                                                              predicate_concept_url=p.predicate_concept_url,
+                                                              predicate_name=p.predicate_name,
+                                                              topic_id=topic)
+                    if f.exists():
+                        score = 1
+                    annotations[u].append(score)
+
+                for p in rels_5:
+                    score = 0
+                    f = RelationshipPredConcept.objects.filter(subject_document_id=document.document_id, username=user,
+                                                               subject_start=p.subject_start,
+                                                               object_start=p.object_start,
+                                                               subject_stop=p.subject_stop,
+                                                               object_stop=p.object_stop,
+                                                               concept_url=p.concept_url,
+                                                               name=p.name,
+                                                               topic_id=topic)
+                    if f.exists():
+                        score = 1
+                    annotations[u].append(score)
+
+                for p in rels_4:
+                    score = 0
+                    f = RelationshipSubjMention.objects.filter(document_id=document, username=user,
+                                                              start=p.start, stop=p.stop,
+                                                              object_concept_url=p.object_concept_url,
+                                                              object_name=p.object_name,
+                                                              predicate_concept_url=p.predicate_concept_url,
+                                                              predicate_name=p.predicate_name,
+                                                              topic_id=topic)
+                    if f.exists():
+                        score = 1
+                    annotations[u].append(score)
+
+                for p in rels_6:
+                    score = 0
+                    f = RelationshipPredMention.objects.filter(document_id=document, username=user,
+                                                              start=p.start, stop=p.stop,
+                                                              object_concept_url=p.object_concept_url,
+                                                              object_name=p.object_name,
+                                                              subject_concept_url=p.subject_concept_url,
+                                                              subject_name=p.subject_name,
+                                                              topic_id=topic)
+                    if f.exists():
+                        score = 1
+                    annotations[u].append(score)
+
+   # user_from = User.objects.get(username = user_from)
+    # annotations_from = annotations[user_from]
+    cohens = []
+    for i in range(len(users)-1):
+        for j in range(i+1, len(users)):
+            json_obj = {'u_1': users[i],'u_2': users[j]}
+            annotations_to = annotations[users[j]]
+            annotations_from = annotations[users[i]]
+            user1_ratings = [r for i,r in enumerate(annotations_from) if annotations_to[i] is not None or r is not None]
+            user2_ratings = [r for i,r in enumerate(annotations_to) if annotations_from[i] is not None or r is not None]
+            co = cohen_kappa_score(user1_ratings, user2_ratings)
+            if user2_ratings == user1_ratings and user1_ratings != []:
+                co = 1.0
+            elif user2_ratings == user1_ratings == []:
+                co = '-'
+            json_obj['cohens'] = co
+            cohens.append(json_obj)
+    return cohens
+
+def create_fleiss_kripp(document,topic):
+    document = Document.objects.get(document_id = document)
+    topic = Topic.objects.get(id = topic)
+    collection = document.collection_id
+    annotation_type = collection.annotation_type.name
+    users = ShareCollection.objects.filter(collection_id=collection).values_list('username', flat=True)
+
+    # rows subjects columns raters cells are users annotations: rows: relevance and clarity. Columns users, cells: what they assigned
+    # generate empty matrix
+    if annotation_type == 'Graded labeling':
+        labels = CollectionHasLabel.objects.filter(collection_id = collection, labels_annotation = True).values_list('label',flat=True)
+
+        table = [[None]*len(users) for _ in labels.count()]
+        annotations = AnnotateLabel.objects.filter(document_id = document, topic_id = topic)
+        # fill the table
+        for annotation in annotations:
+            label = annotation.label.name
+            username = annotation.username.username
+            grade = annotation.grade
+            index_user = users.index(username)
+            index_label = labels.index(label)
+            table[index_label][index_user] = grade
+
+
+    if annotation_type == 'Objects detection':
+        labels = CollectionHasLabel.objects.filter(collection_id=collection, passage_annotation=True).values_list(
+            'label', flat=True)
+
+
+        passages = AnnotateObject.objects.filter(document_id=document, topic_id=topic).distinct("points")
+
+        passages_tuples = [a.points for a in passages]
+
+        table = []
+        for label in labels:
+            tab = [[None] * len(users) for _ in passages.count()]
+            annotations = AnnotateObjectLabel.objects.filter(document_id=document, topic_id=topic,label=label.label)
+
+            # fill the table
+            for annotation in annotations:
+                username = annotation.username.username
+                grade = annotation.grade
+                index_user = users.index(username)
+                index_passage = passages_tuples.index(annotation.points)
+                table[index_passage][index_user] = grade
+
+            if table == []:
+                table = tab
+            else:
+                table.extend(tab)
+
+    if annotation_type == 'Passages annotation':
+        labels = CollectionHasLabel.objects.filter(collection_id=collection, passage_annotation=True).values_list(
+            'label', flat=True)
+
+
+        passages = AnnotatePassage.objects.filter(document_id=document, topic_id=topic).distinct("start","stop")
+
+        passages_tuples = [tuple([a.start_id,a.stop]) for a in passages]
+        table = []
+        for label in labels:
+            tab = [[None] * len(users) for _ in passages.count()]
+            annotations = AnnotatePassage.objects.filter(document_id=document, topic_id=topic,label=label.label)
+
+            # fill the table
+            for annotation in annotations:
+                username = annotation.username.username
+                grade = annotation.grade
+                index_user = users.index(username)
+                index_passage = passages_tuples.index(tuple([annotation.start_id,annotation.stop]))
+                table[index_passage][index_user] = grade
+
+            if table == []:
+                table = tab
+            else:
+                table.extend(tab)
+
+    if annotation_type == 'Entity linking':
+
+
+
+        entities = Associate.objects.filter(document_id=document, topic_id=topic).distinct("concept_url","name")
+        entities_tup = [tuple([e.concept_url_id, e.name_id]) for e in entities]
+
+
+        table = [[0] * len(users) for _ in entities.count()]
+        annotations = Associate.objects.filter(document_id=document, topic_id=topic)
+
+        # fill the table
+        for annotation in annotations:
+            tup = tuple([annotation.concept_url_id, annotation.name_id])
+            username = annotation.username.username
+            index_user = users.index(username)
+            index_entity = entities_tup.index(tup)
+            table[index_entity][index_user] = 1
+
+    if annotation_type == 'Entity tagging':
+
+        entities = AssociateTag.objects.filter(document_id=document, topic_id=topic).distinct("name")
+        entities_tup = [e.name_id for e in entities]
+
+        table = [[0] * len(users) for _ in entities.count()]
+        annotations = Associate.objects.filter(document_id=document, topic_id=topic)
+
+        # fill the table
+        for annotation in annotations:
+            username = annotation.username.username
+            index_user = users.index(username)
+            index_entity = entities_tup.index(annotation.name_id)
+            table[index_entity][index_user] = 1
+
+    if annotation_type == 'Facts annotation':
+
+        facts = CreateFact.objects.filter(document_id=document, topic_id=topic).distinct("subject_concept_url","object_concept_url","predicate_concept_url","subject_name","predicate_name","object_name")
+        facts_tups = [tuple([a.subject_concept_url,a.object_concpet_url,a.predicate_concept_url,a.subject_name,a.object_name,a.predicate_name]) for a in facts]
+        table = [[0] * len(users) for _ in facts.count()]
+        annotations = CreateFact.objects.filter(document_id=document, topic_id=topic)
+
+        # fill the table
+        for a in annotations:
+            tup = tuple([a.subject_concept_url,a.object_concpet_url,a.predicate_concept_url,a.subject_name,a.object_name,a.predicate_name])
+            username = a.username.username
+            index_user = users.index(username)
+            index_entity = facts_tups.index(tup)
+            table[index_entity][index_user] = 1
+
+    if annotation_type == 'Relationships annotation':
+        table = []
+        link = Link.objects.filter(subject_document_id=document.document_id, topic_id=topic).distinct(
+            'subject_start', 'predicate_start', 'object_start', 'subject_stop', 'predicate_stop',
+            'object_stop')
+
+        link_tups = [tuple([a.subject_start,a.predicate_start,a.object_start,a.subject_stop,a.predicate_stop,a.object_stop]) for a in link]
+        table_link = [[0] * len(users) for _ in link.count()]
+        annotations = Link.objects.filter(subject_document_id=document.document_id, topic_id=topic)
+
+        # fill the table
+        for a in annotations:
+            tup =  tuple([a.subject_start, a.predicate_start, a.object_start, a.subject_stop, a.predicate_stop, a.object_stop])
+
+            username = a.username.username
+            index_user = users.index(username)
+            index_entity = link_tups.index(tup)
+            table_link[index_entity][index_user] = 1
+            table.extend(table_link)
+
+
+        rels_1 = RelationshipObjConcept.objects.filter(subject_document_id=document.document_id, topic_id=topic).distinct(
+            'subject_start', 'subject_stop', 'predicate_start', 'predicate_stop', 'concept_url',
+            'name')
+        rels_1_tups = [tuple([a.subject_start, a.predicate_stop, a.predicate_start, a.predicate_stop, a.concept_url_id, a.name_id])
+            for a in rels_1]
+        table_rels_1 = [[0] * len(users) for _ in rels_1.count()]
+        annotations = RelationshipObjConcept.objects.filter(subject_document_id=document.document_id, topic_id=topic)
+
+        # fill the table
+        for a in annotations:
+            tup = tuple([a.subject_start, a.predicate_stop, a.predicate_start, a.predicate_stop, a.concept_url_id, a.name_id])
+            username = a.username.username
+            index_user = users.index(username)
+            index_entity = rels_1_tups.index(tup)
+            table_rels_1[index_entity][index_user] = 1
+            table.extend(table_rels_1)
+
+
+        rels_2 = RelationshipObjMention.objects.filter(document_id=document, topic_id=topic).distinct(
+            'start', 'stop', 'subject_concept_url', 'predicate_concept_url', 'predicate_name',
+            'subject_name')
+        rels_2_tups = [tuple([a.start_id, a.stop, a.subject_concept_url, a.predicate_concept_url, a.predicate_name, a.subject_name])
+            for a in rels_2]
+        table_rels_2 = [[0] * len(users) for _ in rels_2.count()]
+        annotations = RelationshipObjMention.objects.filter(subject_document_id=document.document_id, topic_id=topic)
+
+        # fill the table
+        for a in annotations:
+            tup = tuple([a.start_id, a.stop, a.subject_concept_url, a.predicate_concept_url, a.predicate_name, a.subject_name])
+            username = a.username.username
+            index_user = users.index(username)
+            index_entity = rels_2_tups.index(tup)
+            table_rels_2[index_entity][index_user] = 1
+            table.extend(table_rels_2)
+
+
+        rels_3 = RelationshipSubjConcept.objects.filter(object_document_id=document.document_id, topic_id=topic).distinct(
+            'object_start', 'object_stop', 'predicate_start', 'predicate_stop', 'concept_url',
+            'name')
+        rels_3_tups = [
+            tuple([a.object_start, a.object_stop, a.predicate_start, a.predicate_stop, a.concept_url_id, a.name_id])
+            for a in rels_3]
+        table_rels_3 = [[0] * len(users) for _ in rels_3.count()]
+        annotations = RelationshipSubjConcept.objects.filter(object_document_id=document.document_id, topic_id=topic)
+
+        # fill the table
+        for a in annotations:
+            tup = tuple(
+                [a.object_start, a.object_stop, a.predicate_start, a.predicate_stop, a.concept_url_id, a.name_id])
+            username = a.username.username
+            index_user = users.index(username)
+            index_entity = rels_3_tups.index(tup)
+            table_rels_3[index_entity][index_user] = 1
+            table.extend(table_rels_3)
+
+        rels_4 = RelationshipSubjMention.objects.filter(document_id=document, topic_id=topic).distinct(
+            'start', 'stop', 'object_concept_url', 'predicate_concept_url', 'predicate_name',
+            'object_name')
+        rels_4_tups = [tuple([a.start_id, a.stop, a.object_concept_url, a.predicate_concept_url, a.predicate_name, a.object_name])
+            for a in rels_4]
+        table_rels_4 = [[0] * len(users) for _ in rels_4.count()]
+        annotations = RelationshipSubjMention.objects.filter(document_id=document, topic_id=topic)
+
+        # fill the table
+        for a in annotations:
+            tup = tuple(
+                [a.start_id, a.stop, a.object_concept_url, a.predicate_concept_url, a.predicate_name, a.object_name])
+            username = a.username.username
+            index_user = users.index(username)
+            index_entity = rels_4_tups.index(tup)
+            table_rels_4[index_entity][index_user] = 1
+            table.extend(table_rels_4)
+
+
+        rels_5 = RelationshipPredConcept.objects.filter(subject_document_id=document.document_id, topic_id=topic).distinct(
+            'object_start', 'object_stop', 'subject_start', 'subject_stop', 'concept_url',
+            'name')
+
+        rels_5_tups = [
+            tuple([a.object_start, a.object_stop, a.subject_start, a.subject_stop, a.concept_url_id, a.name_id])
+            for a in rels_3]
+        table_rels_5 = [[0] * len(users) for _ in rels_5.count()]
+        annotations = RelationshipPredConcept.objects.filter(subject_document_id=document.document_id, topic_id=topic)
+
+        # fill the table
+        for a in annotations:
+            tup = tuple([a.object_start, a.object_stop, a.subject_start, a.subject_stop, a.concept_url_id, a.name_id])
+
+            username = a.username.username
+            index_user = users.index(username)
+            index_entity = rels_5_tups.index(tup)
+            table_rels_5[index_entity][index_user] = 1
+            table.extend(table_rels_5)
+
+        rels_6 = RelationshipPredMention.objects.filter(document_id=document, topic_id=topic).distinct(
+            'start', 'stop', 'subject_concept_url', 'object_concept_url', 'subject_name',
+            'object_name')
+        rels_6_tups = [tuple([a.start_id, a.stop, a.subject_concept_url, a.object_concept_url, a.object_name, a.subject_name])
+            for a in rels_6]
+        table_rels_6 = [[0] * len(users) for _ in rels_6.count()]
+        annotations = RelationshipPredMention.objects.filter(subject_document_id=document.document_id, topic_id=topic)
+
+        # fill the table
+        for a in annotations:
+            tup = tuple([a.start_id, a.stop, a.subject_concept_url, a.object_concept_url, a.predicate_name, a.object_name])
+            username = a.username.username
+            index_user = users.index(username)
+            index_entity = rels_6_tups.index(tup)
+            table_rels_6[index_entity][index_user] = 1
+            table.extend(table_rels_6)
+
+    if table == []:
+        return None
+
+    table_fleiss = aggregate_raters(table)[0]
+    fleiss_val = fleiss_kappa(table=table_fleiss)
+    fleiss_val = fleiss_val if not np.isnan(fleiss_val) else 1
+
+    table_kripp = list(map(list, zip(*table)))
+    kripp = krippendorff.alpha(reliability_data=table_kripp)
+    print("Krippendorff's alpha for interval metric: ", krippendorff.alpha(reliability_data=table_kripp))
+
+
+
+    fleiss_val =  fleiss_val if not np.isnan(fleiss_val) else None
+    kripp_val =  kripp if not np.isnan(kripp) else None
+    return fleiss_val, kripp_val
 
 
 
@@ -151,7 +580,7 @@ def global_mentions_agreement(collection,document=None):
     users = Annotate.objects.filter(document_id__in=document).exclude(username=user_iaa).distinct('username')
     users = [x.username_id for x in users]
     table = []
-    if len(users) > 1:
+    if len(users) > 0:
         for a in annotations:
             users_f = [0 for x in users]
             users_a = a['usernames']
@@ -188,7 +617,7 @@ def global_mentions_agreement(collection,document=None):
     #     users = [x.username for x in users]
     #
     # table = []
-    # if len(users) > 1:
+    # if len(users) > 0:
     #     for anno in annotations:
     #         user_annotations = []
     #         # users in rows, mentions in columns
@@ -426,7 +855,7 @@ def update_relationships_agreement_majority(document):
     users = [x.username for x in users]
     total_count_users = len(users)
     # delete tutte le annotate dell'iaa
-    if len(users) > 1:
+    if len(users) > 0:
         with transaction.atomic():
             print('link')
             Link.objects.filter(subject_document_id=document.document_id, username=user_iaa, name_space=name_space).delete()
@@ -664,7 +1093,7 @@ def global_concepts_agreement(collection, document=None):
     table = []
     users = Associate.objects.filter(document_id__in=document).exclude(username=user_iaa).distinct('username')
     users = [x.username_id for x in users]
-    if len(users) > 1:
+    if len(users) > 0:
         for a in annotations:
             for a in annotations:
                 users_f = [0 for x in users]
@@ -688,7 +1117,7 @@ def global_concepts_agreement(collection, document=None):
         return 1
 
     # table = []
-    # if len(users) > 1:
+    # if len(users) > 0:
     #     for association in mentions:
     #         mention = Mention.objects.get(document_id = association.document_id,start = association.start_id, stop = association.stop)
     #         user_annotations = []
@@ -777,7 +1206,7 @@ def global_labels_agreement(collection, documents=None):
     users = AnnotateLabel.objects.filter(document_id__in=documents).exclude(username=user_iaa)
     users = [x.username for x in users]
     table = []
-    if len(users) > 1:
+    if len(users) > 0:
         for a in annotations:
             for a in annotations:
                 users_f = [0 for x in users]
@@ -863,7 +1292,7 @@ def global_createfact_agreement(collection, document=None):
     users = [x.username_id for x in users]
 
     table = []
-    if len(users) > 1:
+    if len(users) > 0:
         for a in annotations:
             users_f = [0 for x in users]
             users_a = a['usernames']
@@ -886,7 +1315,7 @@ def global_createfact_agreement(collection, document=None):
     else:
         return 1
     # table = []
-    # if len(users) > 1:
+    # if len(users) > 0:
     #     for association in mentions:
     #
     #         user_annotations = []
@@ -1009,7 +1438,7 @@ def global_relationships_agreement(collection, document=None):
     user_annotations = []
 
     table = []
-    if len(users) > 1:
+    if len(users) > 0:
         for a in relations1:
             users_f = [0 for x in users]
             users_a = a['usernames']

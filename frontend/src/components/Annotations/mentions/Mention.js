@@ -201,8 +201,15 @@ export default function Mention(props){
         event.preventDefault()
         event.stopPropagation()
         if(CurAnnotator === Username){
-            setAnchorElTagAnno(event.currentTarget);
-            setAnchorElPassAnno(event.currentTarget);
+            if(AnnotationType === 'Entity tagging'){
+                setAnchorElTagAnno(event.currentTarget);
+
+            }else if (AnnotationType === 'Passages annotation'){
+                setAnchorElPassAnno(event.currentTarget);
+
+            }else if (AnnotationType === 'Entity linking'){
+                handleConcept(event)
+            }
             SetNewMention(false)
 
         }
@@ -280,7 +287,8 @@ export default function Mention(props){
                 let m = MentionsList.filter(x => x.mentions === props.mention.mentions)[0]
                 m['id'] = props.id
                 SetSnackMessage({'message': 'Saving...'})
-                axios.post('mentions/copy', {mention: m}).then(response => SetSnackMessage({'message': 'Saved'})).catch(error => SetSnackMessage({'message': 'ERROR'}))
+
+                axios.post('mentions/copy', {mention: m,user:CurAnnotator}).then(response => SetSnackMessage({'message': 'Saved'})).catch(error => SetSnackMessage({'message': 'ERROR'}))
             }
         }
         handleCloseMenu()
@@ -555,7 +563,7 @@ export default function Mention(props){
         if(Modality === 2 || View === 4) {
             SetOpenSnack(true)
             SetSnackMessage({'message': 'You cannot annotate this document'})
-        }else if(AnnotationType === 'Entity tagging'){
+        }else if(AnnotationType !== 'Entity tagging'){
                 SetOpenSnack(true)
                 SetSnackMessage({'message': 'Entity tagging is not allowed here'})
         }else {
@@ -845,33 +853,34 @@ export default function Mention(props){
 
 
 
-            {CurAnnotator !== Username ? <span onClick={(e)=>{
+            {CurAnnotator !== Username ? <span id={props.id} ref={inputEl} onClick={(e)=>{
                     if((e.altKey)) {
                         handleDelete(e)
                     }else if((e.shiftKey)){
                         console.log('relationships')
                         handleRelationship(e)
-                    }else if (e.ctrlKey ) {
+                    }else if (e.ctrlKey || AnnotationType === 'Entity linking' || AnnotationType === 'Relationships annotation') {
                         handleConcept(e)
                     }
 
                 }
                 }>
-                    <span id={props.id} ref={inputEl} >
+                    < >
                         {props.mention_text.startsWith(' ') && !props.mention_text.endsWith(' ') && <>&nbsp;{props.mention_text.trim()}</>}
                         {props.mention_text.endsWith(' ') && !props.mention_text.startsWith(' ') && <>{props.mention_text.trim()}&nbsp;</>}
                         {props.mention_text.endsWith(' ') && props.mention_text.startsWith(' ') && props.mention_text !== ' ' && <>&nbsp;{props.mention_text.trim()}&nbsp;</>}
                         {!props.mention_text.endsWith(' ') && !props.mention_text.startsWith(' ') && <>{props.mention_text}</>}
                         {props.mention_text === (' ') && <>&nbsp;</>}
-                    </span>
+                    </>
                 </span> :
-                <span onContextMenu={handleContextMenu} onClick={(e)=>{
+                < span id={props.id} ref={inputEl} onContextMenu={handleContextMenu} onClick={(e)=>{
                     console.log('clicked on span')
+
                     if((e.altKey)) {
                         handleDelete(e)
                     }else if((e.shiftKey)){
                         handleRelationship(e)
-                    }else if (e.ctrlKey ) {
+                    }else if (e.ctrlKey || AnnotationType === 'Entity linking' || AnnotationType === 'Relationships annotation') {
                         handleConcept(e)
                     }
 
@@ -881,7 +890,7 @@ export default function Mention(props){
                 }
                 }>
 
-                    <span id={props.id} ref={inputEl} >
+                    <>
 
                         {props.mention_text.startsWith(' ') && !props.mention_text.endsWith(' ') && <>&nbsp;{props.mention_text.trim()}</>}
                         {props.mention_text.endsWith(' ') && !props.mention_text.startsWith(' ') && <>{props.mention_text.trim()}&nbsp;</>}
@@ -889,7 +898,7 @@ export default function Mention(props){
                         {!props.mention_text.endsWith(' ') && !props.mention_text.startsWith(' ') && <>{props.mention_text}</>}
                         {props.mention_text === (' ') && <>&nbsp;</>}
 
-                    </span>
+                    </>
 
 
                     <StyledMenu
@@ -1063,14 +1072,20 @@ export default function Mention(props){
             >
                 <div></div>
                 <MenuItem autoFocus ={false} onClick={(e)=>{
-                    copyMention(e)
+                    if(AnnotationType === 'Passages annotation') {
+                        copyMention(e)
+                    }else if(AnnotationType === 'Entity linking') {
+                        copyMentionConcept(e)
+                    }else if(AnnotationType === 'Entity tagging') {
+                        copyMentionTag(e)
+                    }
                 }}>
                     <ListItemIcon>
                         <TextFieldsIcon fontSize="small" />
                     </ListItemIcon>
-                    Copy mention
+                    Copy annotation
                 </MenuItem>
-                <MenuItem onClick={(e)=>{
+     {/*           <MenuItem onClick={(e)=>{
                     copyMentionConcept(e)
                 }}>
                     <ListItemIcon>
@@ -1083,7 +1098,7 @@ export default function Mention(props){
                     <ListItemIcon>
                         <ShareIcon fontSize="small" />
                     </ListItemIcon>
-                    Copy mention and tag(s)</MenuItem>
+                    Copy mention and tag(s)</MenuItem>*/}
             </Menu>
 
         </span>

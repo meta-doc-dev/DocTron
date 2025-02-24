@@ -18,7 +18,7 @@ import {DeleteRange} from "../../HelperFunctions/HelperFunctions";
 
 
 function DeleteAnnotation(){
-    const { concepts,expand,inarel,documentdescription,showupload,showstats,showview,showcollections,showfilter,showbar,showdocs,showmembers,showsettings,
+    const { concepts,expand,annotatedlabels,inarel,documentdescription,showupload,showstats,showview,showcollections,showfilter,showbar,showdocs,showmembers,showsettings,
         showdownload,relationship,relationshipslist,showfactspannel,currentdiv,firstsel,newfact,secondsel,showlabelspannel,showmentionsspannel,showconceptspannel,showrelspannel,showautomaticannotation,mentions,startrange,endrange,fields,fieldsToAnn } = useContext(AppContext);
     const [InARel,SetInARel] = inarel
     const [RelationshipsList, SetRelationshipsList] = relationshipslist
@@ -54,11 +54,12 @@ function DeleteAnnotation(){
     const [ShowDocs,SetShowDocs] = showdocs
     const [ShowMembers,SetShowMembers] =showmembers
     const [ShowSettings,SetShowSettings] =showsettings
+    const [AnnotatedLabels,SetAnnotatedLabels] =annotatedlabels
 
     function deleteAnnotation(e){
         e.preventDefault()
         e.stopPropagation()
-
+        //axios.get('compute_stats')
         axios.post('delete_annotation_all')
             .then(r=>{
                 SetShowDeleteAnnotationModal(false);
@@ -76,6 +77,7 @@ function DeleteAnnotation(){
                 SetShowFacts(false)
 
                 SetShowStats(false)
+                SetAnnotatedLabels(false)
                 SetShowDocs(false)
                 SetShowCollections(false)
                 SetShowView(false)
@@ -90,7 +92,6 @@ function DeleteAnnotation(){
 
             })
             .catch(error=>console.log('error',error))
-
     }
 
 

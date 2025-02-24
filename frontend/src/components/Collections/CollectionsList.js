@@ -49,6 +49,7 @@ export default function CollectionsList(props) {
     const [Counter, SetCounter] = useState(0)
     const [AnnotationType, SetAnnotationType] = annotationtype
     const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+    const [AnnoClicked,SetAnnoClicked] = useState(null)
 
     const [BinaryRel, SetBinaryRel] = binaryrel
     const [InARel, SetInARel] = inarel
@@ -59,6 +60,10 @@ export default function CollectionsList(props) {
             SetBinaryRel(false)
         }
     }, [InARel])
+
+    useEffect(() => {
+        SetAnnoClicked(AnnoClicked)
+    }, [AnnotationType])
 
     useEffect(() => {
         // if(UpdateCollection){
@@ -119,6 +124,7 @@ export default function CollectionsList(props) {
             axios.get('collections/list', {params: {annotation_type: type}})
                 .then(response => {
                     SetCollectionsList(response.data['collections'])
+                    SetAnnoClicked(type)
                     SetAnnotationType(type)
                 })
         } else {
@@ -188,11 +194,11 @@ export default function CollectionsList(props) {
                             <Col md={3}>
                                 <h6>Template</h6>
                                 <div>
-                                    {AnnotationTypes && AnnotationTypes.map(type =>
+                                    {AnnotationTypes  && AnnotationTypes.map(type =>
                                         <div>
 
                                             <Chip label={type} sx={{margin: '2%'}} onClick={(e) => changeType(e, type)}
-                                                  variant={AnnotationType === type ? 'filled' : "outlined"} color={'info'}/>
+                                                  variant={(AnnoClicked === type || AnnotationType === type) ? 'filled' : "outlined"} color={'info'}/>
 
 
                                         </div>)}

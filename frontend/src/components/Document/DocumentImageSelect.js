@@ -76,10 +76,7 @@ export default function DocumentImageSelect() {
 
                         SetPointHigh(false)
                         setPoints(response.data);
-                       /* setCurPoints(response.data['points'][0].split(" ")
-                            .map((c) => c.split(",").map(Number))
-                            .map(([x, y]) => ({ x, y }))
-                        );*/
+
 
                 })
 
@@ -115,6 +112,8 @@ export default function DocumentImageSelect() {
                     .then(response=>{console.log(response);
                         SetClicked(false)
                         setPoints(response.data)
+                        SetPointHigh(path)
+
 
                     })
                     .catch(error => console.log(error))
@@ -129,7 +128,11 @@ export default function DocumentImageSelect() {
         <div>
             <Paper elevation={2}>
 
-                <div style={{margin:'10px 0px',textAlign:'center'}}>
+                <div style={{margin:'10px 0px',textAlign:'center'}}     onClick={()=>{
+                    if(PointHigh !== []){
+                        SetPointHigh(false)
+                    }
+                }}>
                     <div>
                         <span><b>Doc ID: </b></span><span>{DocumentDescEmpty['doc_id']}</span>
                     </div>
@@ -141,31 +144,20 @@ export default function DocumentImageSelect() {
                                 setCurPoints(path);
 
                             }}
+
                             onComplete={(path)=>uploadPoints(pointsToString(path))}
                             imageStyle={{ width: `${width}px` }}
 
                         />}
                         <br />
-              {/*          Image width:{" "}
-                        <input
-                            type="range"
-                            min='0'
-                            max="1000"
-                            value={width}
-                            onChange={(e) => setWidth(e.target.value)}
-                        />
-                        <br />*/}
+
                         <div>
-                            {/*      <span>
-                               Points: {pointsToString(points)}
-                           </span>*/}
+
                             <span>
                                 <Button variant={'contained'} color={'error'} size={'small'}
                                         onClick={()=>{
                                             setCurPoints([])
-                                /*    axios.delete('object_detection',{data:{points:curPoints}})
-                                        .then(response => setPoints([]))
-                                        .catch(error => console.log(error))*/
+
 
                                 }}
                                 >Clear</Button>

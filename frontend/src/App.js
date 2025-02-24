@@ -261,6 +261,8 @@ function App() {
 
 
     useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
         var username = window.username
         var profile = window.profile
         if (AnnotationTypes === false || AnnotationTypes === undefined || AnnotationTypes.length === 0) {
@@ -281,7 +283,6 @@ function App() {
             SetProfile(profile)
         }
 
-        window.scrollTo(0, 0)
 
 
     }, [])

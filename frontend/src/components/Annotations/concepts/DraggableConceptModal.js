@@ -58,7 +58,7 @@ function PaperComponent(props) {
 export default function DraggableModal(props) {
     const {
         relationshipslist,
-        concepts,annotationtypes,
+        concepts,annotationtype,
         curconcept,collectionconcepts,opensnack,snackmessage,
 
         curmention,view,modality,
@@ -75,7 +75,7 @@ export default function DraggableModal(props) {
     } = useContext(ConceptContext);
 
     const [ConceptsList,SetConceptsList] = collectionconcepts
-    const [AnnotationTypes,SetAnnotationTypes] = annotationtypes
+    const [AnnotationType,SetAnnotationType] = annotationtype
     const [RelationshipsList,SetRelationshipsList] = relationshipslist
     const [SnackMessage,SetSnackMessage] = snackmessage;
     const [OpenSnack,SetOpenSnack] = opensnack
@@ -162,7 +162,7 @@ export default function DraggableModal(props) {
             if(Modality === 2 || View === 4) {
                 SetOpenSnack(true)
                 SetSnackMessage({'message': 'You cannot annotate this document'})
-            }else if(AnnotationTypes.indexOf('Entity linking') === -1){
+            }else if(AnnotationType !== 'Entity linking'){
                     SetOpenSnack(true)
                     SetSnackMessage({'message': 'Entity linking is not allowed here'})
             }else {

@@ -54,9 +54,11 @@ import LabelsRadio from "../labels/LabelsRadio";
 import LabelSlider from "../labels/LabelSlider";
 
 export default function MentionsListClass(props) {
-    const {view, labels, mentions,inarel, concepts,annotationtypes, tags_split, documentdescription} = useContext(AppContext);
+    const {view, labels, mentions,inarel, curannotator,username,concepts,annotationtypes, tags_split, documentdescription} = useContext(AppContext);
 
     const [MentionsList, SetMentionsList] = mentions
+    const [CurAnnotator, SetCurAnnotator] = curannotator
+    const [Username, SetUsername] = username
     const [Labels, SetLabels] = labels
     const [ConceptsList, SetConceptsList] = concepts
     const [DocumentDesc, SetDocumentDesc] = documentdescription
@@ -118,27 +120,28 @@ export default function MentionsListClass(props) {
 
                                                 </div>
                                             )}
-                                            <Button color={'error'} size={'small'} variant={'outlined'} onClick={() => {
-                                                axios.delete('mentions/delete', {
-                                                    data: {
-                                                        start: mention.start,
-                                                        stop: mention.stop,
-                                                        mention_text: mention.mention_text,
-                                                        position: mention.position
-                                                    }
-                                                })
-                                                    .then(response => {
+                                            {CurAnnotator === Username && <Button color={'error'} size={'small'} variant={'outlined'}
+                                                     onClick={() => {
+                                                         axios.delete('mentions/delete', {
+                                                             data: {
+                                                                 start: mention.start,
+                                                                 stop: mention.stop,
+                                                                 mention_text: mention.mention_text,
+                                                                 position: mention.position
+                                                             }
+                                                         })
+                                                             .then(response => {
 
-                                                        SetDocumentDesc(response.data['document'])
-                                                        SetMentionsList(response.data['mentions'])
-                                                        SetConceptsList(response.data['concepts'])
-                                                        SetTagsSplitted(response.data['tags'])
-                                                        var m = MentionsListHigh.filter(x=>x[0] !== mention.start && x[1] !== mention.stop)
-                                                        SetMentionsListHigh(m)
+                                                                 SetDocumentDesc(response.data['document'])
+                                                                 SetMentionsList(response.data['mentions'])
+                                                                 SetConceptsList(response.data['concepts'])
+                                                                 SetTagsSplitted(response.data['tags'])
+                                                                 var m = MentionsListHigh.filter(x => x[0] !== mention.start && x[1] !== mention.stop)
+                                                                 SetMentionsListHigh(m)
 
 
-                                                    })
-                                            }}>Delete passage</Button>
+                                                             })
+                                                     }}>Delete passage</Button>}
                                             <hr/>
                                         </div>
                                     </Collapse>

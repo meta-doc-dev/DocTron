@@ -545,7 +545,7 @@ function SideBar(props){
                     <GroupIcon sx={{ fontSize: '1.5rem'}}/>
                 </IconButton></Tooltip>
                 <Tooltip placement="right" title={'Statistics'}>
-                <IconButton color="buttons"  disabled={InARel || !Collection} aria-label="Stats" component="div" onClick={(e)=> {OpenMenu(e,'s')}}>
+                <IconButton color="buttons"  disabled aria-label="Stats" component="div" onClick={(e)=> {OpenMenu(e,'s')}}>
                     <StackedBarChartIcon sx={{ fontSize: '1.5rem'}}/>
                 </IconButton></Tooltip>
 

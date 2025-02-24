@@ -66,10 +66,17 @@ function SignUp() {
         }
     }, [Redir, navigate]);
 
+
+    useEffect(() => {
+        SetAnnotationType('Graded labeling')
+    }, []);
+
+
     function handleSubmit(event){
         event.preventDefault();
+        var anno = AnnotationType ? AnnotationType : "Graded labeling"
         const data = new FormData(event.currentTarget);
-        if(data.get('username','') !== '' && data.get('password','') !== '' && data.get('email','') !== '' && data.get('password_check','') !== '' && data.get('profile','') !== ''&& AnnotationType){
+        if(data.get('username','') !== '' && data.get('password','') !== '' && data.get('email','') !== '' && data.get('password_check','') !== '' && data.get('profile','') !== ''&& anno){
             data.set('annotation_type',AnnotationType)
             axios({
                 method: "post",

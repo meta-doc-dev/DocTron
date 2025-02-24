@@ -47,7 +47,7 @@ export default function LabelsRadio(props) {
     const [OpenSnack, SetOpenSnack] = opensnack
     const [Modality, SetModality] = modality
     const [View, SetView] = view
-
+    const [Update,SetUpdate] = useState(false)
     const [AnnotationType, SetAnnotationType] = annotationtype
     const [OpenDetails,SetOpenDetails] = useState(false)
     const [value, setValue] = useState(null); // Stato locale
@@ -56,17 +56,20 @@ export default function LabelsRadio(props) {
         setValue(props.value)
     }, [props.value]);
     const handleChange = (event) => {
-        var val = event.target.value
-        setValue(val);
-        if (val === 'true') {
-            val = 0
-        } else if (val === 'false') {
-            val = 1
-        } else {
-            val = parseInt(val)
+        if(CurAnnotator === Username){
+            var val = event.target.value
+            setValue(val);
+            if (val === 'true') {
+                val = 0
+            } else if (val === 'false') {
+                val = 1
+            } else {
+                val = parseInt(val)
+            }
+            // Aggiorna lo stato
+            AdddeleteLabel(event, props.label, val)
         }
-        // Aggiorna lo stato
-        AdddeleteLabel(event, props.label, val)
+
 
     };
 
@@ -98,14 +101,14 @@ export default function LabelsRadio(props) {
                     if (props.type_lab === 'label') {
                         axios.post('labels/insert', {label: label, score: score})
                             .then(response => {
-
+                                SetAnnotatedLabels(response.data['labels'])
 
                             })
                     } else if (props.type_lab === 'passage') {
                         console.log('passage')
                         axios.post('labels/insert', {label: label, score: score,mention:props.mention})
                             .then(response => {
-
+                                SetUpdate(true)
 
                             })
                     }
@@ -113,7 +116,7 @@ export default function LabelsRadio(props) {
                         console.log('object detection')
                         axios.post('labels/insert', {label: label, score: score,points:props.points})
                             .then(response => {
-
+                                SetUpdate(true)
 
                             })
                     }
@@ -122,8 +125,7 @@ export default function LabelsRadio(props) {
                 } else {
                     axios.delete('labels', {data: {label: label}})
                         .then(response => {
-
-
+                            SetAnnotatedLabels(response.data['labels'])
                         })
 
                 }
@@ -165,11 +167,11 @@ export default function LabelsRadio(props) {
 
             } aria-label="info">
   <InfoIcon fontSize="inherit"/>
-</IconButton>: {mapKey(value) !== null ? mapKey(value) : 'not set'}    </span> <span> <Button size={'small'}
+</IconButton>: {mapKey(value) !== null ? mapKey(value) : 'not set'}    </span> <span> <Button disabled={CurAnnotator !== Username} size={'small'}
                                                                                               sx={{textAlign: 'right'}}
                                                                                               onClick={() => {
                                                                                                   SetShowCommentDialog(prev => !prev)
-                                                                                              }}>Comment</Button> </span><span> <Button
+                                                                                              }}>Comment</Button> </span><span> <Button disabled={CurAnnotator !== Username}
                 size={'small'}
                 sx={{textAlign: 'right'}}
                 onClick={() => {

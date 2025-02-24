@@ -37,6 +37,18 @@ def try_task(param1, param2):
     return f"Task executed with {param1} and {param2}"
 
 
+
+
+@shared_task
+def compute_stats(document,topic):
+
+    json_final = {}
+    json_final['cohens'] = create_cohen(document,topic)
+    json_final['fleiss'],json_final['kripp'] = create_fleiss_kripp(document,topic)
+    return json_final
+
+
+
 @shared_task
 def get_json_fields(files):
     """This method returns the list of columns in a list of json files"""

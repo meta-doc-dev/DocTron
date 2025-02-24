@@ -711,7 +711,7 @@ function BaseIndex() {
                                     {/*{document_comp}*/}
                                 </div> :
                                 <div>
-                                    {((Collection === '' || !Collection) && (CollList && CollList.filter(x => x.status !== 'Invited').length === 0)) && <>
+                                    {((Collection === '' || !Collection) && (CollList && CollList.filter(x => x.status === 'accepted').length === 0)) && <>
                                         <h4>You have not any document to annotate yet. </h4>
                                         <Button href={'/collections'}>Create a new collection.</Button>
 

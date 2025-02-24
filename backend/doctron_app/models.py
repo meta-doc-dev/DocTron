@@ -274,6 +274,7 @@ class Document(models.Model):
     insertion_time = models.DateTimeField()
     collection_id = models.ForeignKey('Collection', models.DO_NOTHING, db_column='collection_id')
     image = models.BinaryField()
+    stats = models.JSONField()
 
     class Meta:
         managed = False

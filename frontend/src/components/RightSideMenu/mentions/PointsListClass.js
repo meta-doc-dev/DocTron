@@ -19,13 +19,15 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
 
 export default function PointsListClass(props) {
-    const {view, labels, mentions,inarel,pointhigh,points, concepts,annotationtypes, tags_split, documentdescription} = useContext(AppContext);
+    const {view, labels, username,curannotator,pointhigh,points, concepts,annotationtypes, tags_split, documentdescription} = useContext(AppContext);
     const [ShowComment,SetShowComment] = useState(false)
     const [OpenComment,SetOpenComment] = useState(false)
     const [Points, SetPoints] = points
     const [Labels, SetLabels] = labels
     const [Comment,SetComment] = useState(false)
     const [PointHigh,SetPointHigh] = pointhigh
+    const [Username,SetUsername] = username
+    const [CurAnnotator,SetCurAnnotator] = curannotator
 
 
 
@@ -155,7 +157,10 @@ export default function PointsListClass(props) {
                                             <CommentIcon /></IconButton>
                                         <IconButton fontSize={'large'} aria-label="remove" onClick={() => {
                                             axios.delete('object_detection',{data:{points:point}})
-                                                .then(response => SetPoints(response.data))
+                                                .then(response => {
+                                                    SetPoints(response.data)
+                                                    SetPointHigh(false)
+                                                })
                                                 .catch(error => console.log(error))
                                         }}>
                                             <DeleteIcon />

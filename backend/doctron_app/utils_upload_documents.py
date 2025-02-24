@@ -1019,7 +1019,7 @@ def new_collection(request):
         creator = User.objects.filter(username=request.session['username'], name_space=name_space)
         for c in creator:  # gestisco i vari name space
             ShareCollection.objects.create(collection_id=collection, username=c,
-                                           name_space=c.name_space, creator=True,status = 'accepted')
+                                           name_space=c.name_space,admin=True, creator=True,status = 'accepted')
         for user in share_with:
             print(user)
             if user != request.session['username']:

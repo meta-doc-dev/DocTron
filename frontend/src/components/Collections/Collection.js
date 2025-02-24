@@ -156,6 +156,9 @@ export default function Collection(props) {
         }
     }, [LoadColl])
 
+    useEffect(()=>{
+        SetShowCollectionDetails(false)
+    },[Collection, AnnotationType])
 
     useEffect(() => {
         axios.get('collections/labels', {params: {collection: props.collection.id}})
@@ -938,7 +941,7 @@ export default function Collection(props) {
                     </Typography>
                     <hr/>
                     <Typography variant="body2">
-                        <h6>Task: {props.collection.task}</h6>
+                        <h6>Topics: {props.collection.topics}</h6>
                         <h6>Documents: {props.collection.documents_count}</h6>
                         <h6>Documents annotated: {props.collection.annotations_count}</h6>
                         {props.collection.batch.length > 0 && <>
@@ -1258,7 +1261,7 @@ export default function Collection(props) {
 
 
                         <Button onClick={redirToAnnotation} size="small" style={{marginRight: '1%'}}>Annotate</Button>
-                        {Username === props.collection.creator && Admins.indexOf(Username) !== -1 && window.baseurl !== 'https://doctron.dei.unipd.it/' && <>
+                        {Admins.indexOf(Username) !== -1 && window.baseurl !== 'https://doctron.dei.unipd.it/' && <>
                             {/*<Button size="small" style={{marginRight:'1%'}}>Add documents</Button>*/}
                             <Button color="error" onClick={() => SetOpenDeleteCollDialog(true)} size="small"
                                     style={{marginRight: '1%'}}>Delete</Button></>}

@@ -78,14 +78,14 @@ export default function InstructionsPage(props){
                 the current document for the selected types will be listed at the right of the textual document to annotate.
                 <br/>
                 <h4>Create a new annotation</h4>
-                Metatron provides the following five annotation types: <b>mentions, linking, relationships</b> annotations are <i>mention-level</i>
+                DocTron provides the following five annotation types: <b>mentions, linking, relationships</b> annotations are <i>mention-level</i>
                 types, hence they are related to a mention (a textual span in the document to annotate); <b>assertions</b> and <b>labels</b> annotations
                 instead, are <i>document-level</i> annotation types, hence they are related to the entire textual document, and not to a part of it.<br/>
                 To perform Linking, relationship, and assertion annotations, the presence of <b>concepts</b> is required. A concept usually belong to an ontology and it
                 is uploaded by an annotator. A concept is characterized by a <i>URI/ID</i>, a <i>name</i>, and a <i>type</i>: an URI is the identifier of the concept, the
                 type is a category which characterizes the concept -- e.g., gene, disease; the name of the concept describes the concept together with the ID and allows
                 the suers to recognize what the concept represents. <br/>
-                Metatron does not require that all the concepts belong to an already defined available on the web ontology.
+                DocTron does not require that all the concepts belong to an already defined available on the web ontology.
                 <br/>
                 <h5>Mentions</h5>
                 A annotator can select a new mention in two different ways:
@@ -97,7 +97,7 @@ export default function InstructionsPage(props){
                      to drag and drop the mouse from the first character to the last one</li>
 
                 </ul>
-                Metatron supports the overlapping mentions. The annotator can rely on the aformentioned methods to select overlapping mentions. <br/>
+                DocTron supports the overlapping mentions. The annotator can rely on the aformentioned methods to select overlapping mentions. <br/>
                 Each mention, if correctly saved in the database, will be highlighted with a blue background and blue text.
                 <br/>
                 <h6>Mention panel</h6>
@@ -140,7 +140,7 @@ export default function InstructionsPage(props){
                 are supported: (i) subject, predicate and object are all mentions (with or without concepts); the subject (or predicate, or object) is an ontology concept not tied to a mention, while the other elements of the relationship are mentions in text; the subject (or predicate, or object)
                 is a mention in the text (with or without linked conceopts) and the other relationship components are concepts without associated mentions. Relationship exclusively composed by concepts (without any mention associated) are assertions (see the section below).<br/>
 
-                To annotate a new mention, open the mention panel, and click on <kbd>Add relationship</kbd>. Metatron will enter on <i>relationship mode</i>: in this mode the annotator can select the components of the relationship. Mentions can be selected directly from the textual document, while concepts can be selected from the relationship panel at the right of the document. The selected mention
+                To annotate a new mention, open the mention panel, and click on <kbd>Add relationship</kbd>. DocTron will enter on <i>relationship mode</i>: in this mode the annotator can select the components of the relationship. Mentions can be selected directly from the textual document, while concepts can be selected from the relationship panel at the right of the document. The selected mention
                 will automatically be the subject of the mention. To annotate the predicate mention, just click on another mention in text and it will be automatically marked as predicate. To select the object, just click on the
                 third mention of the relationship to automatically assign to it the object role. In order to change the role of the mention -- i.e., change from predicate to object, or to assign a specific role to a mention in the textual document, right click on the mention and select
                 the desired role from the drop-down menu. A mention cannot have two or more subjects, predicates, objects, just one mention for each role.<br/>
@@ -182,8 +182,8 @@ export default function InstructionsPage(props){
                     in particular, if the annotator agrees with an annotator, he can copy one or more annotations, or the enitre set of annotations for the document. One of the selectable is the one
                     corresponding to the majority vote based annotations: this is not a real annotator, it is the set of annotations selected via majority vote among the document's annotators.</li>
                     <li><span className="fa-li"><i className="fa-regular fa-square"></i></span>All the annotators of the collection can upload a set of annotations for the one or more collection's documents. In this case, the required format is the same
-                    that is provided by downloading the annotations in Metatron. The creator of the collection instead, can upload a new set of concepts, a new batch of documents, or upload publications' abstracts
-                    directly via PubMed, Semantic Scholar, and OpenAIRE APIs. Annotators' documents ion Metatron can be uploaded in several formats: PDF, txt, json, csv. For each
+                    that is provided by downloading the annotations in DocTron. The creator of the collection instead, can upload a new set of concepts, a new batch of documents, or upload publications' abstracts
+                    directly via PubMed, Semantic Scholar, and OpenAIRE APIs. Annotators' documents ion DocTron can be uploaded in several formats: PDF, txt, json, csv. For each
                     of these formats, only the textual content will be considered and displayed to be annotated. </li>
                     <li><span className="fa-li"><i className="fa-solid fa-spinner fa-pulse"></i></span>The annotator can change the annotation setup in particular he can select the
                         font size, the line height, and a color for each concept type. In addition, the annotator can select which sections of the documents should be hidden or shown for the annotation.
@@ -213,7 +213,7 @@ export default function InstructionsPage(props){
             <h5>Create a new collection</h5>
                  A new collection can be created in the collections web page. To create a new collection the annotator must add the following information:
                  <ul>
-                     <li>The documents. Documents can be uoloaded in the following formats: CSV, JSON, TXT. Metatron supports the upload of PDFs since it
+                     <li>The documents. Documents can be uoloaded in the following formats: CSV, JSON, TXT. DocTron supports the upload of PDFs since it
                      relies on Grobid for the sections parsing. Only the related textual content will be uploaded, the information concerning images and tables is lost
                      except for the captions. The annotator can search new documents in OpenAIRE and Semantic Scholar by providing one or more DOIs, or in PubMed by providing one or more PMIDs. These APIs will
                      automatically save the following information about a publication: title, abstract, authors, venue, date of publications;</li>

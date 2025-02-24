@@ -706,13 +706,14 @@ def create_json_to_download(annotators,batch,name_space,document,collection,topi
 
 
 import csv
-def create_csv_to_download(annotation,annotators,batch,name_space,document,collection,topic,trec=False):
+def create_csv_to_download(annotators,batch,name_space,document,collection,topic,trec=False):
 
     try:
         response = HttpResponse(content_type='text/csv')
         collection = Collection.objects.get(collection_id=collection)
         name_space = NameSpace.objects.get(name_space=name_space)
         users_list = []
+        annotation = collection.annotation_type.name
         user = annotators
         if annotators != 'all':
             users_list = User.objects.filter(username=user, name_space=name_space)
@@ -988,8 +989,12 @@ def create_csv_to_download(annotation,annotators,batch,name_space,document,colle
         return False
     else:
 
-        writer = csv.writer(response)
-        writer.writerows(row_list)
+        if trec:
+            writer = csv.writer(response, delimiter='\t')  # Use '\t' for tab separation
+            writer.writerows(row_list)
+        else:
+            writer = csv.writer(response)
+            writer.writerows(row_list)
         return response
 
 def row_to_json(row):

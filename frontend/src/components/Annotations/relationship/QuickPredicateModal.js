@@ -44,7 +44,7 @@ export default function QuickPredicateModal(props) {
     const {
         collectionconcepts,
         users, predicateconcepts, predicatetext,
-        collectionslist,
+        collectionslist,annotationtype,
         document_id,
         concepts, annotationtypes,
         collection, predicate,
@@ -53,7 +53,7 @@ export default function QuickPredicateModal(props) {
         startrange, targetconcepts, targettext, sourcetext, target, binaryrel, newfactin,
         endrange, modifyrel, inarel, relationship, labels, view, modality, curannotator, readonlyrelation, newfact,
     } = useContext(AppContext);
-    const [AnnotationTypes, SetAnnotationTypes] = annotationtypes
+    const [AnnotationType, SetAnnotationType] = annotationtype
     const [SnackMessage, SetSnackMessage] = snackmessage;
     const [OpenSnack, SetOpenSnack] = opensnack
     const [RelationshipsList, SetRelationshipsList] = relationshipslist
@@ -254,7 +254,7 @@ export default function QuickPredicateModal(props) {
             if (Modality === 2 || View === 4) {
                 SetOpenSnack(true)
                 SetSnackMessage({'message': 'You cannot annotate this document'})
-            } else if (AnnotationTypes.indexOf('Entity linking') === -1) {
+            } else if (AnnotationType !=='Entity linking') {
                 SetOpenSnack(true)
                 SetSnackMessage({'message': 'Entity linking is not allowed here'})
             } else {
