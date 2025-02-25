@@ -9,7 +9,7 @@ from django.db.models import F
 
 from doctron_app.dashboard.document_access_manager import DocumentAccessManager
 from doctron_app.models import AnnotateLabel, AnnotatePassage, Concept, Associate, AssociateTag, Link, Document, \
-    CreateFact, AnnotateObject, AnnotateObjectLabel
+    CreateFact, AnnotateObject, AnnotateObjectLabel, Mention
 
 
 class BaseAnnotationHandler(ABC):
@@ -548,29 +548,79 @@ class RelationshipsAnnotationHandler(BaseAnnotationHandler):
 
                 # Process relationships for this document
                 relationships = []
+                mention_texts = {}
                 for rel in annotations_list:
-                    # Get mention texts if needed here
+                    # Extract subject mention
+                    subject_key = (rel['subject_document_id'], rel['subject_start'], rel['subject_stop'])
+                    if subject_key not in mention_texts:
+                        try:
+                            mention = Mention.objects.get(
+                                document_id=rel['subject_document_id'],
+                                start=rel['subject_start'],
+                                stop=rel['subject_stop']
+                            )
+                            mention_texts[subject_key] = mention.mention_text
+                        except Mention.DoesNotExist:
+                            mention_texts[subject_key] = f"Text at position {rel.subject_start}-{rel.subject_stop}"
 
+                    # Extract predicate mention
+                    predicate_key = (rel['predicate_document_id'], rel['predicate_start'], rel['predicate_stop'])
+                    if predicate_key not in mention_texts:
+                        try:
+                            mention = Mention.objects.get(
+                                document_id=rel['predicate_document_id'],
+                                start=rel['predicate_start'],
+                                stop=rel['predicate_stop']
+                            )
+                            mention_texts[predicate_key] = mention.mention_text
+                        except Mention.DoesNotExist:
+                            mention_texts[predicate_key] = f"Text at position {rel.predicate_start}-{rel.predicate_stop}"
+
+                    # Extract object mention
+                    object_key = (rel['object_document_id'], rel['object_start'], rel['object_stop'])
+                    if object_key not in mention_texts:
+                        try:
+                            mention = Mention.objects.get(
+                                document_id=rel['object_document_id'],
+                                start=rel['object_start'],
+                                stop=rel['object_stop']
+                            )
+                            mention_texts[object_key] = mention.mention_text
+                        except Mention.DoesNotExist:
+                            mention_texts[object_key] = f"Text at position {rel.object_start}-{rel.object_stop}"
+
+
+                # Group by document and username
+                for rel in annotations_list:
+                    # Get mention texts
+                    subject_key = (rel['subject_document_id'], rel['subject_start'], rel['subject_stop'])
+                    predicate_key = (rel['predicate_document_id'], rel['predicate_start'], rel['predicate_stop'])
+                    object_key = (rel['object_document_id'], rel['object_start'], rel['object_stop'])
+
+                    subject_text = mention_texts.get(subject_key, "Unknown subject")
+                    predicate_text = mention_texts.get(predicate_key, "Unknown predicate")
+                    object_key = mention_texts.get(object_key, "Unknown object")
+
+                    # Create relationship item
                     relationships.append({
                         'subject': {
-                            'document_id': rel['subject_document_id'],
+                            'text': subject_text,
                             'start': rel['subject_start'],
                             'stop': rel['subject_stop'],
-                            'language': rel['subject_language']
+                            'document_id': rel['subject_document_id'],
                         },
                         'predicate': {
-                            'document_id': rel['predicate_document_id'],
+                            'text': predicate_text,
                             'start': rel['predicate_start'],
                             'stop': rel['predicate_stop'],
-                            'language': rel['predicate_language']
+                            'document_id': rel['predicate_document_id'],
                         },
                         'object': {
-                            'document_id': rel['object_document_id'],
+                            'text': object_key,
                             'start': rel['object_start'],
-                            'stop': rel['object_stop'],
-                            'language': rel['object_language']
+                            'stop': rel['object_start'],
+                            'document_id': rel['object_document_id']
                         },
-                        'insertion_time': rel['insertion_time'].isoformat() if rel['insertion_time'] else None
                     })
 
                 results.append({

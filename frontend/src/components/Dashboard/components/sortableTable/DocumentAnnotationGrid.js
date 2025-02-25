@@ -20,6 +20,7 @@ import { AppContext } from '../../../../App';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import "./styles.css";
+import {ReactLassoSelect} from "react-lasso-select";
 
 ModuleRegistry.registerModules([
     CellSpanModule,
@@ -47,7 +48,6 @@ const PassageRenderer = (props) => {
     );
 };
 
-// Renderer for displaying label values
 const LabelRenderer = (props) => {
     if (!props.value && props.value !== 0) {
         return <span className="text-gray-400 italic">-</span>;
@@ -59,7 +59,6 @@ const LabelRenderer = (props) => {
     );
 };
 
-// Summary renderer for entity counts
 const EntityCountRenderer = (props) => {
     if (!props.value || props.value === 0) {
         return <span className="text-gray-400 italic">None</span>;
@@ -71,7 +70,6 @@ const EntityCountRenderer = (props) => {
     );
 };
 
-// Summary renderer for concept counts
 const ConceptCountRenderer = (props) => {
     if (!props.value || props.value === 0) {
         return <span className="text-gray-400 italic">None</span>;
@@ -83,7 +81,43 @@ const ConceptCountRenderer = (props) => {
     );
 };
 
-// Full Width Cell Renderer for Entity Tagging
+// New renderer for facts count
+const FactCountRenderer = (props) => {
+    if (!props.value || props.value === 0) {
+        return <span className="text-gray-400 italic">None</span>;
+    }
+    return (
+        <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">
+            {props.value} {props.value === 1 ? 'fact' : 'facts'}
+        </span>
+    );
+};
+
+// New renderer for relationships count
+const RelationshipCountRenderer = (props) => {
+    if (!props.value || props.value === 0) {
+        return <span className="text-gray-400 italic">None</span>;
+    }
+    return (
+        <span className="px-2 py-1 text-xs rounded-full bg-indigo-100 text-indigo-800">
+            {props.value} {props.value === 1 ? 'relationship' : 'relationships'}
+        </span>
+    );
+};
+
+// New renderer for objects count
+const ObjectCountRenderer = (props) => {
+    if (!props.value || props.value === 0) {
+        return <span className="text-gray-400 italic">None</span>;
+    }
+    return (
+        <span className="px-2 py-1 text-xs rounded-full bg-pink-100 text-pink-800">
+            {props.value} {props.value === 1 ? 'object' : 'objects'}
+        </span>
+    );
+};
+
+// Existing full width cell renderers (kept as is)
 const EntityTaggingFullWidthCellRenderer = (props) => {
     const {data} = props;
 
@@ -112,40 +146,39 @@ const EntityTaggingFullWidthCellRenderer = (props) => {
 
     return (
         <div className="full-width-cell">
-                <div className="full-width-title">Entity Tagging Details ({tableRows.length} entities)</div>
-                <div className="full-width-content">
-                    <table className="entity-table">
-                        <thead>
-                        <tr>
-                            <th>Tag Type</th>
-                            <th>Entity Text</th>
-                            <th>Position</th>
-                            <th>Comment</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {tableRows.length > 0 ? (
-                            tableRows.map((row, index) => (
-                                <tr key={index} className="entity-row">
-                                    <td className="tag-type-cell">{row.tagType}</td>
-                                    <td className="entity-text-cell">"{row.entityText}"</td>
-                                    <td className="entity-position-cell">{row.position}</td>
-                                    <td className="entity-comment-cell">{row.comment}</td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="4" className="no-data">No entity data found</td>
+            <div className="full-width-title">Entity Tagging Details ({tableRows.length} entities)</div>
+            <div className="full-width-content">
+                <table className="entity-table">
+                    <thead>
+                    <tr>
+                        <th>Tag Type</th>
+                        <th>Entity Text</th>
+                        <th>Position</th>
+                        <th>Comment</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {tableRows.length > 0 ? (
+                        tableRows.map((row, index) => (
+                            <tr key={index} className="entity-row">
+                                <td className="tag-type-cell">{row.tagType}</td>
+                                <td className="entity-text-cell">"{row.entityText}"</td>
+                                <td className="entity-position-cell">{row.position}</td>
+                                <td className="entity-comment-cell">{row.comment}</td>
                             </tr>
-                        )}
-                        </tbody>
-                    </table>
-                </div>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan="4" className="no-data">No entity data found</td>
+                        </tr>
+                    )}
+                    </tbody>
+                </table>
             </div>
+        </div>
     );
 };
 
-// Full Width Cell Renderer for Entity Linking
 const EntityLinkingFullWidthCellRenderer = (props) => {
     const {data} = props;
 
@@ -156,9 +189,6 @@ const EntityLinkingFullWidthCellRenderer = (props) => {
             </div>
         );
     }
-
-    // Let's debug the concept data
-    console.log("Concept types data:", data.concept_types);
 
     // Convert concept data to a flat array for the table
     const tableRows = [];
@@ -217,6 +247,165 @@ const EntityLinkingFullWidthCellRenderer = (props) => {
     );
 };
 
+const FactsFullWidthCellRenderer = (props) => {
+    const {data} = props;
+
+    if (!data.facts || data.facts.length === 0) {
+        return (
+            <div className="full-width-cell">
+                <div className="no-data">No facts found for this document</div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="full-width-cell">
+            <div className="full-width-title">Facts Details ({data.facts.length} facts)</div>
+            <div className="full-width-content">
+                <table className="facts-table">
+                    <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Subject Type</th>
+                        <th>Predicate</th>
+                        <th>Predicate Type</th>
+                        <th>Object</th>
+                        <th>Object Type</th>
+                        <th>Comment</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {data.facts.map((fact, index) => (
+                        <tr key={index} className="fact-row">
+                            <td className="fact-cell">{fact.subject.concept_url}</td>
+                            <td className="fact-type-cell">{fact.subject.name}</td>
+                            <td className="fact-cell">{fact.predicate.concept_url}</td>
+                            <td className="fact-type-cell">{fact.predicate.name}</td>
+                            <td className="fact-cell">{fact.object.concept_url}</td>
+                            <td className="fact-type-cell">{fact.object.name}</td>
+                            <td className="fact-comment-cell">{fact.comment || "-"}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+// New Full Width Cell Renderer for Relationships Annotation
+const RelationshipsFullWidthCellRenderer = (props) => {
+    const {data} = props;
+
+    if (!data.relationships || data.relationships.length === 0) {
+        return (
+            <div className="full-width-cell">
+                <div className="no-data">No relationships found for this document</div>
+            </div>
+        );
+    }
+
+    console.log(data.relationships)
+
+    return (
+        <div className="full-width-cell">
+            <div className="full-width-title">Relationships Details ({data.relationships.length} relationships)</div>
+            <div className="full-width-content">
+                <table className="relationships-table">
+                    <thead>
+                    <tr>
+                        <th>Subject Text</th>
+                        <th>Subject Position</th>
+                        <th>Predicate Text</th>
+                        <th>Predicate Position</th>
+                        <th>Object Text</th>
+                        <th>Object Position</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {data.relationships.map((rel, index) => (
+                        <tr key={index} className="relationship-row">
+                            <td className="rel-text-cell">"{rel.subject.text || '-'}"</td>
+                            <td className="rel-position-cell">
+                                {rel.subject.start && rel.subject.stop ?
+                                    `${rel.subject.start}-${rel.subject.stop}` : '-'}
+                            </td>
+                            <td className="rel-text-cell">"{rel.predicate.text || '-'}"</td>
+                            <td className="rel-position-cell">
+                                {rel.predicate.start && rel.predicate.stop ?
+                                    `${rel.predicate.start}-${rel.predicate.stop}` : '-'}
+                            </td>
+                            <td className="rel-text-cell">"{rel.object.text || '-'}"</td>
+                            <td className="rel-position-cell">
+                                {rel.object.start && rel.object.stop ?
+                                    `${rel.object.start}-${rel.object.stop}` : '-'}
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+// New Full Width Cell Renderer for Object Detection
+const ObjectsFullWidthCellRenderer = (props) => {
+    const {data} = props;
+    const imgSrc = data.doc_image
+    console.log(imgSrc, data)
+    const hasImage = !!imgSrc;
+
+    if (!data.objects || data.objects.length === 0) {
+        return (
+            <div className="full-width-cell">
+                <div className="no-data">No detected objects found for this document</div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="full-width-cell">
+            <div className="full-width-title">Detected Objects Details ({data.objects.length} objects)</div>
+            <div className="full-width-content">
+                <table className="objects-table">
+                    <thead>
+                    <tr>
+                        <th>Object ID</th>
+                        <th>Coordinates</th>
+                        <th>Labels</th>
+                        <th>Comment</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {data.objects.map((obj, index) => (
+                        <tr key={index} className="object-row">
+                            <td className="object-id-cell">{index + 1}</td>
+                            <td className="object-coords-cell">
+                                {hasImage ? <ReactLassoSelect
+                                    value={obj.points.split(" ").map((c) => c.split(",").map(Number)).map(([x, y]) => ({ x, y }))}
+                                    src={`data:image/png;base64,${imgSrc}`}
+                                    imageStyle={{ width: `${200}px` }}
+                                /> : '-'}
+                            </td>
+                            <td className="object-labels-cell">
+                                {obj.labels && obj.labels.length > 0 ?
+                                    obj.labels.map(label =>
+                                        <span key={label.label} className="object-label-pill">
+                                            {label.label}: {label.grade}
+                                        </span>
+                                    ) : '-'}
+                            </td>
+                            <td className="object-comment-cell">{obj.comment || "-"}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
 const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2] }) => {
     const {
         document_id: [documentID, setDocumentID],
@@ -248,26 +437,29 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
         const entityTypeSet = new Set();
         const conceptTypeSet = new Set();
 
-        if (data.results.length > 0) {
+        if (data.results && data.results.length > 0) {
             const firstDoc = data.results[0];
+
             if (firstDoc.data && firstDoc.data.length > 0) {
+                // Check if it's a fact annotation
+                if (firstDoc.data.some(item => item.facts)) {
+                    detectedType = "Facts annotation";
+                }
+                // Check if it's a relationship annotation
+                else if (firstDoc.data.some(item => item.relationships)) {
+                    detectedType = "Relationships annotation";
+                }
+                // Check if it's an object detection
+                else if (firstDoc.data.some(item => item.objects)) {
+                    detectedType = "Object detection";
+                }
                 // Check if it has entity tagging (tag_name and entities)
-                if (firstDoc.data.some(item => item.tag_name && item.entities)) {
+                else if (firstDoc.data.some(item => item.tag_name && item.entities)) {
                     detectedType = "Entity tagging";
-                    firstDoc.data.forEach(item => {
-                        if (item.tag_name) {
-                            entityTypeSet.add(item.tag_name);
-                        }
-                    });
                 }
                 // Check if it has entity linking (type_name and concepts)
                 else if (firstDoc.data.some(item => item.type_name && item.concepts)) {
                     detectedType = "Entity linking";
-                    firstDoc.data.forEach(item => {
-                        if (item.type_name) {
-                            conceptTypeSet.add(item.type_name);
-                        }
-                    });
                 }
                 // Check if it has passage annotations
                 else if (firstDoc.data.some(item => item.actual_passage_text)) {
@@ -300,18 +492,21 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
             // Base document information
             const baseDocInfo = {
                 document_id: docId,
-                doc_id: doc.document_content.document_id || doc.document_content.doc_id,
-                title: doc.document_content.title,
-                text: doc.document_content.text?.substring(0, 150) + "...",
-                pubmed_id: doc.document_content.pubmed_id,
+                doc_id: doc.document_content?.document_id || doc.doc_id,
+                title: doc.document_content?.title || doc.doc_id,
+                text: doc.document_content?.text?.substring(0, 150) + "..." || "No text available",
+                pubmed_id: doc.document_content?.pubmed_id || "",
             };
 
             // Handle empty documents
-            if (doc.data.length === 0) {
+            if (!doc.data || doc.data.length === 0) {
                 rows.push({
                     ...baseDocInfo,
                     entityCount: 0,
                     conceptCount: 0,
+                    factCount: 0,
+                    relationshipCount: 0,
+                    objectCount: 0,
                 });
                 return;
             }
@@ -398,6 +593,97 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
                     });
                     break;
 
+                case "Facts annotation":
+                    // Process fact annotations
+                    let totalFactCount = 0;
+                    const facts = [];
+
+                    doc.data.forEach(dataItem => {
+                        if (dataItem.facts) {
+                            facts.push(...dataItem.facts);
+                            totalFactCount += dataItem.facts.length;
+                        }
+                    });
+
+                    rows.push({
+                        ...baseDocInfo,
+                        facts: facts,
+                        factCount: totalFactCount,
+                    });
+
+                    // Add full width row
+                    if (totalFactCount > 0) {
+                        rows.push({
+                            ...baseDocInfo,
+                            facts: facts,
+                            factCount: totalFactCount,
+                            fullWidth: true,
+                            expanded: false
+                        });
+                    }
+                    break;
+
+                case "Relationships annotation":
+                    // Process relationship annotations
+                    let totalRelationshipCount = 0;
+                    const relationships = [];
+
+                    doc.data.forEach(dataItem => {
+                        if (dataItem.relationships) {
+                            relationships.push(...dataItem.relationships);
+                            totalRelationshipCount += dataItem.relationships.length;
+                        }
+                    });
+
+                    rows.push({
+                        ...baseDocInfo,
+                        relationships: relationships,
+                        relationshipCount: totalRelationshipCount,
+                    });
+
+                    // Add full width row
+                    if (totalRelationshipCount > 0) {
+                        rows.push({
+                            ...baseDocInfo,
+                            relationships: relationships,
+                            relationshipCount: totalRelationshipCount,
+                            fullWidth: true,
+                            expanded: false
+                        });
+                    }
+                    break;
+
+                case "Object detection":
+                    // Process object detection annotations
+                    let totalObjectCount = 0;
+                    const objects = [];
+
+                    doc.data.forEach(dataItem => {
+                        if (dataItem.objects) {
+                            objects.push(...dataItem.objects);
+                            totalObjectCount += dataItem.objects.length;
+                        }
+                    });
+
+                    rows.push({
+                        ...baseDocInfo,
+                        objects: objects,
+                        objectCount: totalObjectCount,
+                    });
+
+                    // Add full width row
+                    if (totalObjectCount > 0) {
+                        rows.push({
+                            ...baseDocInfo,
+                            doc_image: doc.document_content?.doc_image || null,
+                            objects: objects,
+                            objectCount: totalObjectCount,
+                            fullWidth: true,
+                            expanded: false
+                        });
+                    }
+                    break;
+
                 default:
                     // Unknown format, just add basic document info
                     rows.push(baseDocInfo);
@@ -410,30 +696,50 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
             labelTypes: Array.from(labelSet),
             entityTypes: Array.from(entityTypeSet),
             conceptTypes: Array.from(conceptTypeSet),
-            hasFullWidthRows: detectedType === "Entity tagging" || detectedType === "Entity linking"
+            hasFullWidthRows: detectedType === "Entity tagging" || detectedType === "Entity linking" ||
+                detectedType === "Facts annotation" || detectedType === "Relationships annotation" ||
+                detectedType === "Object detection"
         };
     }, [data]);
 
 
     const fullWidthCellRenderer = useCallback((props) => {
-        if (annotationType === "Entity tagging") {
-            return <EntityTaggingFullWidthCellRenderer {...props} />;
-        } else if (annotationType === "Entity linking") {
-            return <EntityLinkingFullWidthCellRenderer {...props} />;
+        switch (annotationType) {
+            case "Entity tagging":
+                return <EntityTaggingFullWidthCellRenderer {...props} />;
+            case "Entity linking":
+                return <EntityLinkingFullWidthCellRenderer {...props} />;
+            case "Facts annotation":
+                return <FactsFullWidthCellRenderer {...props} />;
+            case "Relationships annotation":
+                return <RelationshipsFullWidthCellRenderer {...props} />;
+            case "Object detection":
+                return <ObjectsFullWidthCellRenderer {...props} />;
+            default:
+                return null;
         }
-        return null;
     }, [annotationType]);
 
     // Set row height for full width rows
     const getRowHeight = useCallback((params) => {
         if (params.data && params.data.fullWidth) {
-            return params.data?.entityCount * 7.5 + 160
+            // Adjust height based on count of items
+            if (params.data.entityCount) {
+                return Math.max(160, params.data?.entityCount * 40 + 100);
+            } else if (params.data.factCount) {
+                return Math.max(160, params.data?.factCount * 40 + 100);
+            } else if (params.data.relationshipCount) {
+                return Math.max(160, params.data?.relationshipCount * 40 + 100);
+            } else if (params.data.objectCount) {
+                return Math.max(160, params.data?.objectCount * 150 + 100);
+            }
+            return 300; // Default height
         }
         return undefined; // Use default height for normal rows
     }, [annotationType]);
 
     const isFullWidthRow = useCallback(({rowNode}) => {
-        return rowNode.data.fullWidth
+        return rowNode.data.fullWidth;
     }, []);
 
     const columnDefs = useMemo(() => {
@@ -499,7 +805,7 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
                             headerName: `${range}`,
                             valueGetter: params => {
                                 if (!params.data?.labels || params.data.labels[label] === undefined) {
-                                  return null;
+                                    return null;
                                 }
                                 // Convert both to strings for comparison
                                 return params.data.labels[label].toString() === range.toString() ? '✓' : null;
@@ -520,7 +826,6 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
                     width: 120,
                     cellRenderer: EntityCountRenderer
                 });
-
                 break;
 
             case "Entity linking":
@@ -537,6 +842,36 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
                     headerName: 'Entities',
                     width: 120,
                     cellRenderer: EntityCountRenderer
+                });
+                break;
+
+            case "Facts annotation":
+                // Add column for total facts count
+                cols.push({
+                    field: 'factCount',
+                    headerName: 'Facts',
+                    width: 120,
+                    cellRenderer: FactCountRenderer
+                });
+                break;
+
+            case "Relationships annotation":
+                // Add column for total relationships count
+                cols.push({
+                    field: 'relationshipCount',
+                    headerName: 'Relationships',
+                    width: 150,
+                    cellRenderer: RelationshipCountRenderer
+                });
+                break;
+
+            case "Object detection":
+                // Add column for total objects count
+                cols.push({
+                    field: 'objectCount',
+                    headerName: 'Objects',
+                    width: 120,
+                    cellRenderer: ObjectCountRenderer
                 });
                 break;
         }
@@ -577,14 +912,14 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
                     flex-direction: column;
                 }
                 
-                /* Table styles for entity tagging and entity linking */
-                .entity-table, .concept-table {
+                /* Table styles for all annotation types */
+                .entity-table, .concept-table, .facts-table, .relationships-table, .objects-table {
                     width: 100%;
                     border-collapse: collapse;
                     font-size: 14px;
                 }
                 
-                .entity-table th, .concept-table th {
+                .entity-table th, .concept-table th, .facts-table th, .relationships-table th, .objects-table th {
                     background-color: #e0f2f1;
                     color: #00796b;
                     text-align: left;
@@ -593,15 +928,16 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
                     border-bottom: 2px solid #b2dfdb;
                 }
                 
-                .entity-table td, .concept-table td {
+                .entity-table td, .concept-table td, .facts-table td, .relationships-table td, .objects-table td {
                     padding: 8px 10px;
                     border-bottom: 1px solid #e0e0e0;
                 }
                 
-                .entity-row:hover, .concept-row:hover {
+                .entity-row:hover, .concept-row:hover, .fact-row:hover, .relationship-row:hover, .object-row:hover {
                     background-color: #f5f5f5;
                 }
                 
+                /* Entity Tagging styles */
                 .tag-type-cell, .type-cell {
                     font-weight: 600;
                     color: #00796b;
@@ -625,6 +961,146 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
                 .concept-name-cell {
                     font-weight: 500;
                     color: #673ab7;
+                }
+                
+                /* Fact Annotation styles */
+                .fact-cell {
+                    font-weight: 500;
+                }
+                
+                .fact-type-cell {
+                    color: #ff6f00;
+                    background-color: #fff8e1;
+                    font-weight: 600;
+                }
+                
+                .fact-comment-cell {
+                    color: #757575;
+                    font-style: italic;
+                }
+                
+                /* Relationship Annotation styles */
+                .rel-text-cell {
+                    font-weight: 500;
+                }
+                
+                .rel-position-cell {
+                    font-family: monospace;
+                    color: #555;
+                }
+                
+                /* Object Detection styles */
+                .object-id-cell {
+                    font-weight: 600;
+                }
+                
+                .object-coords-cell {
+                    font-family: monospace;
+                    color: #555;
+                }
+                
+                .object-labels-cell {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 5px;
+                }
+                
+                .object-label-pill {
+                    background-color: #e1bee7;
+                    color: #6a1b9a;
+                    padding: 2px 6px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                    font-weight: 500;
+                }
+                
+                .object-comment-cell {
+                    color: #757575;
+                    font-style: italic;
+                }
+                
+                /* Object Detection Image Layout */
+                .object-detection-layout {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                }
+                
+                @media (min-width: 1024px) {
+                    .object-detection-layout {
+                        flex-direction: row;
+                    }
+                    
+                    .object-image-container {
+                        flex: 1;
+                    }
+                    
+                    .objects-table-container {
+                        flex: 1;
+                    }
+                }
+                
+                .object-image-container {
+                    position: relative;
+                    min-height: 300px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    overflow: hidden;
+                }
+                
+                .image-with-overlays {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                }
+                
+                .object-image {
+                    display: block;
+                    width: 100%;
+                    height: auto;
+                    max-height: 500px;
+                    object-fit: contain;
+                }
+                
+                .object-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                }
+                
+                .object-polygon {
+                    cursor: pointer;
+                    pointer-events: all;
+                    transition: all 0.2s ease;
+                }
+                
+                .object-polygon:hover {
+                    fill-opacity: 0.5;
+                    stroke-width: 3;
+                }
+                
+                .object-polygon.selected {
+                    fill-opacity: 0.5;
+                    stroke-width: 3;
+                }
+                
+                .no-image-placeholder {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 100%;
+                    height: 300px;
+                    background-color: #f0f0f0;
+                    color: #777;
+                    font-style: italic;
+                }
+                
+                .selected-row {
+                    background-color: #e8f5e9;
+                    font-weight: 500;
                 }
                 
                 .expansion-btn {
@@ -680,7 +1156,7 @@ const DocumentAnnotationGrid = ({ data, selectedTopicId, labelRanges = [0, 1, 2]
                 onGridReady={(params) => {
                     params.api.sizeColumnsToFit();
                     // If we have full width rows, redraw the grid to ensure proper row heights
-                    if (annotationType === "Entity tagging" || annotationType === "Entity linking") {
+                    if (hasFullWidthRows) {
                         setTimeout(() => params.api.resetRowHeights(), 0);
                     }
                 }}
