@@ -117,7 +117,8 @@ const MyStatisticsPage = () => {
     }, [selectedTopic, username, collectionID, statsActiveTab, actualSelectedTopic]);
 
     useEffect(() => {
-        if (!collectionID || !username || !selectedTopic || statsActiveTab === "inter-agreement") {
+        if (!collectionID || !username || !selectedTopic) {return }
+        if (statsActiveTab === "inter-agreement"){
 
             axios.get(`document-wise-agreement`, {
                 params: {
@@ -132,7 +133,7 @@ const MyStatisticsPage = () => {
                 console.error("Error fetching user statistics:", error);
             });
         }
-    /*    else{
+       else{
             axios.get(`document-wise${statsActiveTab === 'global' ? '-global' : ''}`, {
                 params: {
                     collection_id: collectionID,
@@ -145,7 +146,7 @@ const MyStatisticsPage = () => {
             }).catch((error) => {
                 console.error("Error fetching user statistics:", error);
             });
-        }*/
+       }
 
     }, [selectedTopic, username, collectionID, statsActiveTab, actualSelectedTopic]);
 
