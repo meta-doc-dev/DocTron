@@ -72,7 +72,7 @@ def get_individual_statistics(request):
         all_topics = Topic.objects.filter(collection_id=collection_id)
 
         # Get appropriate collection items based on annotation type
-        if annotation_type in ['Graded labeling', 'Passages annotation']:
+        if annotation_type in ['Graded labeling', 'Passages annotation', 'Object detection']:
             collection_items = CollectionHasLabel.objects.filter(
                 collection_id=collection_id
             ).select_related('label')
@@ -80,8 +80,10 @@ def get_individual_statistics(request):
             collection_items = CollectionHasTag.objects.filter(
                 collection_id=collection_id
             ).select_related('name')
+        elif annotation_type in ['Entity linking', 'Relationships annotation', 'Facts annotation']:
+            # For these types, we'll get data directly from annotations
+            collection_items = []
         else:
-            # For entity linking or other types
             collection_items = []
 
         # Get accessible documents and topics
@@ -89,12 +91,23 @@ def get_individual_statistics(request):
         accessible_topics = handler.get_accessible_topics(all_topics)
 
         # Convert to set for faster lookup
-        all_docs_set = set((doc.document_id, doc.language, doc.document_content['document_id']) for doc in accessible_documents)
+        all_docs_set = set((doc.document_id, doc.language, doc.document_content.get('document_id', '')) for doc in accessible_documents)
 
         results = []
         for topic in accessible_topics:
             annotations = handler.get_annotations(topic.id, accessible_documents)
-            annotated_doc_ids = set(doc_id for doc_id, _, _, _ in annotations)
+            annotated_doc_ids = set()
+
+            # Handle different return types from get_annotations
+            if annotation_type in ['Graded labeling', 'Passages annotation', 'Entity tagging', 'Entity linking']:
+                # These return document_id as first item in tuple
+                annotated_doc_ids = set(doc_id for doc_id, *_ in annotations)
+            elif annotation_type == 'Relationships annotation':
+                # Relationships use subject_document_id as primary
+                annotated_doc_ids = set(subject_doc_id for subject_doc_id, *_ in annotations)
+            elif annotation_type in ['Facts annotation', 'Object detection']:
+                # These return document_id as first item
+                annotated_doc_ids = set(doc_id for doc_id, *_ in annotations)
 
             annotated_documents = []
             missing_documents = []
@@ -123,7 +136,7 @@ def get_individual_statistics(request):
             topic_data = {
                 'id': str(topic.id),
                 'topic_id': str(topic.topic_id),
-                'topic_title': topic.details['text'],
+                'topic_title': topic.details.get('text', ''),
                 'topic_info': topic.details,
                 'number_of_annotated_documents': len(annotated_documents),
                 'number_of_missing_documents': len(missing_documents),
@@ -133,8 +146,24 @@ def get_individual_statistics(request):
                 'label_documents': label_documents
             }
 
+            # Special handling for specific annotation types
             if annotation_type == "Passages annotation":
                 topic_data['number_of_passages'] = sum(
+                    sum(values.values()) for values in topic_data.get('labels', {}).values()
+                )
+            elif annotation_type == "Relationships annotation":
+                # Count total relationships
+                topic_data['number_of_relationships'] = sum(
+                    sum(values.values()) for values in topic_data.get('labels', {}).values()
+                )
+            elif annotation_type == "Facts annotation":
+                # Count total facts
+                topic_data['number_of_facts'] = sum(
+                    sum(values.values()) for values in topic_data.get('labels', {}).values()
+                )
+            elif annotation_type == "Object detection":
+                # Count total detected objects
+                topic_data['number_of_objects'] = sum(
                     sum(values.values()) for values in topic_data.get('labels', {}).values()
                 )
 
@@ -143,18 +172,25 @@ def get_individual_statistics(request):
         response = {'status': 'success','data': results}
 
         # Add label ranges based on annotation type
-        if annotation_type in ['Graded labeling', 'Passages annotation']:
+        if annotation_type in ['Graded labeling', 'Passages annotation', 'Object detection']:
             labels_range = defaultdict(list)
             for coll_label in collection_items:
                 label_range = coll_label.values
-                labels_range[coll_label.label.name] = list(range(int(label_range.lower), int(label_range.upper) + 1))
+                try:
+                    lower, upper = map(int, label_range.split(','))
+                    labels_range[coll_label.label.name] = list(range(lower, upper + 1))
+                except (ValueError, AttributeError):
+                    # If label range is not properly defined, use default values
+                    labels_range[coll_label.label.name] = [0, 1, 2]
             response['label_range'] = labels_range
+
         elif annotation_type == 'Entity tagging':
             # For entity tagging, use simple present/absent (1/0)
             tags_range = {}
             for coll_tag in collection_items:
                 tags_range[coll_tag.name.name] = [1]  # 1 indicates tag is present
             response['label_range'] = tags_range
+
         elif annotation_type == 'Entity linking':
             # For entity linking, treat concepts similarly
             concepts_range = {}
@@ -177,9 +213,19 @@ def get_individual_statistics(request):
 
             response['label_range'] = concepts_range
 
+        elif annotation_type == 'Relationships annotation':
+            # For relationships, use a simple binary range
+            response['label_range'] = {'relationships': [1]}
+
+        elif annotation_type == 'Facts annotation':
+            # For facts, use a simple binary range
+            response['label_range'] = {'facts': [1]}
+
         return JsonResponse(response, json_dumps_params={'default': decimal_default})
 
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return JsonResponse({
             'status': 'error',
             'message': str(e)

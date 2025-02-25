@@ -2,7 +2,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Count
+from django.db.models import Count, F
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
@@ -18,7 +18,7 @@ from doctron_app.models import (
     Associate,
     CollectionHasTag,
     Concept,
-    Tag
+    Tag, Link, CreateFact, AnnotateObject, AnnotateObjectLabel
 )
 
 def decimal_default(obj) -> float:
@@ -29,15 +29,103 @@ def decimal_default(obj) -> float:
 
 def get_document_statistics(topic_id, annotation_type, all_documents):
     """Calculate detailed document statistics for a topic"""
-    if annotation_type == 'Graded labeling':
-        base_query = AnnotateLabel.objects.filter(topic_id=topic_id)
-    elif annotation_type == 'Passages annotation':
-        base_query = AnnotatePassage.objects.filter(topic_id=topic_id)
-    elif annotation_type == 'Entity tagging':
-        base_query = AssociateTag.objects.filter(topic_id=topic_id)
-    elif annotation_type == 'Entity linking':
-        base_query = Associate.objects.filter(topic_id=topic_id)
-    else:
+    try:
+        if annotation_type == 'Graded labeling':
+            base_query = AnnotateLabel.objects.filter(topic_id=topic_id)
+        elif annotation_type == 'Passages annotation':
+            base_query = AnnotatePassage.objects.filter(topic_id=topic_id)
+        elif annotation_type == 'Entity tagging':
+            base_query = AssociateTag.objects.filter(topic_id=topic_id)
+        elif annotation_type == 'Entity linking':
+            base_query = Associate.objects.filter(topic_id=topic_id)
+        elif annotation_type == 'Relationships annotation':
+            base_query = Link.objects.filter(topic_id=topic_id)
+        elif annotation_type == 'Facts annotation':
+            base_query = CreateFact.objects.filter(topic_id=topic_id)
+        elif annotation_type == 'Object detection':
+            # Use either AnnotateObject or AnnotateObjectLabel based on what's available
+            try:
+                base_query = AnnotateObject.objects.filter(topic_id=topic_id)
+                # Check if we have actual records with this query
+                if base_query.count() == 0:
+                    base_query = AnnotateObjectLabel.objects.filter(topic_id=topic_id)
+            except:
+                base_query = AnnotateObjectLabel.objects.filter(topic_id=topic_id)
+        else:
+            return {
+                'total_annotated': 0,
+                'total_missing': 0,
+                'total_annotators': 0,
+                'avg_annotators_per_doc': 0,
+                'total_documents': 0,
+                'document_coverage': {}
+            }
+
+        # Handle different document_id fields for different annotation types
+        if annotation_type == 'Relationships annotation':
+            # Use subject_document_id as primary document for relationships
+            annotated_docs_query = base_query.values('subject_document_id').distinct()
+            total_unique_docs = annotated_docs_query.count()
+
+            # Get documents with annotator counts and calculate average annotators per document
+            docs_with_annotators = base_query.values('subject_document_id').annotate(
+                annotator_count=Count('username', distinct=True),
+                annotators=ArrayAgg('username', distinct=True)
+            ).order_by('-annotator_count')
+
+            # Convert to format similar to other types
+            docs_with_annotators_formatted = []
+            for doc in docs_with_annotators:
+                docs_with_annotators_formatted.append({
+                    'document_id': doc['subject_document_id'],
+                    'annotator_count': doc['annotator_count'],
+                    'annotators': doc['annotators']
+                })
+            docs_with_annotators = docs_with_annotators_formatted
+        else:
+            # Get unique annotated documents
+            annotated_docs_query = base_query.values('document_id').distinct()
+            total_unique_docs = annotated_docs_query.count()
+
+            # Get documents with annotator counts
+            docs_with_annotators = base_query.values('document_id').annotate(
+                annotator_count=Count('username', distinct=True),
+                annotators=ArrayAgg('username', distinct=True)
+            ).order_by('-annotator_count')
+
+        # Total missing documents
+        total_docs = all_documents.count()
+        total_missing = total_docs - total_unique_docs
+
+        # Calculate average annotators per document
+        total_annotations = sum(doc['annotator_count'] for doc in docs_with_annotators)
+        avg_annotators_per_doc = round(total_annotations / total_unique_docs if total_unique_docs > 0 else 0, 2)
+
+        # Get total annotators
+        total_annotators = base_query.values('username').distinct().count()
+
+        # Calculate statistics for documents by annotator count
+        doc_coverage = defaultdict(list)
+        for doc in docs_with_annotators:
+            doc_id = doc.get('document_id', doc.get('subject_document_id', ''))
+            doc_coverage[doc['annotator_count']].append({
+                'id': str(doc_id),
+                'language': '',  # We don't have language info in this context
+                'annotators': doc['annotators']
+            })
+
+        return {
+            'total_annotated': total_unique_docs,
+            'total_missing': total_missing,
+            'total_annotators': total_annotators,
+            'avg_annotators_per_doc': avg_annotators_per_doc,
+            'total_documents': total_annotations,
+            'document_coverage': dict(doc_coverage)
+        }
+    except Exception as e:
+        import traceback
+        print(f"Error in get_document_statistics for {annotation_type}: {str(e)}")
+        print(traceback.format_exc())
         return {
             'total_annotated': 0,
             'total_missing': 0,
@@ -46,53 +134,6 @@ def get_document_statistics(topic_id, annotation_type, all_documents):
             'total_documents': 0,
             'document_coverage': {}
         }
-
-    # Get unique annotated documents
-    annotated_docs_query = base_query.values(
-        'document_id',
-        'language'
-    ).distinct()
-
-    # Total unique documents annotated (considering document_id and language)
-    total_unique_docs = annotated_docs_query.count()
-
-    # Total missing documents
-    total_docs = all_documents.count()
-    total_missing = total_docs - total_unique_docs
-
-    # Get documents with annotator counts and calculate average annotators per document
-    docs_with_annotators = base_query.values(
-        'document_id',
-        'language'
-    ).annotate(
-        annotator_count=Count('username', distinct=True),
-        annotators=ArrayAgg('username', distinct=True)
-    ).order_by('-annotator_count')
-
-    # Calculate average annotators per document
-    total_annotations = sum(doc['annotator_count'] for doc in docs_with_annotators)
-    avg_annotators_per_doc = round(total_annotations / total_unique_docs if total_unique_docs > 0 else 0, 2)
-
-    # Get total annotators
-    total_annotators = base_query.values('username').distinct().count()
-
-    # Calculate statistics for documents by annotator count
-    doc_coverage = defaultdict(list)
-    for doc in docs_with_annotators:
-        doc_coverage[doc['annotator_count']].append({
-            'id': str(doc['document_id']),
-            'language': doc['language'],
-            'annotators': doc['annotators']
-        })
-
-    return {
-        'total_annotated': total_unique_docs,
-        'total_missing': total_missing,
-        'total_annotators': total_annotators,
-        'avg_annotators_per_doc': avg_annotators_per_doc,
-        'total_documents': total_annotations,
-        'document_coverage': dict(doc_coverage)
-    }
 
 class GlobalAnnotationHandler:
     """Handler for global annotation statistics"""
@@ -260,6 +301,153 @@ class GlobalAnnotationHandler:
 
         return dict(grade_stats), dict(doc_stats)
 
+
+    def get_object_label_stats(self, topic_id, label, documents):
+        """Get aggregated object detection label statistics across all users"""
+        try:
+            # Get annotations for object labels
+            label_annotations = AnnotateObjectLabel.objects.filter(
+                topic_id=topic_id,
+                label=label,
+                document_id__in=documents.values_list('document_id', flat=True)
+            ).values('document_id', 'grade').annotate(
+                user_count=Count('username', distinct=True),
+                usernames=ArrayAgg('username', distinct=True)
+            )
+
+            # Need to get document content separately
+            doc_ids = [ann['document_id'] for ann in label_annotations]
+            doc_contents = {
+                doc.document_id: doc.document_content
+                for doc in Document.objects.filter(document_id__in=doc_ids)
+            }
+
+            # Group by grade
+            grade_stats = defaultdict(int)
+            doc_stats = defaultdict(list)
+
+            for ann in label_annotations:
+                grade = int(ann['grade'])
+                doc_id = ann['document_id']
+                usernames = ann['usernames']
+                user_count = ann['user_count']
+
+                grade_stats[grade] += user_count
+
+                # Get document content if available
+                doc_content = doc_contents.get(doc_id, {})
+                doc_title = doc_content.get('document_id', str(doc_id)) if isinstance(doc_content, dict) else str(doc_id)
+
+                doc_stats[grade].append({
+                    'id': str(doc_id),
+                    'title': doc_title,
+                    'annotator_count': user_count,
+                    'annotators': usernames
+                })
+
+            return dict(grade_stats), dict(doc_stats)
+        except Exception as e:
+            import traceback
+            print(f"Error in get_object_label_stats: {str(e)}")
+            print(traceback.format_exc())
+            return {}, {}
+
+    def get_relationship_stats(self, topic_id, documents):
+        """Get aggregated relationship statistics across all users"""
+        try:
+            # Get all relationship annotations for this topic grouped by document
+            # Avoid using 'id' since it appears to be unavailable
+            relationship_annotations = Link.objects.filter(
+                topic_id=topic_id,
+                subject_document_id__in=documents.values_list('document_id', flat=True)
+            ).values('subject_document_id').annotate(
+                # Instead of counting 'id', count one of the required fields
+                count=Count('subject_document_id'),
+                usernames=ArrayAgg('username', distinct=True)
+            )
+
+            # We need to fetch document content separately
+            doc_ids = [ann['subject_document_id'] for ann in relationship_annotations]
+            doc_contents = {
+                doc.document_id: doc.document_content
+                for doc in Document.objects.filter(document_id__in=doc_ids)
+            }
+
+            # Use a single grade (1) for relationships, indicating presence
+            relationship_count = 0
+            doc_stats = []
+
+            for ann in relationship_annotations:
+                doc_id = ann['subject_document_id']
+                usernames = ann['usernames']
+                count = ann['count']
+                relationship_count += count
+
+                # Get document content if available
+                doc_content = doc_contents.get(doc_id, {})
+                doc_title = doc_content.get('document_id', str(doc_id)) if isinstance(doc_content, dict) else str(doc_id)
+
+                doc_stats.append({
+                    'id': str(doc_id),
+                    'title': doc_title,
+                    'annotator_count': len(usernames),
+                    'annotators': usernames
+                })
+
+            return {'1': relationship_count}, {'1': doc_stats}
+        except Exception as e:
+            import traceback
+            print(f"Error in get_relationship_stats: {str(e)}")
+            print(traceback.format_exc())
+            return {}, {}
+
+    def get_fact_stats(self, topic_id, documents):
+        """Get aggregated fact statistics across all users"""
+        try:
+            # Get all fact annotations for this topic grouped by document
+            fact_annotations = CreateFact.objects.filter(
+                topic_id=topic_id,
+                document_id__in=documents.values_list('document_id', flat=True)
+            ).values('document_id').annotate(
+                count=Count('id'),
+                usernames=ArrayAgg('username', distinct=True)
+            )
+
+            # We need to fetch document content separately
+            doc_ids = [ann['document_id'] for ann in fact_annotations]
+            doc_contents = {
+                doc.document_id: doc.document_content
+                for doc in Document.objects.filter(document_id__in=doc_ids)
+            }
+
+            # Use a single grade (1) for facts, indicating presence
+            fact_count = 0
+            doc_stats = []
+
+            for ann in fact_annotations:
+                doc_id = ann['document_id']
+                usernames = ann['usernames']
+                count = ann['count']
+                fact_count += count
+
+                # Get document content if available
+                doc_content = doc_contents.get(doc_id, {})
+                doc_title = doc_content.get('document_id', str(doc_id)) if isinstance(doc_content, dict) else str(doc_id)
+
+                doc_stats.append({
+                    'id': str(doc_id),
+                    'title': doc_title,
+                    'annotator_count': len(usernames),
+                    'annotators': usernames
+                })
+
+            return {'1': fact_count}, {'1': doc_stats}
+        except Exception as e:
+            import traceback
+            print(f"Error in get_fact_stats: {str(e)}")
+            print(traceback.format_exc())
+            return {}, {}
+
 @require_http_methods(["GET"])
 def get_global_statistics(request):
     """View to get global annotation statistics across all users"""
@@ -290,7 +478,7 @@ def get_global_statistics(request):
         all_topics = Topic.objects.filter(collection_id=collection_id)
 
         # Get appropriate collection items based on annotation type
-        if annotation_type in ['Graded labeling', 'Passages annotation']:
+        if annotation_type in ['Graded labeling', 'Passages annotation', 'Object detection']:
             collection_items = CollectionHasLabel.objects.filter(
                 collection_id=collection_id
             ).select_related('label')
@@ -298,8 +486,8 @@ def get_global_statistics(request):
             collection_items = CollectionHasTag.objects.filter(
                 collection_id=collection_id
             ).select_related('name')
-        elif annotation_type == 'Entity linking':
-            # For entity linking, we'll get concept data directly from annotations
+        elif annotation_type in ['Entity linking', 'Relationships annotation', 'Facts annotation']:
+            # For these types, we'll get data directly from annotations
             collection_items = []
         else:
             collection_items = []
@@ -309,7 +497,7 @@ def get_global_statistics(request):
             topic_data = {
                 'id': str(topic.id),
                 'topic_id': str(topic.topic_id),
-                'topic_title': topic.details['text'],
+                'topic_title': topic.details.get('text', ''),
                 'topic_info': topic.details,
                 'labels': {},
                 'label_documents': {}
@@ -333,22 +521,22 @@ def get_global_statistics(request):
             })
 
             # Get statistics based on annotation type
-            if annotation_type in ['Graded labeling', 'Passages annotation']:
+            if annotation_type in ['Graded labeling', 'Passages annotation', 'Object detection']:
                 # Handle label-based annotations
                 for coll_label in collection_items:
                     label_name = coll_label.label.name
 
                     if annotation_type == 'Graded labeling':
                         grade_stats, doc_stats = handler.get_label_stats(
-                            topic.id,
-                            coll_label.label,
-                            all_documents
+                            topic.id, coll_label.label, all_documents
                         )
-                    else:
+                    elif annotation_type == 'Passages annotation':
                         grade_stats, doc_stats = handler.get_passage_stats(
-                            topic.id,
-                            coll_label.label,
-                            all_documents
+                            topic.id, coll_label.label, all_documents
+                        )
+                    elif annotation_type == 'Object detection':
+                        grade_stats, doc_stats = handler.get_object_label_stats(
+                            topic.id, coll_label.label, all_documents
                         )
 
                     if grade_stats:
@@ -365,9 +553,7 @@ def get_global_statistics(request):
                     tag_name = coll_tag.name.name
 
                     grade_stats, doc_stats = handler.get_tag_stats(
-                        topic.id,
-                        coll_tag.name,
-                        all_documents
+                        topic.id, coll_tag.name, all_documents
                     )
 
                     if grade_stats:
@@ -380,7 +566,7 @@ def get_global_statistics(request):
 
             elif annotation_type == 'Entity linking':
                 # Handle concept-based annotations
-                # First get all concept URLs used in this topic
+                # Get all concept URLs used in this topic
                 concept_urls = Associate.objects.filter(
                     topic_id=topic.id,
                     document_id__in=all_documents.values('document_id')
@@ -393,9 +579,7 @@ def get_global_statistics(request):
                         concept_name = concept.concept_name or concept.concept_url
 
                         grade_stats, doc_stats = handler.get_concept_stats(
-                            topic.id,
-                            concept_url,
-                            all_documents
+                            topic.id, concept_url, all_documents
                         )
 
                         if grade_stats:
@@ -408,8 +592,41 @@ def get_global_statistics(request):
                     except Concept.DoesNotExist:
                         continue
 
+            elif annotation_type == 'Relationships annotation':
+                # Handle relationship annotations
+                rel_stats, rel_docs = handler.get_relationship_stats(
+                    topic.id, all_documents
+                )
+
+                if rel_stats:
+                    topic_data['labels']['relationships'] = rel_stats
+                    topic_data['label_documents']['relationships'] = rel_docs
+
+            elif annotation_type == 'Facts annotation':
+                # Handle fact annotations
+                fact_stats, fact_docs = handler.get_fact_stats(
+                    topic.id, all_documents
+                )
+
+                if fact_stats:
+                    topic_data['labels']['facts'] = fact_stats
+                    topic_data['label_documents']['facts'] = fact_docs
+
+            # Add special counters for specific annotation types
             if annotation_type == "Passages annotation":
                 topic_data['number_of_passages'] = sum(
+                    sum(values.values()) for values in topic_data.get('labels', {}).values()
+                )
+            elif annotation_type == "Relationships annotation":
+                topic_data['number_of_relationships'] = sum(
+                    sum(values.values()) for values in topic_data.get('labels', {}).values()
+                )
+            elif annotation_type == "Facts annotation":
+                topic_data['number_of_facts'] = sum(
+                    sum(values.values()) for values in topic_data.get('labels', {}).values()
+                )
+            elif annotation_type == "Object detection":
+                topic_data['number_of_objects'] = sum(
                     sum(values.values()) for values in topic_data.get('labels', {}).values()
                 )
 
@@ -421,14 +638,16 @@ def get_global_statistics(request):
         }
 
         # Add label ranges based on annotation type
-        if annotation_type in ['Graded labeling', 'Passages annotation']:
+        if annotation_type in ['Graded labeling', 'Passages annotation', 'Object detection']:
             labels_range = defaultdict()
             for coll_label in collection_items:
                 label_range = coll_label.values
-                labels_range[coll_label.label.name] = list(range(
-                    int(label_range.lower),
-                    int(label_range.upper) + 1
-                ))
+                try:
+                    lower, upper = map(int, label_range.split(','))
+                    labels_range[coll_label.label.name] = list(range(lower, upper + 1))
+                except (ValueError, AttributeError):
+                    # If label range is not properly defined, use default values
+                    labels_range[coll_label.label.name] = [0, 1, 2]
             response['label_range'] = labels_range
 
         elif annotation_type == 'Entity tagging':
@@ -457,9 +676,19 @@ def get_global_statistics(request):
 
             response['label_range'] = concepts_range
 
+        elif annotation_type == 'Relationships annotation':
+            # For relationships, use a simple binary range
+            response['label_range'] = {'relationships': [1]}
+
+        elif annotation_type == 'Facts annotation':
+            # For facts, use a simple binary range
+            response['label_range'] = {'facts': [1]}
+
         return JsonResponse(response, json_dumps_params={'default': decimal_default})
 
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return JsonResponse({
             'status': 'error',
             'message': str(e)
