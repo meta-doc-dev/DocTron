@@ -1,11 +1,15 @@
+import random
 from collections import defaultdict
 
 from django.db.models import Count, F
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+
 from doctron_app.dashboard.annotation_handler import AnnotationFactory
-from doctron_app.dashboard.utils import is_collection_accessible
-from doctron_app.models import Document, AnnotatePassage, AnnotateLabel, GroundTruthLogFile, AssociateTag, Associate, Concept, Tag
+from doctron_app.models import (
+    Document, AnnotatePassage, AnnotateLabel, GroundTruthLogFile,
+    AssociateTag, Associate, Mention, HasArea, CollectionHasConcept,
+)
 
 
 @require_http_methods(["GET"])
@@ -49,42 +53,27 @@ def get_individual_document_wise_statistics(request):
             annotations = handler.get_detailed_annotations(topic_id, accessible_documents.values('document_id'))
             results = handler.get_detailed_annotations_results(annotations, accessible_documents)
         elif annotation_type == 'Entity tagging':
-            # Get tag annotations
+            # Get tag annotations with mention text directly from the Mention model
             annotations = AssociateTag.objects.filter(
                 topic_id=topic_id,
                 username=username,
                 name_space=name_space,
                 document_id__in=accessible_documents.values('document_id')
-            ).select_related('start', 'name').values(
-                'document_id',
-                'start',
-                'stop',
-                'comment',
-                'insertion_time',
-                tag_name=F('name__name')
-            )
+            ).select_related('start', 'name')
 
-            # Process into hierarchical structure
+            # Process into hierarchical structure with correct mention text
             results = process_entity_tagging_results(annotations, accessible_documents)
         elif annotation_type == 'Entity linking':
-            # Get concept annotations - FIXED THE FIELD NAME CONFLICT
+            # Get concept annotations with mention text directly from the Mention model
             annotations = Associate.objects.filter(
                 topic_id=topic_id,
                 username=username,
                 name_space=name_space,
                 document_id__in=accessible_documents.values('document_id')
-            ).values(
-                'document_id',
-                'start',
-                'stop',
-                'comment',
-                'insertion_time',
-                'concept_url_id',  # Using the actual field name from the model
-                concept_name=F('concept_url__concept_name')  # This is fine as annotation
-            )
+            ).select_related('start', 'concept_url', 'name')
 
-            # Process into hierarchical structure
-            results = process_entity_linking_results(annotations, accessible_documents)
+            # Process into hierarchical structure with correct mention text and categorized by concept types
+            results = process_entity_linking_results(annotations, accessible_documents, collection_id)
         else:
             results = []
 
@@ -101,6 +90,8 @@ def get_individual_document_wise_statistics(request):
         return JsonResponse({"results": results}, safe=False)
 
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -111,7 +102,7 @@ def process_entity_tagging_results(annotations, accessible_documents):
 
     # Group annotations by document
     for annotation in annotations:
-        doc_id = annotation['document_id']
+        doc_id = annotation.document_id_id
         doc_annotations[doc_id].append(annotation)
 
     # Process each document
@@ -121,95 +112,194 @@ def process_entity_tagging_results(annotations, accessible_documents):
 
             # Group tags
             tags = {}
+            # Track unique entities by (start, stop) to prevent duplicates
+            unique_entities = {}
+
             for annotation in annotations_list:
-                tag_name = annotation['tag_name']
+                tag_name = annotation.name.name
                 if tag_name not in tags:
                     tags[tag_name] = []
 
-                # Add entity info to the tag
-                tags[tag_name].append({
-                    'start': annotation['start'],
-                    'stop': annotation['stop'],
-                    'comment': annotation['comment'],
-                    'insertion_time': annotation['insertion_time'].isoformat() if annotation['insertion_time'] else None
-                })
+                # Create a unique key for this entity
+                entity_key = (annotation.start_id, annotation.stop)
 
-            # Structure the data for hierarchical display
-            tag_data = []
-            for tag_name, entities in tags.items():
-                tag_data.append({
+                # Skip if we've already processed this exact entity for this tag
+                if entity_key in unique_entities.get(tag_name, set()):
+                    continue
+
+                # Add to the set of unique entities for this tag
+                if tag_name not in unique_entities:
+                    unique_entities[tag_name] = set()
+                unique_entities[tag_name].add(entity_key)
+
+                # Get the correct mention text from the Mention model
+                try:
+                    mention = Mention.objects.get(
+                        start=annotation.start_id,
+                        stop=annotation.stop,
+                        document_id=annotation.document_id,
+                        language=annotation.language
+                    )
+
+                    # Add entity info to the tag with proper mention text
+                    tags[tag_name].append({
+                        'start': annotation.start_id,
+                        'stop': annotation.stop,
+                        'comment': annotation.comment,
+                        'mention_text': mention.mention_text,  # Correct mention text
+                        'insertion_time': annotation.insertion_time.isoformat() if annotation.insertion_time else None
+                    })
+                except Mention.DoesNotExist:
+                    continue
+
+            tag_data = [
+                {
                     'tag_name': tag_name,
                     'entities': entities,
-                    'count': len(entities)
-                })
-
+                    'count': len(entities),
+                }
+                for tag_name, entities in tags.items()
+            ]
             results.append({
                 'document_id': doc_id,
                 'document_content': document.document_content,
                 'data': tag_data
             })
-        except Document.DoesNotExist:
+        except (Document.DoesNotExist, Mention.DoesNotExist) as e:
+            print(f"Error processing document {doc_id}: {str(e)}")
             continue
 
     return results
 
 
-def process_entity_linking_results(annotations, accessible_documents):
-    """Process entity linking annotations into hierarchical structure"""
+def process_entity_linking_results(annotations, accessible_documents, collection_id):
+    """Process entity linking annotations into hierarchical structure with concept types"""
     results = []
     doc_annotations = defaultdict(list)
 
     # Group annotations by document
     for annotation in annotations:
-        doc_id = annotation['document_id']
+        doc_id = annotation.document_id_id
         doc_annotations[doc_id].append(annotation)
+
+    # Get concept types for this collection
+    # First try looking in CollectionHasConcept
+    collection_concepts = CollectionHasConcept.objects.select_related('name')
+
+    # Create a mapping of concept_urls to their types
+    concept_type_map = {}
+
+    # Get all concept URLs used in annotations
+    concept_urls = set(annotation.concept_url_id for doc_annotations_list in doc_annotations.values()
+                       for annotation in doc_annotations_list)
+
+    # Check for concept types in CollectionHasConcept
+    for concept_url in concept_urls:
+        vocab_concepts = collection_concepts.filter(concept_url=concept_url)
+        if vocab_concepts.exists():
+            vocabulary_type = vocab_concepts.first().name.name
+            concept_type_map[concept_url] = vocabulary_type
+
+    # For concepts without a type from Vocabulary, check HasArea
+    for concept_url in concept_urls:
+        if concept_url not in concept_type_map:
+            area_concepts = HasArea.objects.filter(concept_url=concept_url).select_related('name')
+            if area_concepts.exists():
+                area_type = area_concepts.first().name.name
+                concept_type_map[concept_url] = area_type
+
+    # Default type for concepts that don't have a defined type
+    default_type = "Uncategorized"
 
     # Process each document
     for doc_id, annotations_list in doc_annotations.items():
         try:
             document = accessible_documents.get(document_id=doc_id)
 
-            # Group concepts
-            concepts = {}
-            for annotation in annotations_list:
-                concept_url = annotation['concept_url_id']  # FIXED: Using the correct field name
-                concept_name = annotation['concept_name'] or concept_url
+            # First, group by concept type
+            concept_types = defaultdict(dict)
 
-                if concept_url not in concepts:
-                    concepts[concept_url] = {
+            # Track unique entities by (start, stop) for each concept to prevent duplicates
+            unique_entities = defaultdict(set)
+
+            for annotation in annotations_list:
+                concept_url = annotation.concept_url_id
+                concept_name = annotation.concept_url.concept_name or concept_url
+
+                # Get concept type from our mapping or use default
+                concept_type = concept_type_map.get(concept_url, default_type)
+
+                # Initialize concept in its type group if not exists
+                if concept_url not in concept_types[concept_type]:
+                    concept_types[concept_type][concept_url] = {
                         'name': concept_name,
                         'url': concept_url,
                         'entities': []
                     }
 
-                # Add entity info to the concept
-                concepts[concept_url]['entities'].append({
-                    'start': annotation['start'],
-                    'stop': annotation['stop'],
-                    'comment': annotation['comment'],
-                    'insertion_time': annotation['insertion_time'].isoformat() if annotation['insertion_time'] else None
-                })
+                # Create a unique key for this entity
+                entity_key = (annotation.start_id, annotation.stop)
+
+                # Skip if we've already processed this exact entity for this concept
+                if entity_key in unique_entities[concept_url]:
+                    continue
+
+                # Add to the set of unique entities for this concept
+                unique_entities[concept_url].add(entity_key)
+
+                # Get the correct mention text from the Mention model
+                try:
+                    mention = Mention.objects.get(
+                        start=annotation.start_id,
+                        stop=annotation.stop,
+                        document_id=annotation.document_id,
+                        language=annotation.language
+                    )
+
+                    # Add entity info to the concept with proper mention text
+                    concept_types[concept_type][concept_url]['entities'].append({
+                        'start': annotation.start_id,
+                        'stop': annotation.stop,
+                        'comment': annotation.comment,
+                        'mention_text': mention.mention_text,  # Correct mention text
+                        'insertion_time': annotation.insertion_time.isoformat() if annotation.insertion_time else None
+                    })
+                except Mention.DoesNotExist:
+                    continue
 
             # Structure the data for hierarchical display
-            concept_data = []
-            for concept_url, concept_info in concepts.items():
-                concept_data.append({
-                    'concept_name': concept_info['name'],
-                    'concept_url': concept_info['url'],
-                    'entities': concept_info['entities'],
-                    'count': len(concept_info['entities'])
+            concept_type_data = []
+
+            # Process each concept type
+            for concept_type, concepts in concept_types.items():
+                # Convert concepts dict to list
+                concept_list = []
+                for concept_url, concept_info in concepts.items():
+                    concept_list.append({
+                        'concept_name': concept_info['name'],
+                        'concept_url': concept_info['url'],
+                        'entities': concept_info['entities'],
+                        'count': len(concept_info['entities'])
+                    })
+
+                # Add the concept type with its concepts
+                concept_type_data.append({
+                    'type_name': concept_type,
+                    'concepts': concept_list,
+                    'count': sum(len(c['entities']) for c in concept_list)
                 })
 
+            # Add document result
             results.append({
                 'document_id': doc_id,
                 'document_content': document.document_content,
-                'data': concept_data
+                'data': concept_type_data
             })
-        except Document.DoesNotExist:
+        except (Document.DoesNotExist, Mention.DoesNotExist) as e:
+            print(f"Error processing document {doc_id}: {str(e)}")
             continue
 
     return results
-
 
 
 @require_http_methods(["GET"])
@@ -331,14 +421,15 @@ def process_label_annotations(annotations, all_documents):
 
         if doc_id in results:
             for username_data in results[doc_id]['data'].values():
-                # Convert the nested defaultdict to regular dict
-                formatted_labels = {}
-                for label_name, label_data in username_data['labels'].items():
-                    formatted_labels[label_name] = {
+                formatted_labels = {
+                    label_name: {
                         'total': label_data['total'],
-                        'grades': dict(label_data['grades'])
+                        'grades': dict(label_data['grades']),
                     }
-
+                    for label_name, label_data in username_data[
+                        'labels'
+                    ].items()
+                }
                 formatted_data = {
                     'username': username_data['username'],
                     'total_num_annotation': username_data['total_num_annotation'],
@@ -406,7 +497,8 @@ def process_concept_annotations(annotations, all_documents):
     for annotation in annotations:
         doc_id = annotation['document_id']
         username = annotation['username']
-        concept_name = annotation['concept_name'] or annotation['concept_url_id']  # Use name if available, otherwise use URL
+        concept_name = annotation['concept_name'] or annotation[
+            'concept_url_id']  # Use name if available, otherwise use URL
         count = annotation['count']
 
         results[doc_id]['document_id'] = doc_id
@@ -436,14 +528,12 @@ def process_concept_annotations(annotations, all_documents):
 
     return formatted_results
 
-
-import random
 @require_http_methods(["GET"])
 def get_agreement_document_wise_statistics(request):
     """View to Document-wise statistics for a topic in a collection for all the users"""
     collection_id = request.GET.get('collection_id')
     topic_id = request.GET.get('topic_id')
-    users = request.GET.get('users','all')
+    users = request.GET.get('users', 'all')
     annotation_type = request.GET.get('annotation_type', 'Passages annotation')
 
     all_documents = Document.objects.filter(collection_id=collection_id)
@@ -459,7 +549,7 @@ def get_agreement_document_wise_statistics(request):
             'doc_id': doc_content['document_id'],
             'users': users,
             'fleiss': str(val + round(random.uniform(0.001, 0.01), 2))[0:4],
-            'krippendorff':str(val - round(random.uniform(0.01, 0.05), 2))[0:4]
+            'krippendorff': str(val - round(random.uniform(0.01, 0.05), 2))[0:4]
         }
 
         formatted_results.append(doc_result)
