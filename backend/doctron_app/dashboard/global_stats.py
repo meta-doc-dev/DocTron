@@ -13,7 +13,12 @@ from doctron_app.models import (
     AnnotateLabel,
     AnnotatePassage,
     ShareCollection,
-    Collection
+    Collection,
+    AssociateTag,
+    Associate,
+    CollectionHasTag,
+    Concept,
+    Tag
 )
 
 def decimal_default(obj) -> float:
@@ -26,8 +31,21 @@ def get_document_statistics(topic_id, annotation_type, all_documents):
     """Calculate detailed document statistics for a topic"""
     if annotation_type == 'Graded labeling':
         base_query = AnnotateLabel.objects.filter(topic_id=topic_id)
-    else:
+    elif annotation_type == 'Passages annotation':
         base_query = AnnotatePassage.objects.filter(topic_id=topic_id)
+    elif annotation_type == 'Entity tagging':
+        base_query = AssociateTag.objects.filter(topic_id=topic_id)
+    elif annotation_type == 'Entity linking':
+        base_query = Associate.objects.filter(topic_id=topic_id)
+    else:
+        return {
+            'total_annotated': 0,
+            'total_missing': 0,
+            'total_annotators': 0,
+            'avg_annotators_per_doc': 0,
+            'total_documents': 0,
+            'document_coverage': {}
+        }
 
     # Get unique annotated documents
     annotated_docs_query = base_query.values(
@@ -126,7 +144,6 @@ class GlobalAnnotationHandler:
             label=label,
             document_id__in=documents.values('document_id')
         ).values('document_id', 'document_id__document_content', 'grade').annotate(
-            # count=Count('username', distinct=True),
             usernames=ArrayAgg('username', distinct=True)
         )
 
@@ -158,7 +175,6 @@ class GlobalAnnotationHandler:
             label=label,
             document_id__in=documents.values('document_id')
         ).values('document_id', 'document_id__document_content', 'grade').annotate(
-            # count=Count('username', distinct=True),
             usernames=ArrayAgg('username', distinct=True)
         )
 
@@ -174,6 +190,68 @@ class GlobalAnnotationHandler:
 
             grade_stats[grade] += count
             doc_stats[grade].append({
+                'id': str(doc_id),
+                'title': ann['document_id__document_content']['document_id'],
+                'annotator_count': count,
+                'annotators': usernames
+            })
+
+        return dict(grade_stats), dict(doc_stats)
+
+    def get_tag_stats(self, topic_id, tag, documents):
+        """Get aggregated tag statistics across all users"""
+        # Get annotations for tags
+        tag_annotations = AssociateTag.objects.filter(
+            topic_id=topic_id,
+            name=tag,
+            document_id__in=documents.values('document_id')
+        ).values('document_id', 'document_id__document_content').annotate(
+            usernames=ArrayAgg('username', distinct=True)
+        )
+
+        # We use a single grade (1) for tags, indicating presence
+        grade_stats = defaultdict(int)
+        doc_stats = defaultdict(list)
+
+        for ann in tag_annotations:
+            doc_id = ann['document_id']
+            usernames = ann['usernames']
+            count = len(ann['usernames'])
+
+            # Use grade "1" to indicate presence
+            grade_stats[1] += count
+            doc_stats[1].append({
+                'id': str(doc_id),
+                'title': ann['document_id__document_content']['document_id'],
+                'annotator_count': count,
+                'annotators': usernames
+            })
+
+        return dict(grade_stats), dict(doc_stats)
+
+    def get_concept_stats(self, topic_id, concept_url, documents):
+        """Get aggregated concept statistics across all users"""
+        # Get annotations for concepts
+        concept_annotations = Associate.objects.filter(
+            topic_id=topic_id,
+            concept_url=concept_url,
+            document_id__in=documents.values('document_id')
+        ).values('document_id', 'document_id__document_content').annotate(
+            usernames=ArrayAgg('username', distinct=True)
+        )
+
+        # We use a single grade (1) for concepts, indicating presence
+        grade_stats = defaultdict(int)
+        doc_stats = defaultdict(list)
+
+        for ann in concept_annotations:
+            doc_id = ann['document_id']
+            usernames = ann['usernames']
+            count = len(ann['usernames'])
+
+            # Use grade "1" to indicate presence
+            grade_stats[1] += count
+            doc_stats[1].append({
                 'id': str(doc_id),
                 'title': ann['document_id__document_content']['document_id'],
                 'annotator_count': count,
@@ -210,13 +288,21 @@ def get_global_statistics(request):
         # Get collection data
         all_documents = Document.objects.filter(collection_id=collection_id)
         all_topics = Topic.objects.filter(collection_id=collection_id)
-        collection_labels = CollectionHasLabel.objects.filter(
-            collection_id=collection_id
-        ).select_related('label')
 
-        # # Get all users with access to collection # USELESS CODE
-        # collection_users = handler.get_collection_users()
-        # user_count = len(collection_users)
+        # Get appropriate collection items based on annotation type
+        if annotation_type in ['Graded labeling', 'Passages annotation']:
+            collection_items = CollectionHasLabel.objects.filter(
+                collection_id=collection_id
+            ).select_related('label')
+        elif annotation_type == 'Entity tagging':
+            collection_items = CollectionHasTag.objects.filter(
+                collection_id=collection_id
+            ).select_related('name')
+        elif annotation_type == 'Entity linking':
+            # For entity linking, we'll get concept data directly from annotations
+            collection_items = []
+        else:
+            collection_items = []
 
         results = []
         for topic in all_topics:
@@ -246,30 +332,81 @@ def get_global_statistics(request):
                 'document_coverage': doc_stats['document_coverage']
             })
 
-            # Get label statistics
-            for coll_label in collection_labels:
-                label_name = coll_label.label.name
+            # Get statistics based on annotation type
+            if annotation_type in ['Graded labeling', 'Passages annotation']:
+                # Handle label-based annotations
+                for coll_label in collection_items:
+                    label_name = coll_label.label.name
 
-                if annotation_type == 'Graded labeling':
-                    grade_stats, doc_stats = handler.get_label_stats(
+                    if annotation_type == 'Graded labeling':
+                        grade_stats, doc_stats = handler.get_label_stats(
+                            topic.id,
+                            coll_label.label,
+                            all_documents
+                        )
+                    else:
+                        grade_stats, doc_stats = handler.get_passage_stats(
+                            topic.id,
+                            coll_label.label,
+                            all_documents
+                        )
+
+                    if grade_stats:
+                        topic_data['labels'][label_name] = {
+                            str(k): v for k, v in grade_stats.items()
+                        }
+                        topic_data['label_documents'][label_name] = {
+                            str(k): v for k, v in doc_stats.items()
+                        }
+
+            elif annotation_type == 'Entity tagging':
+                # Handle tag-based annotations
+                for coll_tag in collection_items:
+                    tag_name = coll_tag.name.name
+
+                    grade_stats, doc_stats = handler.get_tag_stats(
                         topic.id,
-                        coll_label.label,
+                        coll_tag.name,
                         all_documents
                     )
-                else:
-                    grade_stats, doc_stats = handler.get_passage_stats(
-                        topic.id,
-                        coll_label.label,
-                        all_documents
-                    )
 
-                if grade_stats:
-                    topic_data['labels'][label_name] = {
-                        str(k): v for k, v in grade_stats.items()
-                    }
-                    topic_data['label_documents'][label_name] = {
-                        str(k): v for k, v in doc_stats.items()
-                    }
+                    if grade_stats:
+                        topic_data['labels'][tag_name] = {
+                            str(k): v for k, v in grade_stats.items()
+                        }
+                        topic_data['label_documents'][tag_name] = {
+                            str(k): v for k, v in doc_stats.items()
+                        }
+
+            elif annotation_type == 'Entity linking':
+                # Handle concept-based annotations
+                # First get all concept URLs used in this topic
+                concept_urls = Associate.objects.filter(
+                    topic_id=topic.id,
+                    document_id__in=all_documents.values('document_id')
+                ).values_list('concept_url', flat=True).distinct()
+
+                for concept_url in concept_urls:
+                    try:
+                        # Get concept name
+                        concept = Concept.objects.get(concept_url=concept_url)
+                        concept_name = concept.concept_name or concept.concept_url
+
+                        grade_stats, doc_stats = handler.get_concept_stats(
+                            topic.id,
+                            concept_url,
+                            all_documents
+                        )
+
+                        if grade_stats:
+                            topic_data['labels'][concept_name] = {
+                                str(k): v for k, v in grade_stats.items()
+                            }
+                            topic_data['label_documents'][concept_name] = {
+                                str(k): v for k, v in doc_stats.items()
+                            }
+                    except Concept.DoesNotExist:
+                        continue
 
             if annotation_type == "Passages annotation":
                 topic_data['number_of_passages'] = sum(
@@ -281,19 +418,44 @@ def get_global_statistics(request):
         response = {
             'status': 'success',
             'data': results,
-            # 'total_annotators': user_count
         }
 
-        # Add label ranges if applicable
+        # Add label ranges based on annotation type
         if annotation_type in ['Graded labeling', 'Passages annotation']:
             labels_range = defaultdict()
-            for coll_label in collection_labels:
+            for coll_label in collection_items:
                 label_range = coll_label.values
                 labels_range[coll_label.label.name] = list(range(
                     int(label_range.lower),
                     int(label_range.upper) + 1
                 ))
             response['label_range'] = labels_range
+
+        elif annotation_type == 'Entity tagging':
+            # For entity tagging, we use a single value (1) indicating presence
+            tags_range = defaultdict(list)
+            for coll_tag in collection_items:
+                tags_range[coll_tag.name.name] = [1]
+            response['label_range'] = tags_range
+
+        elif annotation_type == 'Entity linking':
+            # For entity linking, we use a single value (1) for each concept
+            concepts_range = defaultdict(list)
+            for topic in all_topics:
+                concept_urls = Associate.objects.filter(
+                    topic_id=topic.id,
+                    document_id__in=all_documents.values('document_id')
+                ).values_list('concept_url', flat=True).distinct()
+
+                for concept_url in concept_urls:
+                    try:
+                        concept = Concept.objects.get(concept_url=concept_url)
+                        concept_name = concept.concept_name or concept.concept_url
+                        concepts_range[concept_name] = [1]
+                    except Concept.DoesNotExist:
+                        continue
+
+            response['label_range'] = concepts_range
 
         return JsonResponse(response, json_dumps_params={'default': decimal_default})
 

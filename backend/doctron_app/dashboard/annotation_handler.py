@@ -7,7 +7,7 @@ from bs4.diagnose import profile
 from django.db.models import F
 
 from doctron_app.dashboard.document_access_manager import DocumentAccessManager
-from doctron_app.models import AnnotateLabel, AnnotatePassage
+from doctron_app.models import AnnotateLabel, AnnotatePassage, Concept, Associate, AssociateTag
 
 
 class BaseAnnotationHandler(ABC):
@@ -269,13 +269,228 @@ class PassageAnnotationHandler(BaseAnnotationHandler):
                 label_documents[label_name] = {str(k): v for k, v in dict(grade_docs).items()}
             return labels_data, label_documents
 
+class EntityTaggingHandler(BaseAnnotationHandler):
+    """Handler for entity tagging annotations"""
+
+    @property
+    def model(self):
+        return AssociateTag
+
+    def get_annotations(self, topic_id, documents):
+        return self.model.objects.filter(
+            topic_id=topic_id,
+            username=self.username,
+            name_space=self.name_space,
+            document_id__in=documents.values('document_id')
+        ).values_list('document_id', 'name', 'start', 'comment').distinct()
+
+    def get_detailed_annotations(self, topic_id, accessible_document_ids):
+        return self.model.objects.filter(
+            topic_id=topic_id,
+            username=self.username,
+            document_id__in=accessible_document_ids
+        ).select_related('name').values(
+            'document_id',
+            'start',
+            'stop',
+            'comment',
+            tag_name=F('name__name'),
+        )
+
+    def get_detailed_annotations_results(self, annotations, accessible_documents):
+        results = []
+
+        # Group by document_id
+        for document_id, doc_annotations in groupby(annotations, key=itemgetter('document_id')):
+            doc_annotations_list = list(doc_annotations)
+
+            # Group by start position (entity mentions)
+            entities = []
+            for start, entity_annotations in groupby(doc_annotations_list, key=itemgetter('start')):
+                entity_annotations_list = list(entity_annotations)
+
+                # Create tags dictionary
+                tags = {
+                    anno['tag_name']: 1  # Using 1 to indicate presence
+                    for anno in entity_annotations_list
+                }
+
+                entities.append({
+                    'entity_id': start,
+                    'start': entity_annotations_list[0]['start'],
+                    'stop': entity_annotations_list[0]['stop'],
+                    'tags': tags
+                })
+
+            results.append({
+                'document_id': document_id,
+                'document_content': accessible_documents.get(document_id=document_id).document_content,
+                'data': entities
+            })
+
+        return results
+
+    def get_stats(self, topic_id, collection_tags, documents, all_docs_set):
+        tags_data = {}
+        tag_documents = {}
+
+        for coll_tag in collection_tags:
+            tag_name = coll_tag.name.name
+
+            # Get annotations with this tag
+            annotations = self.model.objects.filter(
+                topic_id=topic_id,
+                username=self.username,
+                name_space=self.name_space,
+                name=coll_tag.name,
+                document_id__in=documents.values('document_id')
+            ).values('document_id', 'comment')
+
+            # Count documents with this tag
+            doc_count = annotations.count()
+
+            if doc_count > 0:
+                # Store document details
+                doc_info = []
+                for ann in annotations:
+                    doc_id = ann['document_id']
+                    extra_details = next(((lang, document_id) for did, lang, document_id in all_docs_set if did == doc_id), None)
+
+                    if extra_details:
+                        doc_info.append({
+                            'id': str(doc_id),
+                            'title': extra_details[1],
+                            'language': extra_details[0],
+                            'comment': ann['comment'] if ann['comment'] else ""
+                        })
+
+                tags_data[tag_name] = {"1": doc_count}  # Using "1" to match existing format
+                tag_documents[tag_name] = {"1": doc_info}
+
+        return tags_data, tag_documents
+
+
+class EntityLinkingHandler(BaseAnnotationHandler):
+    """Handler for entity linking annotations"""
+
+    @property
+    def model(self):
+        return Associate
+
+    def get_annotations(self, topic_id, documents):
+        return self.model.objects.filter(
+            topic_id=topic_id,
+            username=self.username,
+            name_space=self.name_space,
+            document_id__in=documents.values('document_id')
+        ).values_list('document_id', 'concept_url', 'start', 'comment').distinct()
+
+    def get_detailed_annotations(self, topic_id, accessible_document_ids):
+        return self.model.objects.filter(
+            topic_id=topic_id,
+            username=self.username,
+            document_id__in=accessible_document_ids
+        ).select_related('concept_url').values(
+            'document_id',
+            'start',
+            'stop',
+            'comment',
+            concept_name=F('concept_url__concept_name'),
+            concept_url=F('concept_url__concept_url'),
+        )
+
+    def get_detailed_annotations_results(self, annotations, accessible_documents):
+        results = []
+
+        # Group by document_id
+        for document_id, doc_annotations in groupby(annotations, key=itemgetter('document_id')):
+            doc_annotations_list = list(doc_annotations)
+
+            # Group by start position (entity mentions)
+            entities = []
+            for start, entity_annotations in groupby(doc_annotations_list, key=itemgetter('start')):
+                entity_annotations_list = list(entity_annotations)
+
+                # Create concepts dictionary
+                concepts = {
+                    anno['concept_name'] or anno['concept_url']: anno['concept_url']
+                    for anno in entity_annotations_list
+                }
+
+                entities.append({
+                    'entity_id': start,
+                    'start': entity_annotations_list[0]['start'],
+                    'stop': entity_annotations_list[0]['stop'],
+                    'concepts': concepts
+                })
+
+            results.append({
+                'document_id': document_id,
+                'document_content': accessible_documents.get(document_id=document_id).document_content,
+                'data': entities
+            })
+
+        return results
+
+    def get_stats(self, topic_id, collection_items, documents, all_docs_set):
+        concepts_data = {}
+        concept_documents = {}
+
+        # Get all concepts used in annotations for this topic
+        concept_ids = self.model.objects.filter(
+            topic_id=topic_id,
+            username=self.username,
+            name_space=self.name_space,
+            document_id__in=documents.values('document_id')
+        ).values_list('concept_url', flat=True).distinct()
+
+        for concept_id in concept_ids:
+            try:
+                concept = Concept.objects.get(concept_url=concept_id)
+                concept_name = concept.concept_name or concept.concept_url
+
+                # Get annotations with this concept
+                annotations = self.model.objects.filter(
+                    topic_id=topic_id,
+                    username=self.username,
+                    name_space=self.name_space,
+                    concept_url=concept_id,
+                    document_id__in=documents.values('document_id')
+                ).values('document_id', 'comment')
+
+                # Count documents with this concept
+                doc_count = annotations.count()
+
+                if doc_count > 0:
+                    # Store document details
+                    doc_info = []
+                    for ann in annotations:
+                        doc_id = ann['document_id']
+                        extra_details = next(((lang, document_id) for did, lang, document_id in all_docs_set if did == doc_id), None)
+
+                        if extra_details:
+                            doc_info.append({
+                                'id': str(doc_id),
+                                'title': extra_details[1],
+                                'language': extra_details[0],
+                                'comment': ann['comment'] if ann['comment'] else ""
+                            })
+
+                    concepts_data[concept_name] = {"1": doc_count}  # Using "1" to match existing format
+                    concept_documents[concept_name] = {"1": doc_info}
+            except Concept.DoesNotExist:
+                continue
+
+        return concepts_data, concept_documents
 
 class AnnotationFactory:
     """Factory class for creating annotation handlers"""
 
     _handlers = {
         'Graded labeling': GradedLabelHandler,
-        'Passages annotation': PassageAnnotationHandler
+        'Passages annotation': PassageAnnotationHandler,
+        'Entity tagging': EntityTaggingHandler,
+        'Entity linking': EntityLinkingHandler
     }
 
     @classmethod
@@ -292,3 +507,5 @@ class AnnotationFactory:
         if not issubclass(handler_class, BaseAnnotationHandler):
             raise ValueError("Handler must inherit from BaseAnnotationHandler")
         cls._handlers[annotation_type] = handler_class
+
+

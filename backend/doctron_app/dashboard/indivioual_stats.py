@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
 from doctron_app.dashboard.annotation_handler import AnnotationFactory
-from doctron_app.models import Document, Topic, CollectionHasLabel
+from doctron_app.models import Document, Topic, CollectionHasLabel, CollectionHasTag, Concept
 
 
 def decimal_default(obj) -> float:
@@ -70,9 +70,19 @@ def get_individual_statistics(request):
         # Get collection data
         all_documents = Document.objects.filter(collection_id=collection_id)
         all_topics = Topic.objects.filter(collection_id=collection_id)
-        collection_labels = CollectionHasLabel.objects.filter(
-            collection_id=collection_id
-        ).select_related('label')
+
+        # Get appropriate collection items based on annotation type
+        if annotation_type in ['Graded labeling', 'Passages annotation']:
+            collection_items = CollectionHasLabel.objects.filter(
+                collection_id=collection_id
+            ).select_related('label')
+        elif annotation_type == 'Entity tagging':
+            collection_items = CollectionHasTag.objects.filter(
+                collection_id=collection_id
+            ).select_related('name')
+        else:
+            # For entity linking or other types
+            collection_items = []
 
         # Get accessible documents and topics
         accessible_documents = handler.get_accessible_documents(all_documents)
@@ -102,11 +112,10 @@ def get_individual_statistics(request):
                 else:
                     missing_documents.append(doc_info)
 
-
-            # Get label statistics with document details
+            # Get label/tag/concept statistics with document details
             labels_data, label_documents = handler.get_stats(
                 topic.id,
-                collection_labels,
+                collection_items,
                 accessible_documents,
                 all_docs_set
             )
@@ -133,12 +142,40 @@ def get_individual_statistics(request):
 
         response = {'status': 'success','data': results}
 
+        # Add label ranges based on annotation type
         if annotation_type in ['Graded labeling', 'Passages annotation']:
-            labels_range = defaultdict()
-            for coll_label in collection_labels:
+            labels_range = defaultdict(list)
+            for coll_label in collection_items:
                 label_range = coll_label.values
                 labels_range[coll_label.label.name] = list(range(int(label_range.lower), int(label_range.upper) + 1))
             response['label_range'] = labels_range
+        elif annotation_type == 'Entity tagging':
+            # For entity tagging, use simple present/absent (1/0)
+            tags_range = {}
+            for coll_tag in collection_items:
+                tags_range[coll_tag.name.name] = [1]  # 1 indicates tag is present
+            response['label_range'] = tags_range
+        elif annotation_type == 'Entity linking':
+            # For entity linking, treat concepts similarly
+            concepts_range = {}
+            concept_ids = set()
+            for topic in accessible_topics:
+                concept_ids.update(handler.model.objects.filter(
+                    topic_id=topic.id,
+                    username=username,
+                    name_space=name_space,
+                    document_id__in=accessible_documents.values('document_id')
+                ).values_list('concept_url', flat=True).distinct())
+
+            for concept_id in concept_ids:
+                try:
+                    concept = Concept.objects.get(concept_url=concept_id)
+                    concept_name = concept.concept_name or concept.concept_url
+                    concepts_range[concept_name] = [1]  # 1 indicates concept is linked
+                except Concept.DoesNotExist:
+                    continue
+
+            response['label_range'] = concepts_range
 
         return JsonResponse(response, json_dumps_params={'default': decimal_default})
 
