@@ -8,7 +8,7 @@ from django.views.decorators.http import require_http_methods
 from doctron_app.dashboard.annotation_handler import AnnotationFactory
 from doctron_app.models import (
     Document, AnnotatePassage, AnnotateLabel, GroundTruthLogFile,
-    AssociateTag, Associate, Mention, HasArea, CollectionHasConcept,
+    AssociateTag, Associate, Mention, HasArea, CollectionHasConcept, Link, CreateFact, AnnotateObjectLabel,
 )
 
 
@@ -25,7 +25,6 @@ def get_individual_document_wise_statistics(request):
         # Check if the data is accessible to the user, if yes it can be fetch also from the endpoint
         username = request.session.get('username')
 
-        print(f"username: {username}")
         # Validate required parameters
         if not all([collection_id, username]):
             return JsonResponse({
@@ -49,7 +48,8 @@ def get_individual_document_wise_statistics(request):
         # Get accessible documents and topics
         accessible_documents = handler.get_accessible_documents(all_documents)
 
-        if annotation_type in ['Graded labeling', 'Passages annotation']:
+        # Update this condition to include the new annotation types
+        if annotation_type in ['Graded labeling', 'Passages annotation', 'Relationships annotation', 'Facts annotation', 'Object detection']:
             annotations = handler.get_detailed_annotations(topic_id, accessible_documents.values('document_id'))
             results = handler.get_detailed_annotations_results(annotations, accessible_documents)
         elif annotation_type == 'Entity tagging':
@@ -349,7 +349,7 @@ def get_global_document_wise_statistics(request):
             count=Count('start', distinct=True)  # Count annotations per tag
         )
     elif annotation_type == "Entity linking":
-        # Get concept annotations - FIXED FIELD NAMES
+        # Get concept annotations
         annotations = Associate.objects.filter(
             topic_id=topic_id,
             document_id__in=all_documents.values('document_id')
@@ -361,6 +361,44 @@ def get_global_document_wise_statistics(request):
         ).annotate(
             count=Count('start', distinct=True)  # Count annotations per concept
         )
+    # Add new annotation types
+    elif annotation_type == "Relationships annotation":
+        # Get relationship annotations (using subject_document_id as primary)
+        annotations = Link.objects.filter(
+            topic_id=topic_id,
+            subject_document_id__in=all_documents.values_list('document_id', flat=True)
+        ).values(
+            'topic_id',  # Include topic_id for detailed query later
+            'subject_document_id',  # Use as document_id
+            'username'
+        ).annotate(
+            count=Count('subject_document_id')  # Count relationships
+        )
+    elif annotation_type == "Facts annotation":
+        # Get fact annotations
+        annotations = CreateFact.objects.filter(
+            topic_id=topic_id,
+            document_id__in=all_documents.values('document_id')
+        ).values(
+            'topic_id',  # Include topic_id for detailed query later
+            'document_id',
+            'username'
+        ).annotate(
+            count=Count('document_id')  # Count facts
+        )
+    elif annotation_type == "Object detection":
+        # Get object detection annotations
+        annotations = AnnotateObjectLabel.objects.filter(
+            topic_id=topic_id,
+            document_id__in=all_documents.values('document_id')
+        ).values(
+            'document_id',
+            'username',
+            'label__name',  # Get the label name
+            'grade'
+        ).annotate(
+            count=Count('document_id')  # Count annotated objects
+        )
     else:
         return JsonResponse({'error': f'Unsupported annotation type: {annotation_type}'}, status=400)
 
@@ -371,6 +409,10 @@ def get_global_document_wise_statistics(request):
         results = process_tag_annotations(annotations, all_documents)
     elif annotation_type == "Entity linking":
         results = process_concept_annotations(annotations, all_documents)
+    elif annotation_type == "Relationships annotation":
+        results = process_relationship_annotations(annotations, all_documents)
+    elif annotation_type == "Facts annotation":
+        results = process_fact_annotations(annotations, all_documents)
     else:
         results = []
 
@@ -441,7 +483,6 @@ def process_label_annotations(annotations, all_documents):
 
     return formatted_results
 
-
 def process_tag_annotations(annotations, all_documents):
     """Process tag annotations for global document-wise statistics"""
     results = defaultdict(lambda: {'document_id': None, 'data': defaultdict(lambda: {
@@ -484,7 +525,6 @@ def process_tag_annotations(annotations, all_documents):
 
     return formatted_results
 
-
 def process_concept_annotations(annotations, all_documents):
     """Process concept annotations for global document-wise statistics"""
     results = defaultdict(lambda: {'document_id': None, 'data': defaultdict(lambda: {
@@ -521,6 +561,198 @@ def process_concept_annotations(annotations, all_documents):
                     'username': username_data['username'],
                     'total_num_annotation': username_data['total_num_annotation'],
                     'concepts': dict(username_data['concepts'])
+                }
+                doc_result['data'].append(formatted_data)
+
+        formatted_results.append(doc_result)
+
+    return formatted_results
+
+def process_relationship_annotations(annotations, all_documents):
+    """Process relationship annotations for global document-wise statistics"""
+    results = defaultdict(lambda: {'document_id': None, 'data': defaultdict(lambda: {
+        'username': None,
+        'total_num_annotation': 0,
+        'relationships': []
+    })})
+
+    # Get all document IDs from annotations
+    doc_ids = set()
+    for annotation in annotations:
+        doc_ids.add(annotation['subject_document_id'])
+
+    # Fetch detailed relationship data
+    detailed_relationships = Link.objects.filter(
+        topic_id=annotations[0]['topic_id'] if annotations else None,
+        subject_document_id__in=doc_ids
+    )
+
+    # Build mention text lookup dictionary
+    mention_texts = {}
+    for rel in detailed_relationships:
+        # Extract subject mention
+        subject_key = (rel.subject_document_id, rel.subject_start, rel.subject_stop)
+        if subject_key not in mention_texts:
+            try:
+                mention = Mention.objects.get(
+                    document_id=rel.subject_document_id,
+                    start=rel.subject_start,
+                    stop=rel.subject_stop
+                )
+                mention_texts[subject_key] = mention.mention_text
+            except Mention.DoesNotExist:
+                mention_texts[subject_key] = f"Text at position {rel.subject_start}-{rel.subject_stop}"
+
+        # Extract predicate mention
+        predicate_key = (rel.predicate_document_id, rel.predicate_start, rel.predicate_stop)
+        if predicate_key not in mention_texts:
+            try:
+                mention = Mention.objects.get(
+                    document_id=rel.predicate_document_id,
+                    start=rel.predicate_start,
+                    stop=rel.predicate_stop
+                )
+                mention_texts[predicate_key] = mention.mention_text
+            except Mention.DoesNotExist:
+                mention_texts[predicate_key] = f"Text at position {rel.predicate_start}-{rel.predicate_stop}"
+
+        # Extract object mention
+        object_key = (rel.object_document_id, rel.object_start, rel.object_stop)
+        if object_key not in mention_texts:
+            try:
+                mention = Mention.objects.get(
+                    document_id=rel.object_document_id,
+                    start=rel.object_start,
+                    stop=rel.object_stop
+                )
+                mention_texts[object_key] = mention.mention_text
+            except Mention.DoesNotExist:
+                mention_texts[object_key] = f"Text at position {rel.object_start}-{rel.object_stop}"
+
+    # Group by document and username
+    for rel in detailed_relationships:
+        doc_id = rel.subject_document_id
+        username = rel.username_id
+
+        # Get mention texts
+        subject_key = (rel.subject_document_id, rel.subject_start, rel.subject_stop)
+        predicate_key = (rel.predicate_document_id, rel.predicate_start, rel.predicate_stop)
+        object_key = (rel.object_document_id, rel.object_start, rel.object_stop)
+
+        subject_text = mention_texts.get(subject_key, "Unknown subject")
+        predicate_text = mention_texts.get(predicate_key, "Unknown predicate")
+        object_key = mention_texts.get(object_key, "Unknown object")
+
+        # Create relationship item
+        relationship = {
+            'subject': {
+                'text': subject_text,
+                'start': rel.subject_start,
+                'stop': rel.subject_stop,
+                'document_id': rel.subject_document_id
+            },
+            'predicate': {
+                'text': predicate_text,
+                'start': rel.predicate_start,
+                'stop': rel.predicate_stop,
+                'document_id': rel.predicate_document_id
+            },
+            'object': {
+                'text': object_key,
+                'start': rel.object_start,
+                'stop': rel.object_stop,
+                'document_id': rel.object_document_id
+            },
+        }
+
+        results[doc_id]['document_id'] = doc_id
+        results[doc_id]['data'][username]['username'] = username
+        results[doc_id]['data'][username]['relationships'].append(relationship)
+        results[doc_id]['data'][username]['total_num_annotation'] += 1
+
+    # Format the response
+    formatted_results = []
+    for doc_id, doc_content in list(all_documents.values_list('document_id', 'document_content')):
+        doc_result = {
+            'document_id': doc_id,
+            'doc_id': doc_content.get('document_id', doc_id),
+            'data': []
+        }
+
+        if doc_id in results:
+            for username_data in results[doc_id]['data'].values():
+                formatted_data = {
+                    'username': username_data['username'],
+                    'total_num_annotation': username_data['total_num_annotation'],
+                    'relationships': username_data['relationships']
+                }
+                doc_result['data'].append(formatted_data)
+
+        formatted_results.append(doc_result)
+
+    return formatted_results
+
+def process_fact_annotations(annotations, all_documents):
+    """Process fact annotations for global document-wise statistics"""
+    results = defaultdict(lambda: {'document_id': None, 'data': defaultdict(lambda: {
+        'username': None,
+        'total_num_annotation': 0,
+        'facts': []
+    })})
+
+    # Get all document IDs from annotations
+    doc_ids = set()
+    for annotation in annotations:
+        doc_ids.add(annotation['document_id'])
+
+    # Fetch detailed fact data
+    detailed_facts = CreateFact.objects.filter(
+        topic_id=annotations[0]['topic_id'] if annotations else None,
+        document_id__in=doc_ids
+    )
+
+    # Group by document and username
+    for fact in detailed_facts:
+        doc_id = fact.document_id_id
+        username = fact.username_id
+
+        # Create fact item with triple information
+        fact_item = {
+            'subject': {
+                'name': fact.subject_name,
+                'concept_url': fact.subject_concept_url
+            },
+            'predicate': {
+                'name': fact.predicate_name,
+                'concept_url': fact.predicate_concept_url
+            },
+            'object': {
+                'name': fact.object_name,
+                'concept_url': fact.object_concept_url
+            },
+            'comment': fact.comment
+        }
+
+        results[doc_id]['document_id'] = doc_id
+        results[doc_id]['data'][username]['username'] = username
+        results[doc_id]['data'][username]['facts'].append(fact_item)
+        results[doc_id]['data'][username]['total_num_annotation'] += 1
+
+    # Format the response
+    formatted_results = []
+    for doc_id, doc_content in list(all_documents.values_list('document_id', 'document_content')):
+        doc_result = {
+            'document_id': doc_id,
+            'doc_id': doc_content.get('document_id', doc_id),
+            'data': []
+        }
+
+        if doc_id in results:
+            for username_data in results[doc_id]['data'].values():
+                formatted_data = {
+                    'username': username_data['username'],
+                    'total_num_annotation': username_data['total_num_annotation'],
+                    'facts': username_data['facts']
                 }
                 doc_result['data'].append(formatted_data)
 

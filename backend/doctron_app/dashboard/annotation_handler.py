@@ -1,3 +1,4 @@
+import base64
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from itertools import groupby
@@ -889,7 +890,10 @@ class ObjectDetectionHandler(BaseAnnotationHandler):
 
                 results.append({
                     'document_id': doc_id,
-                    'document_content': document.document_content,
+                    'document_content': {
+                        **document.document_content,
+                        'doc_image': base64.b64encode(document.image).decode('utf-8'),
+                    },
                     'data': [{
                         'object_type': 'detected_objects',
                         'count': len(objects),
