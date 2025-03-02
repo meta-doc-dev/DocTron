@@ -578,7 +578,7 @@ function SideBar(props){
                 {/*    </IconButton>*/}
                 {/*</Tooltip>*/}
                 <Tooltip placement="right" title={'Demo'}>
-                    <IconButton className={'bottombutt'} color="buttons" aria-label="Auto"  component="a" target={'_blank'} href={'/demo'}>
+                    <IconButton className={'bottombutt'} disabled color="buttons" aria-label="Auto"  component="a" target={'_blank'} href={'/demo'}>
 
                         <NotStartedIcon sx={{ fontSize: '1.5rem'}}/>
                     </IconButton>

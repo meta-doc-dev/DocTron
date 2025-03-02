@@ -46,7 +46,7 @@ function Home() {
                                                 style={{margin:'2vh 1vh',width:'100px'}}>Signup</Button>
                                     </div>
                                 </div><hr/>
-                                <div style={{fontSize:'1.2rem'}}>
+                       {/*         <div style={{fontSize:'1.2rem'}}>
                                     <div>Want to know more? Explore Doctron features with our tutorial</div>
                                     <div>
                                         <Button variant="text" href={"https://doctron.dei.unipd.it/demo"} target="_blank"  sx={{ '& > :not(style)': { m: 1 },background:"linear-gradient(90deg, rgba(34,193,195,1) 0%, rgba(255,185,33,1) 100%);",color:"white",'&:hover': {
@@ -56,7 +56,7 @@ function Home() {
                                         </Button>
 
                                     </div>
-                                </div>
+                                </div>*/}
 
                             </div>
 
