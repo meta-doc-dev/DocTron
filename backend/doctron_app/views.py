@@ -1057,6 +1057,8 @@ def collections(request, type=None):
                 print(e)
                 return HttpResponse(status=500)
         else:
+            file_paths = []
+
             try:
                 with transaction.atomic():
 
@@ -1076,17 +1078,29 @@ def collections(request, type=None):
                     ir_url = data.get('ir_dataset', None)
                     ir_preanno = data.get('ir_preanno', None)
                     files = request.FILES.items()
+
+                    for file in files:
+                        file_path = f"/tmp/{file.name}"  # Cambia il percorso se necessario
+                        with open(file_path, "wb") as f:
+                            if hasattr(file, "chunks"):  # Controlla se ha chunks()
+                                for chunk in file.chunks():
+                                    f.write(chunk)
+                            else:
+                                f.write(file.read())
+
+                        file_paths.append(file_path)
+
                     pubmed_ids = data.get('pubmed_ids', None)
 
 
 
                     #msg = new_collection(request)
                     session = dict(request.session)
-                    #msg = add_collection.delay(session,type_collection,topic_type,tags,labels,name,min_labels,max_labels,labels_p,min_labels_p,max_labels_p,description,share_with,ir_url,ir_preanno,files,pubmed_ids)
-                    msg = new_collection(request)
+                    msg = add_collection.delay(session,type_collection,topic_type,tags,labels,name,min_labels,max_labels,labels_p,min_labels_p,max_labels_p,description,share_with,ir_url,ir_preanno,file_paths,pubmed_ids)
+                   # msg = new_collection(request)
                     #msg = try_task.delay("value1", "value2")
                     # print(msg)
-                    return JsonResponse({'status': msg})
+                    return JsonResponse({'status': 'ok'})
 
             except Exception as e:
                 print(e)
@@ -1095,6 +1109,10 @@ def collections(request, type=None):
             else:
                 json_resp = {'message': 'ok'}
             finally:
+                for file_path in file_paths:
+                    print(f"Processing file: {file_path}")  # Nome del file
+                    os.remove(file_path)
+
                 json_resp = {'message': 'ok'}
                 print(json_resp)
                 return JsonResponse(json_resp)

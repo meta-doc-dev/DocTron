@@ -353,7 +353,7 @@ def upload_preannotations(file,annotation,collection):
                                                        """, [data])
 
 @shared_task
-def add_collection(session,type_collection,topic_type,tags,labels,name,min_labels,max_labels,labels_p,min_labels_p,max_labels_p,description,share_with,ir_url,ir_preanno,files,pubmed_ids):
+def add_collection(session,type_collection,topic_type,tags,labels,name,min_labels,max_labels,labels_p,min_labels_p,max_labels_p,description,share_with,ir_url,ir_preanno,file_paths,pubmed_ids):
     # Task logic here
     print("task started")
     options = {}
@@ -454,7 +454,9 @@ def add_collection(session,type_collection,topic_type,tags,labels,name,min_label
         else:
             # files = request.FILES.items()
             #pubmed_ids = data.get('pubmed_ids', None)
+            files = [(path, open(path, "rb")) for path in file_paths]
             for filename, file in files:
+                filename = filename.solit('/')[-1]
                 if filename.startswith('concept'):
                     if file.name.endswith('json'):
                         upload_json_concepts(file, name_space.name_space, username, collection)
