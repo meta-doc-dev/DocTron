@@ -21,7 +21,7 @@ services:
     build: .
     command: >
       bash -c "while !</dev/tcp/redis/6379; do sleep 1; done;
-      celery -A doctron worker --loglevel=info" 
+      celery -A doctron worker --pool=gevent --loglevel=inf
     volumes:
       - .:/code
     environment:
