@@ -73,4 +73,5 @@ webencodings==0.5.1
 wrapt==1.16.0
 Redis
 zlib-state==0.1.9
+gevent
 djangorestframework~=3.15.2
