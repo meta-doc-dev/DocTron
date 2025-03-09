@@ -32,7 +32,7 @@ ORCID_REDIRECT_URI_REGISTER = 'https://doctron.dei.unipd.it/loginorcidcallback/r
 ORCID_REDIRECT_LINK_URI = 'https://doctron.dei.unipd.it/loginorcidcallback/link'
 
 
-ALLOWED_HOSTS = ['127.0.0.1','localhost','doctron.dei.unipd.it']
+ALLOWED_HOSTS = ['127.0.0.1','localhost','doctron.dei.unipd.it','0.0.0.0]
 CSRF_TRUSTED_ORIGINS = ['https://doctron.dei.unipd.it', 'http://doctron.dei.unipd.it']
 SESSION_EXPIRES_AT_BROWSER_CLOSE = True
 
