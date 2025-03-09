@@ -11,7 +11,7 @@ A set of videos illustrating the instructions on how to perform annotations and 
 A demo version of DocTron is available online at http://doctron.dei.unipd.it. Users can login with username and password "demo" and test DocTron functionalities.
 In order to locally deploy DocTron in your computer or in a remote server you need Docker and docker-compose. To install them, you can follow the instructions available at: https://docs.docker.com/get-docker/ (Docker) and https://docs.docker.com/compose/install/ (docker-compose). 
 
-Clone or donwload this repository. Open the **doctron** folder and, replace the url provided in the url.txt file with the url of the server where DocTron will be deployed. Your url must replace the default one: http://0.0.0.0:8000. 
+Clone or donwload this repository. Open the **doctron** folder and, replace the url provided in the url.txt file with the url of the server where DocTron will be deployed. Your url must replace the default one: http://localhost:8000. 
 
 Run a new terminal session and place inside ```backend``` folder --where there is the ```docker-compose.yml``` file-- and run 
 
