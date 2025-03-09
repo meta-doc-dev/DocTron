@@ -20,7 +20,7 @@ Run a new terminal session and place inside ```backend``` folder --where there i
 This procedure will take few minutes depending on your hardware and you internet connection. When the procedure is finished you can open a new browser winodw (chrome is recommended) and you can start uploading new documents.
 Once that DocTron is up and running, open a new terminal and run 
 
-```docker-compose exec db bash -c "psql -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'doctron_db'\" | grep -q 1 || psql -U postgres -c 'CREATE DATABASE doctron_db;' && pg_restore -U postgres -d doctron_db -v backup_db_1.tar"```
+```docker-compose exec db bash -c "psql -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'doctron_db'\" | grep -q 1 || psql -U postgres -c 'CREATE DATABASE doctron_db;' && pg_restore -U postgres -d doctron_db -v backup_db_2.tar"```
 
 this will setup the database restoring the database schema and providing some test collections (those provided in the online demo instance).
 
