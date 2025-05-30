@@ -134,7 +134,7 @@ Any questions? The authors are glad to answer your questions and receive your fe
 
 - [Ornella Irrera](http://www.dei.unipd.it/~irreraorne) · ornella.irrera AT unipd.it
 - [Stefano Marchesin](https://www.dei.unipd.it/~marches1/) · stefano.marchesin AT unipd.it
-- [Farzad Shami] · farzad.shami AT studenti.unipd.it
+- Farzad Shami · farzad.shami AT studenti.unipd.it
 - [Gianmaria Silvello](http://www.dei.unipd.it/~silvello/) · gianmaria.silvello AT unipd.it
 
 
