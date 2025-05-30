@@ -120,11 +120,11 @@ If you use DocTron for your research work, please consider citing our paper:
 
 DocTron has been developed by the [Intelligent Interactive Information Access Hub (IIIA)](http://iiia.dei.unipd.it/) of the  [Department of Information Engineering](https://www.dei.unipd.it/en/), [University of Padua](https://www.unipd.it/en/), Italy.
 
-![](./img/logos/merge_logo_580x130.png)
+![](./img/logo/merge_logo_580x130.png)
 
 ## Acknowledgements 
 
-![](./img/logos/hereditary.png)
+![](./img/logo/hereditary.png)
 
 This work was supported by [HEREDITARY](https://www.hereditary.eu/), European Union Horizon 2020 program under Grant Agreement no. 101137074.
 
