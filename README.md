@@ -124,7 +124,7 @@ DocTron has been developed by the [Intelligent Interactive Information Access Hu
 
 ## Acknowledgements 
 
-![](./img/logo/hereditary.png)
+<img src="./img/logo/hereditary.png" width="300"/>
 
 This work was supported by [HEREDITARY](https://www.hereditary.eu/), European Union Horizon 2020 program under Grant Agreement no. 101137074.
 
