@@ -2,10 +2,12 @@
 <p align="center">
    <img src="./img/logo.png" alt="logo" width="500px"/>
 </p>
-DocTron is an open-source, collaborative, web-based annotation targeting IR domain. 
+DocTron is an open-source, collaborative, web-based annotation targeting IR domain.  
 All the source code, the installation guidelines, and instructions to use the tool are availanle in this repository.
 
 A set of videos illustrating the instructions on how to perform annotations and an overview of the features that DocTron provides is available at: https://doctron.dei.unipd.it/demo
+DocTron has been published at SIGIR2025: *Doctron: A Web-based Collaborative Annotation Tool for Ground Truth Creation in IR*
+DOI: 10.1145/3726302.3730286
 
 ## Requirements
 A demo version of DocTron is available online at http://doctron.dei.unipd.it. Users can login with username and password "demo" and test DocTron functionalities.
@@ -96,6 +98,45 @@ Some of these features are accessible only by the admins --i.e., collection spli
 <p align="center">
    <img src="./img/collection.png" alt="collection" width="900px"/>
 </p>
+
+# Citation
+If you use DocTron for your research work, please consider citing our paper:
+
+  ```bibtex
+@inproceedings{irrera_etal-2025,
+  author    = {Ornella Irrera and
+               Stefano Marchesin and
+               Farzad Shami and
+               Gianmaria Silvello},
+  title     = {Doctron: A Web-based Collaborative Annotation Tool for Ground Truth Creation in IR},
+  booktitle    = {Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval, {SIGIR} 2025, Padua, Italy, July 13-18, 2025},
+  url          = {https://doi.org/10.1145/3726302.3730286},
+  doi          = {10.1145/3726302.3730286}
+  year      = {2025}
+}
+```
+
+# Credits
+
+DocTron has been developed by the [Intelligent Interactive Information Access Hub (IIIA)](http://iiia.dei.unipd.it/) of the  [Department of Information Engineering](https://www.dei.unipd.it/en/), [University of Padua](https://www.unipd.it/en/), Italy.
+
+![](./img/logos/merge_logo_580x130.png)
+
+## Acknowledgements 
+
+![](./img/logos/hereditary.png)
+
+This work was supported by [HEREDITARY](https://www.hereditary.eu/), European Union Horizon 2020 program under Grant Agreement no. 101137074.
+
+## Contacts
+
+Any questions? The authors are glad to answer your questions and receive your feedback or suggestions to further improve MedTAG. 
+
+- [Ornella Irrera](http://www.dei.unipd.it/~irreraorne) · ornella.irrera AT unipd.it
+- [Stefano Marchesin](https://www.dei.unipd.it/~marches1/) · stefano.marchesin AT unipd.it
+- [Farzad Shami] · farzad.shami AT studenti.unipd.it
+- [Gianmaria Silvello](http://www.dei.unipd.it/~silvello/) · gianmaria.silvello AT unipd.it
+
 
 
 
