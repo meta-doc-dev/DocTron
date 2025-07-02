@@ -5,7 +5,6 @@
 DocTron is an open-source, collaborative, web-based annotation targeting IR domain.  
 All the source code, the installation guidelines, and instructions to use the tool are availanle in this repository.
 
-A set of videos illustrating the instructions on how to perform annotations and an overview of the features that DocTron provides is available at: https://doctron.dei.unipd.it/demo
 DocTron has been published at SIGIR2025: *Doctron: A Web-based Collaborative Annotation Tool for Ground Truth Creation in IR*
 DOI: 10.1145/3726302.3730286
 
